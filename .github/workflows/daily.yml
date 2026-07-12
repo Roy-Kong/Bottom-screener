@@ -1,4 +1,4 @@
-yamlname: daily-screener
+name: daily-screener
 
 on:
   schedule:
