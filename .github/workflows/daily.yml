@@ -20,12 +20,12 @@ jobs:
         run: pip install -r requirements.txt
       - name: Run screener
         run: python screener.py
-      - name: Publish results to web/
-        run: cp results.json web/results.json
+      - name: Publish results to docs/
+        run: cp results.json docs/results.json
       - name: Commit results
         run: |
           git config user.name "screener-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add results.json web/results.json
+          git add results.json docs/results.json
           git commit -m "chore: update results" || echo "no changes"
           git push
