@@ -40,9 +40,30 @@ def yyyymmdd(d: dt.date) -> str:
     return d.strftime("%Y%m%d")
 
 
-def recent_business_dates(n: int) -> list[str]:
-    """오늘부터 거꾸로, 영업일로 추정되는 날짜 문자열 n개 (주말 제외; 공휴일은 pykrx가 빈DF로 처리)."""
-    out, d = [], dt.date.today()
+def find_latest_trading_day(max_lookback: int = 14) -> str:
+    """실제로 시세 데이터가 존재하는 가장 최근 영업일을 찾아 반환.
+       휴장일(주말·공휴일)에 돌리면 '오늘'에는 데이터가 없으므로,
+       KRX에 실제 응답이 올 때까지 하루씩 거슬러 올라간다."""
+    d = dt.date.today()
+    for _ in range(max_lookback):
+        if d.weekday() < 5:      # 0=월 ... 4=금
+            ds = yyyymmdd(d)
+            try:
+                tickers = stock.get_market_ticker_list(ds, market=TARGET_MARKETS[0])
+            except Exception:
+                tickers = []
+            if tickers:
+                return ds
+        d -= dt.timedelta(days=1)
+    # 이 지점까지 왔다면 이상 상황; 마지막으로 시도한 날짜라도 반환해
+    # 호출부가 빈 결과를 감지하고 처리하게 한다.
+    return yyyymmdd(d)
+
+
+def recent_business_dates(n: int, anchor: dt.date | None = None) -> list[str]:
+    """anchor(기본: 가장 최근 영업일)부터 거꾸로, 영업일로 추정되는 날짜 문자열 n개
+       (주말 제외; 공휴일은 pykrx가 빈DF로 처리)."""
+    out, d = [], anchor or dt.date.today()
     while len(out) < n:
         if d.weekday() < 5:      # 0=월 ... 4=금
             out.append(yyyymmdd(d))
@@ -50,10 +71,11 @@ def recent_business_dates(n: int) -> list[str]:
     return list(reversed(out))   # 과거 → 현재 순
 
 
-def month_end_samples(months: int) -> list[str]:
+def month_end_samples(months: int, anchor: dt.date | None = None) -> list[str]:
     """최근 N개월의 월말(대략) 날짜 표본. 5년 밴드용."""
     out = []
-    d = dt.date.today().replace(day=1) - dt.timedelta(days=1)  # 지난달 말일
+    base = anchor or dt.date.today()
+    d = base.replace(day=1) - dt.timedelta(days=1)  # 지난달 말일
     for _ in range(months):
         # 주말이면 금요일로 당김
         x = d
@@ -64,8 +86,8 @@ def month_end_samples(months: int) -> list[str]:
     return out
 
 
-def weekly_samples(weeks: int) -> list[str]:
-    out, d = [], dt.date.today()
+def weekly_samples(weeks: int, anchor: dt.date | None = None) -> list[str]:
+    out, d = [], anchor or dt.date.today()
     for _ in range(weeks):
         x = d
         while x.weekday() >= 5:
@@ -76,12 +98,11 @@ def weekly_samples(weeks: int) -> list[str]:
 
 
 # ---------------- 수집 ----------------
-def get_universe() -> dict[str, str]:
+def get_universe(asof: str) -> dict[str, str]:
     """{티커: 종목명} for 코스피+코스닥."""
     uni = {}
-    today = yyyymmdd(dt.date.today())
     for mkt in TARGET_MARKETS:
-        for tkr in stock.get_market_ticker_list(today, market=mkt):
+        for tkr in stock.get_market_ticker_list(asof, market=mkt):
             try:
                 uni[tkr] = stock.get_market_ticker_name(tkr)
             except Exception:
@@ -221,21 +242,26 @@ def had_dividend_cut(fund_hist_rows: list[dict]) -> bool:
 # ---------------- 메인 ----------------
 def run():
     t0 = time.time()
+    print("0) 가장 최근 영업일 탐색…")
+    asof = find_latest_trading_day()
+    anchor = dt.datetime.strptime(asof, "%Y%m%d").date()
+    print(f"   기준일: {asof}")
+
     print("1) 종목 유니버스 수집…")
-    universe = get_universe()
+    universe = get_universe(asof)
     print(f"   {len(universe)}개 종목")
 
     print("2) OHLCV 스냅샷 수집…")
-    ohlcv_dates = recent_business_dates(OHLCV_LOOKBACK_DAYS)
+    ohlcv_dates = recent_business_dates(OHLCV_LOOKBACK_DAYS, anchor)
     matrix = collect_ohlcv_matrix(ohlcv_dates)
     print(f"   {len(matrix)}개 영업일 확보")
 
     print("3) 펀더멘털 히스토리 수집…")
-    fund_hist = collect_fundamental_history(month_end_samples(FUND_HISTORY_MONTHS))
+    fund_hist = collect_fundamental_history(month_end_samples(FUND_HISTORY_MONTHS, anchor))
 
     print("4) 공매도 3개월 최고/현재 수집…")
-    short_max = collect_short_max(weekly_samples(SHORT_SAMPLE_WEEKS))
-    latest_date = sorted(matrix.keys())[-1] if matrix else yyyymmdd(dt.date.today())
+    short_max = collect_short_max(weekly_samples(SHORT_SAMPLE_WEEKS, anchor))
+    latest_date = sorted(matrix.keys())[-1] if matrix else asof
     short_cur = collect_short_current(latest_date)
 
     print("5) 20일 매집 수집…")
