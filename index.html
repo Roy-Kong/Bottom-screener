@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#061018">
+<title>바닥 스크리너 · Korea Bottom Screener</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --abyss:#061018;--deep:#0B1A28;--deep2:#102639;--line:#1C3A52;
+    --ink:#EAF2F8;--mute:#6E8CA6;--dim:#436079;
+    --go:#2FE0B6;--mid:#F4C15D;--hot:#F5695C;--ping:#4CC9E8;
+    --disp:'Space Grotesk',sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace;--body:'IBM Plex Sans',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--abyss);color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased}
+  body{min-height:100dvh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    background:radial-gradient(120% 55% at 50% -10%,#0d2438 0%,rgba(13,36,56,0) 55%),var(--abyss)}
+  .wrap{max-width:820px;margin:0 auto;padding:22px 16px 60px}
+
+  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+  h1{font-family:var(--disp);font-weight:700;font-size:23px;letter-spacing:-.4px;display:flex;align-items:center;gap:9px}
+  .wave{width:23px;height:23px;flex:none}
+  .meta{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-align:right;line-height:1.5}
+  .sub{color:var(--mute);font-size:12.5px;margin:8px 0 18px;line-height:1.5}
+
+  .legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin-bottom:16px;font-family:var(--mono);font-size:10.5px;color:var(--mute)}
+  .legend .lg{display:flex;align-items:center;gap:5px}
+  .ld{width:8px;height:8px;border-radius:50%}
+
+  .row{background:var(--deep);border:1px solid var(--line);border-radius:13px;margin-bottom:9px;overflow:hidden}
+  .rhead{display:grid;grid-template-columns:34px 1fr auto auto;gap:12px;align-items:center;padding:13px 15px;cursor:pointer}
+  .rank{font-family:var(--disp);font-weight:700;font-size:17px;color:var(--mute);text-align:center}
+  .nm{font-family:var(--disp);font-weight:500;font-size:16px}
+  .tk{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:2px}
+  .dots{display:flex;gap:4px}
+  .d{width:9px;height:9px;border-radius:50%}
+  .sc{font-family:var(--disp);font-weight:700;font-size:20px;min-width:44px;text-align:right}
+  .rbody{display:none;padding:0 15px 14px;border-top:1px dashed var(--line)}
+  .row.open .rbody{display:block}
+  .bar{display:grid;grid-template-columns:120px 1fr 40px;gap:10px;align-items:center;margin-top:11px;font-family:var(--mono);font-size:12px}
+  .bar .bl{color:var(--mute)}
+  .track{height:7px;background:var(--abyss);border-radius:4px;overflow:hidden}
+  .fill{height:100%;border-radius:4px}
+  .bv{text-align:right;color:var(--ink)}
+  .na{color:var(--dim);font-style:italic}
+  .close{font-family:var(--mono);font-size:11px;color:var(--mute);margin-top:12px}
+
+  .loading,.err{font-family:var(--mono);font-size:13px;color:var(--mute);padding:30px 4px;text-align:center;line-height:1.6}
+  .err{color:var(--hot)}
+  .disc{margin-top:22px;font-size:11px;color:var(--dim);line-height:1.55;font-family:var(--mono)}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>
+      <svg class="wave" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M2 12c2.5 0 2.5-5 5-5s2.5 5 5 5 2.5-5 5-5 2.5 5 5 5" stroke="#4CC9E8" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M2 17c2.5 0 2.5-3 5-3s2.5 3 5 3 2.5-3 5-3 2.5 3 5 3" stroke="#2FE0B6" stroke-width="1.6" stroke-linecap="round" opacity=".6"/>
+      </svg>
+      바닥 스크리너
+    </h1>
+    <div class="meta" id="meta"></div>
+  </div>
+  <div class="sub">코스피·코스닥 전종목을 6개 바닥 신호로 매일 채점해 상위 종목을 보여줍니다. 종목을 탭하면 신호별 점수가 열립니다.</div>
+
+  <div class="legend">
+    <span class="lg"><span class="ld" style="background:var(--go)"></span>바닥 신호 강함(≥66)</span>
+    <span class="lg"><span class="ld" style="background:var(--mid)"></span>중간(34–65)</span>
+    <span class="lg"><span class="ld" style="background:var(--hot)"></span>약함(&lt;34)</span>
+    <span class="lg"><span class="ld" style="background:#2b4359"></span>미적용</span>
+  </div>
+
+  <div id="list"><div class="loading">데이터 불러오는 중…</div></div>
+
+  <div class="disc" id="disc"></div>
+</div>
+
+<script>
+const LABELS = {
+  volume_dryness:"거래량 고갈", accumulation:"기관·외국인 매집", short_covering:"공매도 감소",
+  pbr_low:"PBR 역사적 저점", dividend_yield:"배당수익률", relative_strength:"상대강도"
+};
+const ORDER = ["volume_dryness","accumulation","short_covering","pbr_low","dividend_yield","relative_strength"];
+
+// 미리보기용 샘플 (호스팅되면 실제 results.json로 대체됨)
+const SAMPLE = {
+  generated_at:"(미리보기)", as_of_date:"—", universe_size:2600, scored:0,
+  results:[
+    {rank:1,ticker:"000660",name:"예시종목 A",score:91.2,close:207000,breakdown:{volume_dryness:88,accumulation:100,short_covering:95,pbr_low:92,dividend_yield:80,relative_strength:92}},
+    {rank:2,ticker:"005930",name:"예시종목 B",score:78.5,close:71000,breakdown:{volume_dryness:70,accumulation:85,short_covering:60,pbr_low:88,dividend_yield:null,relative_strength:89}},
+    {rank:3,ticker:"012345",name:"예시종목 C",score:64.0,close:15300,breakdown:{volume_dryness:55,accumulation:40,short_covering:72,pbr_low:95,dividend_yield:60,relative_strength:62}},
+  ]
+};
+
+function color(v){ if(v==null) return "#2b4359"; return v>=66?"#2FE0B6":v>=34?"#F4C15D":"#F5695C"; }
+
+function render(data){
+  document.getElementById("meta").innerHTML =
+    "기준일 "+data.as_of_date+"<br>갱신 "+data.generated_at+"<br>채점 "+(data.scored||0)+" / "+(data.universe_size||"—");
+  const list = document.getElementById("list");
+  if(!data.results || !data.results.length){ list.innerHTML='<div class="err">결과가 없습니다.</div>'; return; }
+  list.innerHTML = data.results.map((r,i)=>{
+    const rank = r.rank || i+1;
+    const dots = ORDER.map(k=>'<span class="d" style="background:'+color(r.breakdown[k])+'"></span>').join("");
+    const bars = ORDER.map(k=>{
+      const v=r.breakdown[k];
+      const val = v==null?'<span class="na">미적용</span>':Math.round(v);
+      const w = v==null?0:v;
+      return '<div class="bar"><span class="bl">'+LABELS[k]+'</span>'+
+        '<span class="track"><span class="fill" style="width:'+w+'%;background:'+color(v)+'"></span></span>'+
+        '<span class="bv">'+val+'</span></div>';
+    }).join("");
+    return '<div class="row" onclick="this.classList.toggle(\'open\')">'+
+      '<div class="rhead"><div class="rank">'+rank+'</div>'+
+      '<div><div class="nm">'+r.name+'</div><div class="tk">'+r.ticker+'</div></div>'+
+      '<div class="dots">'+dots+'</div>'+
+      '<div class="sc" style="color:'+color(r.score)+'">'+r.score+'</div></div>'+
+      '<div class="rbody">'+bars+'<div class="close">종가 '+(r.close?r.close.toLocaleString('ko-KR')+'원':'—')+'</div></div>'+
+    '</div>';
+  }).join("");
+}
+
+document.getElementById("disc").textContent =
+  "6개 신호 동일 가중 · 임계값은 백테스트 전 시작값 · 매수·매도 신호가 아닌 후보 발굴 도구입니다. 신용잔고·내부자매수는 후속 버전에서 후보군에 추가됩니다.";
+
+fetch("results.json").then(r=>{ if(!r.ok) throw new Error(); return r.json(); })
+  .then(render)
+  .catch(()=>{ render(SAMPLE); document.getElementById("meta").innerHTML+="<br><span style='color:var(--hot)'>※ 샘플(호스팅 전)</span>"; });
+</script>
+</body>
+</html>
