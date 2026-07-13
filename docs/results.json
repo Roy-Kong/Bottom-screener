@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-13T12:31",
+  "generated_at": "2026-07-13T13:26",
   "as_of_date": "20260713",
   "universe_size": 2766,
   "scored": 1069,
@@ -15,7 +15,8 @@
     "short_covering": "공매도 감소",
     "pbr_low": "PBR 역사적 저점",
     "dividend_yield": "배당수익률(조건부)",
-    "relative_strength": "상대강도"
+    "relative_strength": "상대강도",
+    "margin_balance": "신용잔고 낮음"
   },
   "results": [
     {
@@ -29,7 +30,8 @@
         "short_covering": 100.0,
         "pbr_low": 43.4,
         "dividend_yield": null,
-        "relative_strength": 100.0
+        "relative_strength": 100.0,
+        "margin_balance": null
       },
       "close": 4005
     },
@@ -44,7 +46,8 @@
         "short_covering": null,
         "pbr_low": 98.1,
         "dividend_yield": null,
-        "relative_strength": 100.0
+        "relative_strength": 100.0,
+        "margin_balance": null
       },
       "close": 8490
     },
@@ -59,7 +62,8 @@
         "short_covering": 100.0,
         "pbr_low": 96.2,
         "dividend_yield": null,
-        "relative_strength": 100.0
+        "relative_strength": 100.0,
+        "margin_balance": null
       },
       "close": 1308
     },
@@ -74,7 +78,8 @@
         "short_covering": 100.0,
         "pbr_low": 90.6,
         "dividend_yield": null,
-        "relative_strength": 100.0
+        "relative_strength": 100.0,
+        "margin_balance": null
       },
       "close": 2485
     },
@@ -89,7 +94,8 @@
         "short_covering": 100.0,
         "pbr_low": 86.8,
         "dividend_yield": null,
-        "relative_strength": 100.0
+        "relative_strength": 100.0,
+        "margin_balance": null
       },
       "close": 2900
     },
@@ -104,7 +110,8 @@
         "short_covering": 100.0,
         "pbr_low": 98.1,
         "dividend_yield": null,
-        "relative_strength": 100.0
+        "relative_strength": 100.0,
+        "margin_balance": null
       },
       "close": 1857
     },
@@ -119,7 +126,8 @@
         "short_covering": 100.0,
         "pbr_low": 95.2,
         "dividend_yield": null,
-        "relative_strength": 100.0
+        "relative_strength": 100.0,
+        "margin_balance": null
       },
       "close": 67700
     },
@@ -134,7 +142,8 @@
         "short_covering": 100.0,
         "pbr_low": 81.1,
         "dividend_yield": null,
-        "relative_strength": 100.0
+        "relative_strength": 100.0,
+        "margin_balance": null
       },
       "close": 9020
     },
@@ -149,7 +158,8 @@
         "short_covering": 100.0,
         "pbr_low": 62.3,
         "dividend_yield": null,
-        "relative_strength": 100.0
+        "relative_strength": 100.0,
+        "margin_balance": null
       },
       "close": 16190
     },
@@ -164,7 +174,8 @@
         "short_covering": 100.0,
         "pbr_low": 62.3,
         "dividend_yield": null,
-        "relative_strength": 100.0
+        "relative_strength": 100.0,
+        "margin_balance": null
       },
       "close": 1330
     },
@@ -179,7 +190,8 @@
         "short_covering": 100.0,
         "pbr_low": 60.4,
         "dividend_yield": null,
-        "relative_strength": 100.0
+        "relative_strength": 100.0,
+        "margin_balance": null
       },
       "close": 7760
     },
@@ -194,7 +206,8 @@
         "short_covering": 100.0,
         "pbr_low": 87.9,
         "dividend_yield": null,
-        "relative_strength": 88.6
+        "relative_strength": 88.6,
+        "margin_balance": null
       },
       "close": 15860
     },
@@ -209,7 +222,8 @@
         "short_covering": 100.0,
         "pbr_low": 94.2,
         "dividend_yield": 100.0,
-        "relative_strength": 17.0
+        "relative_strength": 17.0,
+        "margin_balance": null
       },
       "close": 238000
     },
@@ -224,7 +238,8 @@
         "short_covering": 100.0,
         "pbr_low": 84.9,
         "dividend_yield": null,
-        "relative_strength": 0.0
+        "relative_strength": 0.0,
+        "margin_balance": null
       },
       "close": 7880
     },
@@ -239,7 +254,8 @@
         "short_covering": 100.0,
         "pbr_low": 62.5,
         "dividend_yield": 100.0,
-        "relative_strength": 63.5
+        "relative_strength": 63.5,
+        "margin_balance": null
       },
       "close": 18250
     },
@@ -254,7 +270,8 @@
         "short_covering": 100.0,
         "pbr_low": 94.3,
         "dividend_yield": 98.1,
-        "relative_strength": 27.0
+        "relative_strength": 27.0,
+        "margin_balance": null
       },
       "close": 46050
     },
@@ -269,7 +286,8 @@
         "short_covering": 100.0,
         "pbr_low": 98.1,
         "dividend_yield": 100.0,
-        "relative_strength": 0.0
+        "relative_strength": 0.0,
+        "margin_balance": null
       },
       "close": 56200
     },
@@ -284,7 +302,8 @@
         "short_covering": 100.0,
         "pbr_low": 88.7,
         "dividend_yield": null,
-        "relative_strength": 0.0
+        "relative_strength": 0.0,
+        "margin_balance": null
       },
       "close": 22850
     },
@@ -299,7 +318,8 @@
         "short_covering": 100.0,
         "pbr_low": 98.1,
         "dividend_yield": null,
-        "relative_strength": 31.6
+        "relative_strength": 31.6,
+        "margin_balance": null
       },
       "close": 248500
     },
@@ -314,7 +334,8 @@
         "short_covering": 100.0,
         "pbr_low": 98.1,
         "dividend_yield": null,
-        "relative_strength": 0.0
+        "relative_strength": 0.0,
+        "margin_balance": null
       },
       "close": 1935
     },
@@ -329,7 +350,8 @@
         "short_covering": 100.0,
         "pbr_low": 98.1,
         "dividend_yield": 100.0,
-        "relative_strength": 0.0
+        "relative_strength": 0.0,
+        "margin_balance": null
       },
       "close": 47950
     },
@@ -344,7 +366,8 @@
         "short_covering": 100.0,
         "pbr_low": 84.6,
         "dividend_yield": 92.3,
-        "relative_strength": 34.6
+        "relative_strength": 34.6,
+        "margin_balance": null
       },
       "close": 199500
     },
@@ -359,7 +382,8 @@
         "short_covering": 100.0,
         "pbr_low": 96.2,
         "dividend_yield": 100.0,
-        "relative_strength": 17.1
+        "relative_strength": 17.1,
+        "margin_balance": null
       },
       "close": 23300
     },
@@ -374,7 +398,8 @@
         "short_covering": 100.0,
         "pbr_low": 88.9,
         "dividend_yield": 97.8,
-        "relative_strength": 78.7
+        "relative_strength": 78.7,
+        "margin_balance": null
       },
       "close": 79900
     },
@@ -389,7 +414,8 @@
         "short_covering": 100.0,
         "pbr_low": 81.1,
         "dividend_yield": 100.0,
-        "relative_strength": 8.6
+        "relative_strength": 8.6,
+        "margin_balance": null
       },
       "close": 9810
     },
@@ -404,7 +430,8 @@
         "short_covering": 100.0,
         "pbr_low": 94.3,
         "dividend_yield": 100.0,
-        "relative_strength": 0.0
+        "relative_strength": 0.0,
+        "margin_balance": null
       },
       "close": 3350
     },
@@ -419,7 +446,8 @@
         "short_covering": 100.0,
         "pbr_low": 98.1,
         "dividend_yield": 100.0,
-        "relative_strength": 0.0
+        "relative_strength": 0.0,
+        "margin_balance": null
       },
       "close": 17380
     },
@@ -434,7 +462,8 @@
         "short_covering": 100.0,
         "pbr_low": 79.2,
         "dividend_yield": null,
-        "relative_strength": 13.6
+        "relative_strength": 13.6,
+        "margin_balance": null
       },
       "close": 7000
     },
@@ -449,7 +478,8 @@
         "short_covering": 100.0,
         "pbr_low": 67.9,
         "dividend_yield": 47.2,
-        "relative_strength": 65.3
+        "relative_strength": 65.3,
+        "margin_balance": null
       },
       "close": 91700
     },
@@ -464,7 +494,8 @@
         "short_covering": 100.0,
         "pbr_low": 98.1,
         "dividend_yield": 100.0,
-        "relative_strength": 5.7
+        "relative_strength": 5.7,
+        "margin_balance": null
       },
       "close": 5730
     },
@@ -479,7 +510,8 @@
         "short_covering": 100.0,
         "pbr_low": 71.7,
         "dividend_yield": 98.1,
-        "relative_strength": 30.5
+        "relative_strength": 30.5,
+        "margin_balance": null
       },
       "close": 133700
     },
@@ -494,7 +526,8 @@
         "short_covering": 100.0,
         "pbr_low": 98.1,
         "dividend_yield": 100.0,
-        "relative_strength": 0.0
+        "relative_strength": 0.0,
+        "margin_balance": null
       },
       "close": 7790
     },
@@ -509,7 +542,8 @@
         "short_covering": 100.0,
         "pbr_low": 30.2,
         "dividend_yield": 100.0,
-        "relative_strength": 100.0
+        "relative_strength": 100.0,
+        "margin_balance": null
       },
       "close": 19100
     },
@@ -524,7 +558,8 @@
         "short_covering": 100.0,
         "pbr_low": 98.1,
         "dividend_yield": 96.2,
-        "relative_strength": 0.0
+        "relative_strength": 0.0,
+        "margin_balance": null
       },
       "close": 11490
     },
@@ -539,7 +574,8 @@
         "short_covering": 100.0,
         "pbr_low": 22.6,
         "dividend_yield": 83.0,
-        "relative_strength": 100.0
+        "relative_strength": 100.0,
+        "margin_balance": null
       },
       "close": 10530
     },
@@ -554,7 +590,8 @@
         "short_covering": 100.0,
         "pbr_low": 92.5,
         "dividend_yield": 100.0,
-        "relative_strength": 0.0
+        "relative_strength": 0.0,
+        "margin_balance": null
       },
       "close": 24000
     },
@@ -569,7 +606,8 @@
         "short_covering": 100.0,
         "pbr_low": 98.1,
         "dividend_yield": 100.0,
-        "relative_strength": 0.0
+        "relative_strength": 0.0,
+        "margin_balance": null
       },
       "close": 40250
     },
@@ -584,7 +622,8 @@
         "short_covering": 100.0,
         "pbr_low": 67.9,
         "dividend_yield": null,
-        "relative_strength": 36.0
+        "relative_strength": 36.0,
+        "margin_balance": null
       },
       "close": 31800
     },
@@ -599,7 +638,8 @@
         "short_covering": null,
         "pbr_low": 98.1,
         "dividend_yield": 100.0,
-        "relative_strength": 0.0
+        "relative_strength": 0.0,
+        "margin_balance": null
       },
       "close": 26250
     },
@@ -614,7 +654,8 @@
         "short_covering": 100.0,
         "pbr_low": 64.2,
         "dividend_yield": null,
-        "relative_strength": 0.0
+        "relative_strength": 0.0,
+        "margin_balance": null
       },
       "close": 5910
     }
