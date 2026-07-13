@@ -240,22 +240,35 @@ def fetch_margin_ratio(ticker: str) -> tuple[float | None, str]:
         return None, "parse_fail"
 
 
+DEBUG_CANDIDATE_URLS = [
+    ("finance/main", "https://finance.naver.com/item/main.naver?code={t}"),
+    ("finance/sise", "https://finance.naver.com/item/sise.naver?code={t}"),
+    ("finance/frgn", "https://finance.naver.com/item/frgn.naver?code={t}"),
+    ("finance/coinfo", "https://finance.naver.com/item/coinfo.naver?code={t}&target=finansummary"),
+    ("mstock/basic", "https://m.stock.naver.com/api/stock/{t}/basic"),
+    ("mstock/integration", "https://m.stock.naver.com/api/stock/{t}/integration"),
+    ("mstock/finance", "https://m.stock.naver.com/api/stock/{t}/finance/annual"),
+]
+
+
 def debug_dump_naver_labels(ticker: str) -> None:
-    """임시 진단용(파싱 라벨 확인 후 제거 예정): 첫 후보 종목 페이지의 th 텍스트를 로그로 남긴다."""
-    url = f"https://finance.naver.com/item/main.naver?code={ticker}"
-    try:
-        resp = requests.get(url, headers=NAVER_HEADERS, timeout=5)
-        resp.raise_for_status()
-    except Exception as e:
-        print(f"   [진단] {ticker} 요청 실패: {type(e).__name__}: {e}")
-        return
-    print(f"   [진단] {ticker} 응답 {resp.status_code}, 본문 길이 {len(resp.text)}자, '신용' 포함: {'신용' in resp.text}")
-    soup = BeautifulSoup(resp.text, "html.parser")
-    th_texts = [t.get_text(strip=True) for t in soup.find_all("th")]
-    th_texts = [t for t in th_texts if t]
-    print(f"   [진단] th 태그 {len(th_texts)}개, 상위 40개: {th_texts[:40]}")
-    credit_th = [t for t in th_texts if "신용" in t]
-    print(f"   [진단] '신용' 포함 th: {credit_th}")
+    """임시 진단용(정확한 소스 확인 후 제거 예정): 신용잔고 후보 URL 여러 개를 시도해
+       어디에 '신용' 텍스트가 있는지 로그로 남긴다."""
+    for label, tmpl in DEBUG_CANDIDATE_URLS:
+        url = tmpl.format(t=ticker)
+        try:
+            resp = requests.get(url, headers=NAVER_HEADERS, timeout=5)
+            status = resp.status_code
+            text = resp.text
+        except Exception as e:
+            print(f"   [진단:{label}] 요청 실패: {type(e).__name__}: {e}")
+            continue
+        has_credit = "신용" in text
+        print(f"   [진단:{label}] {status}, 길이 {len(text)}자, '신용' 포함: {has_credit}")
+        if has_credit:
+            idx = text.find("신용")
+            print(f"   [진단:{label}] 주변 텍스트: ...{text[max(0,idx-80):idx+80]}...")
+        time.sleep(NAVER_REQUEST_PAUSE)
 
 
 def collect_margin_balance(tickers: list[str]) -> dict[str, float]:
