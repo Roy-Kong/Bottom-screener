@@ -240,8 +240,28 @@ def fetch_margin_ratio(ticker: str) -> tuple[float | None, str]:
         return None, "parse_fail"
 
 
+def debug_dump_naver_labels(ticker: str) -> None:
+    """임시 진단용(파싱 라벨 확인 후 제거 예정): 첫 후보 종목 페이지의 th 텍스트를 로그로 남긴다."""
+    url = f"https://finance.naver.com/item/main.naver?code={ticker}"
+    try:
+        resp = requests.get(url, headers=NAVER_HEADERS, timeout=5)
+        resp.raise_for_status()
+    except Exception as e:
+        print(f"   [진단] {ticker} 요청 실패: {type(e).__name__}: {e}")
+        return
+    print(f"   [진단] {ticker} 응답 {resp.status_code}, 본문 길이 {len(resp.text)}자, '신용' 포함: {'신용' in resp.text}")
+    soup = BeautifulSoup(resp.text, "html.parser")
+    th_texts = [t.get_text(strip=True) for t in soup.find_all("th")]
+    th_texts = [t for t in th_texts if t]
+    print(f"   [진단] th 태그 {len(th_texts)}개, 상위 40개: {th_texts[:40]}")
+    credit_th = [t for t in th_texts if "신용" in t]
+    print(f"   [진단] '신용' 포함 th: {credit_th}")
+
+
 def collect_margin_balance(tickers: list[str]) -> dict[str, float]:
     """상위 후보군에 한해 신용잔고율(%) 수집 {ticker: ratio}."""
+    if tickers:
+        debug_dump_naver_labels(tickers[0])
     out: dict[str, float] = {}
     reasons: dict[str, int] = {}
     for tkr in tickers:
