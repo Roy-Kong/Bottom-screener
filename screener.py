@@ -4,9 +4,9 @@ screener.py — 전종목 바닥 스크리너 파이프라인 (pykrx → signals
 흐름:
   1) 코스피+코스닥 종목 목록
   2) 효율적 수집: '하루치 전종목 스냅샷'을 여러 날짜에 대해 수집 (종목별 개별호출 최소화)
-  3) 생존 게이트 통과 종목만 1차 채점 (signals.py 6개 신호, KRX 데이터만 사용)
-  4) 1차 상위 CANDIDATE_POOL개에 한해 네이버금융에서 신용잔고율 개별 수집(7번째 신호)
-  5) 7개 신호로 2차 채점 후 상위 N개를 results.json으로 저장 (프론트가 읽음)
+  3) 생존 게이트 통과 종목만 1차 채점 (signals.py 7개 신호, KRX 데이터만 사용)
+  4) 1차 상위 CANDIDATE_POOL개에 한해 네이버금융에서 신용잔고율 개별 수집(8번째 신호)
+  5) 8개 신호로 2차 채점 후 상위 N개를 results.json으로 저장 (프론트가 읽음)
 
 주의: KRX 접속이 되는 환경(예: GitHub Actions)에서 실행해야 한다.
 첫 실행은 디버그 패스가 필요할 수 있다(휴장일·결측·해외IP 차단 등).
@@ -262,6 +262,20 @@ def series_for_ticker(matrix, tkr):
     return closes, vols
 
 
+def bollinger_bandwidth_series(closes: list[float], window: int = 20) -> list[float]:
+    """일별 볼린저밴드 폭(상대값, (상단-하단)/중앙선) 시계열. 마지막 값이 최신."""
+    out = []
+    for i in range(window, len(closes) + 1):
+        w = closes[i - window:i]
+        m = sum(w) / window
+        if m <= 0:
+            continue
+        var = sum((x - m) ** 2 for x in w) / window
+        sd = var ** 0.5
+        out.append((4 * sd) / m)   # (m+2sd) - (m-2sd) = 4sd, 상대화 위해 /m
+    return out
+
+
 def had_dividend_cut(fund_hist_rows: list[dict]) -> bool:
     """연도별 DPS가 전년比 감소한 적 있으면 True (배당 삭감 이력)."""
     by_year = {}
@@ -315,7 +329,7 @@ def run():
     except Exception:
         idx_ret = 0.0
 
-    print("7) 1차 채점(6개 신호)…")
+    print("7) 1차 채점(7개 신호)…")
     prelim = []
     for tkr, name in universe.items():
         closes, vols = series_for_ticker(matrix, tkr)
@@ -344,6 +358,7 @@ def run():
         cur_div = fh[0]["DIV"] if fh else 0.0
         cur_dps = fh[0]["DPS"] if fh else 0.0
         cur_eps = fh[0]["EPS"] if fh else 0.0
+        bw_series = bollinger_bandwidth_series(closes)
 
         # 유통시총 근사 = 시총 대용(정밀도보다 강도 순위가 목적)
         float_mc = avg_trading_value * 50  # 대략적 스케일; 백테스트 시 실제 시총으로 교체 예정
@@ -355,6 +370,7 @@ def run():
             "pbr_low": sg.score_pbr_low(cur_pbr, pbr_series),
             "dividend_yield": sg.score_dividend_yield(cur_div, div_series, cur_dps, cur_eps, had_dividend_cut(fh)),
             "relative_strength": sg.score_relative_strength(ret60, idx_ret),
+            "volatility_squeeze": sg.score_volatility_squeeze(bw_series),
         }
         comp = sg.composite_score(scores)
         if comp["composite"] is None:

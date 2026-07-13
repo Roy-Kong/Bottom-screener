@@ -130,6 +130,19 @@ def score_margin_balance(ratio: float | None, peer_ratios: list[float]) -> float
     return _clamp(100.0 - pr)   # 최저 신용잔고율 → 100
 
 
+def score_volatility_squeeze(bandwidth_history: list[float]) -> float | None:
+    """⑧ 변동성 수축(밴드 스퀴즈). 최근 20일 볼린저밴드폭이 자체 과거 밴드폭
+       히스토리 대비 얼마나 좁은지(백분위). 좁을수록(가격이 눌려 다져질수록) 고점."""
+    hist = [h for h in bandwidth_history if _valid(h)]
+    if not hist:
+        return None
+    current = bandwidth_history[-1]
+    pr = percentile_rank(hist, current)
+    if pr is None:
+        return None
+    return _clamp(100.0 - pr)   # 가장 좁은 밴드 → 100
+
+
 # ---------- 종합 ----------
 SIGNAL_LABELS = {
     "volume_dryness": "거래량 고갈",
@@ -139,6 +152,7 @@ SIGNAL_LABELS = {
     "dividend_yield": "배당수익률(조건부)",
     "relative_strength": "상대강도",
     "margin_balance": "신용잔고 낮음",
+    "volatility_squeeze": "변동성 수축",
 }
 
 
@@ -201,10 +215,17 @@ if __name__ == "__main__":
     d_high = score_margin_balance(6.7, peers)  # 후보군 중 최고 → 저점
     print(f"D. 신용잔고 테스트: 최저 비중 → {d_low}, 최고 비중 → {d_high}\n")
 
+    # 시나리오 E: 변동성 수축 (밴드폭 자체 히스토리 대비 좁음/넓음)
+    bw_hist = [4.2, 5.1, 3.8, 6.0, 4.5, 7.2, 2.1, 5.5, 3.0, 8.4]
+    e_narrow = score_volatility_squeeze(bw_hist[:-1] + [1.0])   # 현재값이 역대 최저 → 고점
+    e_wide = score_volatility_squeeze(bw_hist[:-1] + [9.0])     # 현재값이 역대 최고 → 저점
+    print(f"E. 변동성 수축 테스트: 최근 밴드 역대 최저 → {e_narrow}, 최고 → {e_wide}\n")
+
     # 검증 단언
     assert ra["composite"] > 75, "바닥 종목은 고득점이어야 함"
     assert rb["composite"] < 30, "고점 종목은 저득점이어야 함"
     assert c_div is None, "배당 함정은 배제(None)되어야 함"
     assert ra["n_signals_used"] == 6 and rb["n_signals_used"] == 5, "무배당주는 신호 5개"
     assert d_low > d_high, "신용잔고 낮은 쪽이 고득점이어야 함"
-    print("✅ 모든 로직 검증 통과 (바닥 고득점 / 고점 저득점 / 함정 배제 / 무배당 분모조정 / 신용잔고 순위)")
+    assert e_narrow > e_wide, "밴드 좁은 쪽이 고득점이어야 함"
+    print("✅ 모든 로직 검증 통과 (바닥 고득점 / 고점 저득점 / 함정 배제 / 무배당 분모조정 / 신용잔고 순위 / 밴드 스퀴즈)")
