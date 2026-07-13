@@ -215,38 +215,42 @@ def collect_accumulation(fromdate: str, todate: str) -> dict[str, float]:
     return acc
 
 
-def fetch_margin_ratio(ticker: str) -> float | None:
-    """네이버금융 개별 종목 페이지에서 신용잔고율(%) 파싱. 실패 시 None.
+def fetch_margin_ratio(ticker: str) -> tuple[float | None, str]:
+    """네이버금융 개별 종목 페이지에서 신용잔고율(%) 파싱.
        KRX엔 전종목 일괄 조회 API가 없어(공매도와 달리) 종목별 개별 호출이 불가피하므로,
-       1차 채점 상위 후보군에 한해서만 호출한다(호출부는 collect_margin_balance)."""
+       1차 채점 상위 후보군에 한해서만 호출한다(호출부는 collect_margin_balance).
+       반환: (ratio 또는 None, 실패 시 진단용 사유 태그)"""
     url = f"https://finance.naver.com/item/main.naver?code={ticker}"
     try:
         resp = requests.get(url, headers=NAVER_HEADERS, timeout=5)
         resp.raise_for_status()
-    except Exception:
-        return None
+    except Exception as e:
+        return None, f"http:{type(e).__name__}"
     soup = BeautifulSoup(resp.text, "html.parser")
     th = next((t for t in soup.find_all("th") if "신용잔고율" in t.get_text()), None)
     if th is None:
-        return None
+        return None, "no_th"
     td = th.find_next("td")
     if td is None:
-        return None
+        return None, "no_td"
     text = td.get_text(strip=True).replace("%", "").replace(",", "")
     try:
-        return float(text)
+        return float(text), "ok"
     except ValueError:
-        return None
+        return None, "parse_fail"
 
 
 def collect_margin_balance(tickers: list[str]) -> dict[str, float]:
     """상위 후보군에 한해 신용잔고율(%) 수집 {ticker: ratio}."""
     out: dict[str, float] = {}
+    reasons: dict[str, int] = {}
     for tkr in tickers:
-        ratio = fetch_margin_ratio(tkr)
+        ratio, reason = fetch_margin_ratio(tkr)
+        reasons[reason] = reasons.get(reason, 0) + 1
         if ratio is not None:
             out[tkr] = ratio
         time.sleep(NAVER_REQUEST_PAUSE)
+    print(f"   실패 사유 분포: {reasons}")
     return out
 
 
