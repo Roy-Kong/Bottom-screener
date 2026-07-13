@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-12T13:37",
-  "as_of_date": "20260628",
-  "universe_size": 0,
-  "scored": 0,
+  "generated_at": "2026-07-13T12:31",
+  "as_of_date": "20260713",
+  "universe_size": 2766,
+  "scored": 1069,
   "params": {
     "ohlcv_lookback": 130,
     "accum_window": 20,
@@ -17,5 +17,606 @@
     "dividend_yield": "배당수익률(조건부)",
     "relative_strength": "상대강도"
   },
-  "results": []
+  "results": [
+    {
+      "ticker": "078130",
+      "name": "국일제지",
+      "score": 88.7,
+      "n_signals": 5,
+      "breakdown": {
+        "volume_dryness": 100.0,
+        "accumulation": 100.0,
+        "short_covering": 100.0,
+        "pbr_low": 43.4,
+        "dividend_yield": null,
+        "relative_strength": 100.0
+      },
+      "close": 4005
+    },
+    {
+      "ticker": "052420",
+      "name": "오성첨단소재",
+      "score": 80.5,
+      "n_signals": 4,
+      "breakdown": {
+        "volume_dryness": 100.0,
+        "accumulation": 24.0,
+        "short_covering": null,
+        "pbr_low": 98.1,
+        "dividend_yield": null,
+        "relative_strength": 100.0
+      },
+      "close": 8490
+    },
+    {
+      "ticker": "036090",
+      "name": "위지트",
+      "score": 80.3,
+      "n_signals": 5,
+      "breakdown": {
+        "volume_dryness": 68.4,
+        "accumulation": 37.0,
+        "short_covering": 100.0,
+        "pbr_low": 96.2,
+        "dividend_yield": null,
+        "relative_strength": 100.0
+      },
+      "close": 1308
+    },
+    {
+      "ticker": "270520",
+      "name": "앱튼",
+      "score": 78.1,
+      "n_signals": 5,
+      "breakdown": {
+        "volume_dryness": 100.0,
+        "accumulation": 0.0,
+        "short_covering": 100.0,
+        "pbr_low": 90.6,
+        "dividend_yield": null,
+        "relative_strength": 100.0
+      },
+      "close": 2485
+    },
+    {
+      "ticker": "092220",
+      "name": "KEC",
+      "score": 77.4,
+      "n_signals": 5,
+      "breakdown": {
+        "volume_dryness": 100.0,
+        "accumulation": 0.0,
+        "short_covering": 100.0,
+        "pbr_low": 86.8,
+        "dividend_yield": null,
+        "relative_strength": 100.0
+      },
+      "close": 2900
+    },
+    {
+      "ticker": "086960",
+      "name": "MDS테크",
+      "score": 75.7,
+      "n_signals": 5,
+      "breakdown": {
+        "volume_dryness": 80.6,
+        "accumulation": 0.0,
+        "short_covering": 100.0,
+        "pbr_low": 98.1,
+        "dividend_yield": null,
+        "relative_strength": 100.0
+      },
+      "close": 1857
+    },
+    {
+      "ticker": "298000",
+      "name": "효성화학",
+      "score": 73.8,
+      "n_signals": 4,
+      "breakdown": {
+        "volume_dryness": null,
+        "accumulation": 0.0,
+        "short_covering": 100.0,
+        "pbr_low": 95.2,
+        "dividend_yield": null,
+        "relative_strength": 100.0
+      },
+      "close": 67700
+    },
+    {
+      "ticker": "024850",
+      "name": "HLB이노베이션",
+      "score": 73.7,
+      "n_signals": 5,
+      "breakdown": {
+        "volume_dryness": 87.6,
+        "accumulation": 0.0,
+        "short_covering": 100.0,
+        "pbr_low": 81.1,
+        "dividend_yield": null,
+        "relative_strength": 100.0
+      },
+      "close": 9020
+    },
+    {
+      "ticker": "011930",
+      "name": "신성이엔지",
+      "score": 72.5,
+      "n_signals": 5,
+      "breakdown": {
+        "volume_dryness": 100.0,
+        "accumulation": 0.0,
+        "short_covering": 100.0,
+        "pbr_low": 62.3,
+        "dividend_yield": null,
+        "relative_strength": 100.0
+      },
+      "close": 16190
+    },
+    {
+      "ticker": "290660",
+      "name": "다이나믹솔루션",
+      "score": 72.5,
+      "n_signals": 5,
+      "breakdown": {
+        "volume_dryness": 100.0,
+        "accumulation": 0.0,
+        "short_covering": 100.0,
+        "pbr_low": 62.3,
+        "dividend_yield": null,
+        "relative_strength": 100.0
+      },
+      "close": 1330
+    },
+    {
+      "ticker": "049080",
+      "name": "기가레인",
+      "score": 72.1,
+      "n_signals": 5,
+      "breakdown": {
+        "volume_dryness": 100.0,
+        "accumulation": 0.0,
+        "short_covering": 100.0,
+        "pbr_low": 60.4,
+        "dividend_yield": null,
+        "relative_strength": 100.0
+      },
+      "close": 7760
+    },
+    {
+      "ticker": "439090",
+      "name": "마녀공장",
+      "score": 72.1,
+      "n_signals": 5,
+      "breakdown": {
+        "volume_dryness": 0.0,
+        "accumulation": 84.1,
+        "short_covering": 100.0,
+        "pbr_low": 87.9,
+        "dividend_yield": null,
+        "relative_strength": 88.6
+      },
+      "close": 15860
+    },
+    {
+      "ticker": "259960",
+      "name": "크래프톤",
+      "score": 71.8,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 19.6,
+        "accumulation": 100.0,
+        "short_covering": 100.0,
+        "pbr_low": 94.2,
+        "dividend_yield": 100.0,
+        "relative_strength": 17.0
+      },
+      "close": 238000
+    },
+    {
+      "ticker": "002310",
+      "name": "아세아제지",
+      "score": 71.1,
+      "n_signals": 5,
+      "breakdown": {
+        "volume_dryness": 70.8,
+        "accumulation": 100.0,
+        "short_covering": 100.0,
+        "pbr_low": 84.9,
+        "dividend_yield": null,
+        "relative_strength": 0.0
+      },
+      "close": 7880
+    },
+    {
+      "ticker": "453340",
+      "name": "현대그린푸드",
+      "score": 71.0,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 0.0,
+        "accumulation": 100.0,
+        "short_covering": 100.0,
+        "pbr_low": 62.5,
+        "dividend_yield": 100.0,
+        "relative_strength": 63.5
+      },
+      "close": 18250
+    },
+    {
+      "ticker": "145990",
+      "name": "삼양사",
+      "score": 69.9,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 0.0,
+        "accumulation": 100.0,
+        "short_covering": 100.0,
+        "pbr_low": 94.3,
+        "dividend_yield": 98.1,
+        "relative_strength": 27.0
+      },
+      "close": 46050
+    },
+    {
+      "ticker": "000070",
+      "name": "삼양홀딩스",
+      "score": 69.9,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 21.1,
+        "accumulation": 100.0,
+        "short_covering": 100.0,
+        "pbr_low": 98.1,
+        "dividend_yield": 100.0,
+        "relative_strength": 0.0
+      },
+      "close": 56200
+    },
+    {
+      "ticker": "100120",
+      "name": "뷰웍스",
+      "score": 69.4,
+      "n_signals": 5,
+      "breakdown": {
+        "volume_dryness": 97.5,
+        "accumulation": 60.6,
+        "short_covering": 100.0,
+        "pbr_low": 88.7,
+        "dividend_yield": null,
+        "relative_strength": 0.0
+      },
+      "close": 22850
+    },
+    {
+      "ticker": "051900",
+      "name": "LG생활건강",
+      "score": 69.2,
+      "n_signals": 5,
+      "breakdown": {
+        "volume_dryness": 16.3,
+        "accumulation": 100.0,
+        "short_covering": 100.0,
+        "pbr_low": 98.1,
+        "dividend_yield": null,
+        "relative_strength": 31.6
+      },
+      "close": 248500
+    },
+    {
+      "ticker": "016880",
+      "name": "웅진",
+      "score": 69.2,
+      "n_signals": 5,
+      "breakdown": {
+        "volume_dryness": 67.1,
+        "accumulation": 81.0,
+        "short_covering": 100.0,
+        "pbr_low": 98.1,
+        "dividend_yield": null,
+        "relative_strength": 0.0
+      },
+      "close": 1935
+    },
+    {
+      "ticker": "067160",
+      "name": "SOOP",
+      "score": 69.2,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 16.8,
+        "accumulation": 100.0,
+        "short_covering": 100.0,
+        "pbr_low": 98.1,
+        "dividend_yield": 100.0,
+        "relative_strength": 0.0
+      },
+      "close": 47950
+    },
+    {
+      "ticker": "483650",
+      "name": "달바글로벌",
+      "score": 69.1,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 3.0,
+        "accumulation": 100.0,
+        "short_covering": 100.0,
+        "pbr_low": 84.6,
+        "dividend_yield": 92.3,
+        "relative_strength": 34.6
+      },
+      "close": 199500
+    },
+    {
+      "ticker": "323410",
+      "name": "카카오뱅크",
+      "score": 68.9,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 0.0,
+        "accumulation": 100.0,
+        "short_covering": 100.0,
+        "pbr_low": 96.2,
+        "dividend_yield": 100.0,
+        "relative_strength": 17.1
+      },
+      "close": 23300
+    },
+    {
+      "ticker": "383220",
+      "name": "F&F",
+      "score": 68.6,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 3.2,
+        "accumulation": 43.1,
+        "short_covering": 100.0,
+        "pbr_low": 88.9,
+        "dividend_yield": 97.8,
+        "relative_strength": 78.7
+      },
+      "close": 79900
+    },
+    {
+      "ticker": "136490",
+      "name": "선진",
+      "score": 68.6,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 22.1,
+        "accumulation": 100.0,
+        "short_covering": 100.0,
+        "pbr_low": 81.1,
+        "dividend_yield": 100.0,
+        "relative_strength": 8.6
+      },
+      "close": 9810
+    },
+    {
+      "ticker": "037270",
+      "name": "YG PLUS",
+      "score": 67.7,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 66.8,
+        "accumulation": 45.3,
+        "short_covering": 100.0,
+        "pbr_low": 94.3,
+        "dividend_yield": 100.0,
+        "relative_strength": 0.0
+      },
+      "close": 3350
+    },
+    {
+      "ticker": "003090",
+      "name": "대웅",
+      "score": 67.5,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 15.8,
+        "accumulation": 90.9,
+        "short_covering": 100.0,
+        "pbr_low": 98.1,
+        "dividend_yield": 100.0,
+        "relative_strength": 0.0
+      },
+      "close": 17380
+    },
+    {
+      "ticker": "002350",
+      "name": "넥센타이어",
+      "score": 67.3,
+      "n_signals": 5,
+      "breakdown": {
+        "volume_dryness": 49.8,
+        "accumulation": 93.9,
+        "short_covering": 100.0,
+        "pbr_low": 79.2,
+        "dividend_yield": null,
+        "relative_strength": 13.6
+      },
+      "close": 7000
+    },
+    {
+      "ticker": "021240",
+      "name": "코웨이",
+      "score": 67.3,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 48.5,
+        "accumulation": 75.1,
+        "short_covering": 100.0,
+        "pbr_low": 67.9,
+        "dividend_yield": 47.2,
+        "relative_strength": 65.3
+      },
+      "close": 91700
+    },
+    {
+      "ticker": "101530",
+      "name": "해태제과식품",
+      "score": 67.3,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 0.0,
+        "accumulation": 100.0,
+        "short_covering": 100.0,
+        "pbr_low": 98.1,
+        "dividend_yield": 100.0,
+        "relative_strength": 5.7
+      },
+      "close": 5730
+    },
+    {
+      "ticker": "271560",
+      "name": "오리온",
+      "score": 66.7,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 0.0,
+        "accumulation": 100.0,
+        "short_covering": 100.0,
+        "pbr_low": 71.7,
+        "dividend_yield": 98.1,
+        "relative_strength": 30.5
+      },
+      "close": 133700
+    },
+    {
+      "ticker": "003350",
+      "name": "한국화장품제조",
+      "score": 66.4,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 0.0,
+        "accumulation": 100.0,
+        "short_covering": 100.0,
+        "pbr_low": 98.1,
+        "dividend_yield": 100.0,
+        "relative_strength": 0.0
+      },
+      "close": 7790
+    },
+    {
+      "ticker": "039830",
+      "name": "오로라",
+      "score": 66.2,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 0.0,
+        "accumulation": 67.0,
+        "short_covering": 100.0,
+        "pbr_low": 30.2,
+        "dividend_yield": 100.0,
+        "relative_strength": 100.0
+      },
+      "close": 19100
+    },
+    {
+      "ticker": "004090",
+      "name": "한국석유",
+      "score": 65.7,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 100.0,
+        "accumulation": 0.0,
+        "short_covering": 100.0,
+        "pbr_low": 98.1,
+        "dividend_yield": 96.2,
+        "relative_strength": 0.0
+      },
+      "close": 11490
+    },
+    {
+      "ticker": "212560",
+      "name": "네오오토",
+      "score": 65.5,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 5.7,
+        "accumulation": 81.5,
+        "short_covering": 100.0,
+        "pbr_low": 22.6,
+        "dividend_yield": 83.0,
+        "relative_strength": 100.0
+      },
+      "close": 10530
+    },
+    {
+      "ticker": "001060",
+      "name": "JW중외제약",
+      "score": 65.4,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 46.2,
+        "accumulation": 53.8,
+        "short_covering": 100.0,
+        "pbr_low": 92.5,
+        "dividend_yield": 100.0,
+        "relative_strength": 0.0
+      },
+      "close": 24000
+    },
+    {
+      "ticker": "068760",
+      "name": "셀트리온제약",
+      "score": 65.3,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 18.3,
+        "accumulation": 75.1,
+        "short_covering": 100.0,
+        "pbr_low": 98.1,
+        "dividend_yield": 100.0,
+        "relative_strength": 0.0
+      },
+      "close": 40250
+    },
+    {
+      "ticker": "108670",
+      "name": "LX하우시스",
+      "score": 65.1,
+      "n_signals": 5,
+      "breakdown": {
+        "volume_dryness": 47.2,
+        "accumulation": 74.1,
+        "short_covering": 100.0,
+        "pbr_low": 67.9,
+        "dividend_yield": null,
+        "relative_strength": 36.0
+      },
+      "close": 31800
+    },
+    {
+      "ticker": "200670",
+      "name": "휴메딕스",
+      "score": 65.1,
+      "n_signals": 5,
+      "breakdown": {
+        "volume_dryness": 37.7,
+        "accumulation": 89.4,
+        "short_covering": null,
+        "pbr_low": 98.1,
+        "dividend_yield": 100.0,
+        "relative_strength": 0.0
+      },
+      "close": 26250
+    },
+    {
+      "ticker": "000390",
+      "name": "SP삼화",
+      "score": 65.0,
+      "n_signals": 5,
+      "breakdown": {
+        "volume_dryness": 99.0,
+        "accumulation": 61.8,
+        "short_covering": 100.0,
+        "pbr_low": 64.2,
+        "dividend_yield": null,
+        "relative_strength": 0.0
+      },
+      "close": 5910
+    }
+  ]
 }
