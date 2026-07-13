@@ -67,7 +67,7 @@
     </h1>
     <div class="meta" id="meta"></div>
   </div>
-  <div class="sub">코스피·코스닥 전종목을 6개 바닥 신호로 매일 채점해 상위 종목을 보여줍니다. 종목을 탭하면 신호별 점수가 열립니다.</div>
+  <div class="sub">코스피·코스닥 전종목을 6개 바닥 신호로 1차 채점하고, 상위 후보군은 신용잔고를 더해 7개 신호로 매일 재채점해 상위 종목을 보여줍니다. 종목을 탭하면 신호별 점수가 열립니다.</div>
 
   <div class="legend">
     <span class="lg"><span class="ld" style="background:var(--go)"></span>바닥 신호 강함(≥66)</span>
@@ -84,9 +84,10 @@
 <script>
 const LABELS = {
   volume_dryness:"거래량 고갈", accumulation:"기관·외국인 매집", short_covering:"공매도 감소",
-  pbr_low:"PBR 역사적 저점", dividend_yield:"배당수익률", relative_strength:"상대강도"
+  pbr_low:"PBR 역사적 저점", dividend_yield:"배당수익률", relative_strength:"상대강도",
+  margin_balance:"신용잔고 낮음"
 };
-const ORDER = ["volume_dryness","accumulation","short_covering","pbr_low","dividend_yield","relative_strength"];
+const ORDER = ["volume_dryness","accumulation","short_covering","pbr_low","dividend_yield","relative_strength","margin_balance"];
 
 // 미리보기용 샘플 (호스팅되면 실제 results.json로 대체됨)
 const SAMPLE = {
@@ -127,7 +128,7 @@ function render(data){
 }
 
 document.getElementById("disc").textContent =
-  "6개 신호 동일 가중 · 임계값은 백테스트 전 시작값 · 매수·매도 신호가 아닌 후보 발굴 도구입니다. 신용잔고·내부자매수는 후속 버전에서 후보군에 추가됩니다.";
+  "신호 동일 가중 · 임계값은 백테스트 전 시작값 · 매수·매도 신호가 아닌 후보 발굴 도구입니다. 신용잔고는 1차 채점 상위 후보군에 한해 네이버금융에서 수집되며, 내부자매수는 후속 버전에서 추가됩니다.";
 
 fetch("results.json").then(r=>{ if(!r.ok) throw new Error(); return r.json(); })
   .then(render)

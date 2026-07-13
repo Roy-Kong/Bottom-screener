@@ -1,2 +1,4 @@
 pykrx>=1.0.45
 pandas
+requests
+beautifulsoup4
