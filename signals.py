@@ -118,20 +118,8 @@ def score_relative_strength(stock_return_60d: float, index_return_60d: float) ->
     return _lin(rel, -0.20, 0.20, 0.0, 100.0)
 
 
-def score_margin_balance(ratio: float | None, peer_ratios: list[float]) -> float | None:
-    """⑦ 신용잔고 낮음 (1차 채점 상위 후보군에 한해 네이버금융에서 수집).
-       종목별 5년 밴드가 없어 '그날 후보군 내 상대 순위'로 대체.
-       신용잔고율이 낮을수록(레버리지 강제청산 위험이 낮을수록) 고점."""
-    if not _valid(ratio):
-        return None
-    pr = percentile_rank(peer_ratios, ratio)
-    if pr is None:
-        return None
-    return _clamp(100.0 - pr)   # 최저 신용잔고율 → 100
-
-
 def score_volatility_squeeze(bandwidth_history: list[float]) -> float | None:
-    """⑧ 변동성 수축(밴드 스퀴즈). 최근 20일 볼린저밴드폭이 자체 과거 밴드폭
+    """⑦ 변동성 수축(밴드 스퀴즈). 최근 20일 볼린저밴드폭이 자체 과거 밴드폭
        히스토리 대비 얼마나 좁은지(백분위). 좁을수록(가격이 눌려 다져질수록) 고점."""
     hist = [h for h in bandwidth_history if _valid(h)]
     if not hist:
@@ -151,7 +139,6 @@ SIGNAL_LABELS = {
     "pbr_low": "PBR 역사적 저점",
     "dividend_yield": "배당수익률(조건부)",
     "relative_strength": "상대강도",
-    "margin_balance": "신용잔고 낮음",
     "volatility_squeeze": "변동성 수축",
 }
 
@@ -209,12 +196,6 @@ if __name__ == "__main__":
     c_div = score_dividend_yield(9.0, [3, 4, 5, 6, 7, 9], dps=9000, eps=9500, had_dividend_cut=False)
     print(f"C. 배당 함정 테스트: 수익률 9%인데 배당성향 {9000/9500:.0%} → 점수 = {c_div} (None이면 정상 배제)\n")
 
-    # 시나리오 D: 신용잔고 (후보군 내 상대 순위)
-    peers = [1.2, 3.4, 5.0, 0.8, 2.1, 4.4, 6.7]
-    d_low = score_margin_balance(0.5, peers)   # 후보군 중 최저 → 고점
-    d_high = score_margin_balance(6.7, peers)  # 후보군 중 최고 → 저점
-    print(f"D. 신용잔고 테스트: 최저 비중 → {d_low}, 최고 비중 → {d_high}\n")
-
     # 시나리오 E: 변동성 수축 (밴드폭 자체 히스토리 대비 좁음/넓음)
     bw_hist = [4.2, 5.1, 3.8, 6.0, 4.5, 7.2, 2.1, 5.5, 3.0, 8.4]
     e_narrow = score_volatility_squeeze(bw_hist[:-1] + [1.0])   # 현재값이 역대 최저 → 고점
@@ -226,6 +207,5 @@ if __name__ == "__main__":
     assert rb["composite"] < 30, "고점 종목은 저득점이어야 함"
     assert c_div is None, "배당 함정은 배제(None)되어야 함"
     assert ra["n_signals_used"] == 6 and rb["n_signals_used"] == 5, "무배당주는 신호 5개"
-    assert d_low > d_high, "신용잔고 낮은 쪽이 고득점이어야 함"
     assert e_narrow > e_wide, "밴드 좁은 쪽이 고득점이어야 함"
-    print("✅ 모든 로직 검증 통과 (바닥 고득점 / 고점 저득점 / 함정 배제 / 무배당 분모조정 / 신용잔고 순위 / 밴드 스퀴즈)")
+    print("✅ 모든 로직 검증 통과 (바닥 고득점 / 고점 저득점 / 함정 배제 / 무배당 분모조정 / 밴드 스퀴즈)")

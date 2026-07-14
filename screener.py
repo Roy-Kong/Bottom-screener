@@ -4,12 +4,14 @@ screener.py — 전종목 바닥 스크리너 파이프라인 (pykrx → signals
 흐름:
   1) 코스피+코스닥 종목 목록
   2) 효율적 수집: '하루치 전종목 스냅샷'을 여러 날짜에 대해 수집 (종목별 개별호출 최소화)
-  3) 생존 게이트 통과 종목만 1차 채점 (signals.py 7개 신호, KRX 데이터만 사용)
-  4) 1차 상위 CANDIDATE_POOL개에 한해 네이버금융에서 신용잔고율 개별 수집(8번째 신호)
-  5) 8개 신호로 2차 채점 후 상위 N개를 results.json으로 저장 (프론트가 읽음)
+  3) 생존 게이트 통과 종목만 채점 (signals.py 7개 신호, KRX 데이터만 사용)
+  4) 상위 N개를 results.json으로 저장 (프론트가 읽음)
 
 주의: KRX 접속이 되는 환경(예: GitHub Actions)에서 실행해야 한다.
 첫 실행은 디버그 패스가 필요할 수 있다(휴장일·결측·해외IP 차단 등).
+
+참고: 신용잔고(개별 종목)는 KRX 공식/비공식 API, 네이버금융(구/신 페이지 모두)
+어디에도 무료로 종목별 조회할 방법을 찾지 못해 신호에서 제외했다.
 """
 from __future__ import annotations
 import json
@@ -17,8 +19,6 @@ import time
 import datetime as dt
 from statistics import median
 
-import requests
-from bs4 import BeautifulSoup
 from pykrx import stock
 import signals as sg
 
@@ -29,15 +29,12 @@ FUND_HISTORY_MONTHS = 60       # PBR/배당 5년 밴드용 월별 표본
 SHORT_SAMPLE_WEEKS = 13        # 공매도 3개월 최고용 주별 표본
 ACCUM_WINDOW_DAYS = 20         # 매집 판정 창(영업일)
 TOP_N = 40                     # 결과에 담을 상위 종목 수
-CANDIDATE_POOL = 100           # 신용잔고(네이버) 조회 대상 = 1차 채점 상위 N개
 
 # 생존 게이트 임계값
 MIN_MARKET_CAP = 30_000_000_000        # 시총 300억 이상
 MIN_AVG_TRADING_VALUE = 500_000_000    # 20일 평균 거래대금 5억 이상
 
 REQUEST_PAUSE = 0.10           # KRX 예의상 호출 간 간격(초)
-NAVER_REQUEST_PAUSE = 0.15     # 네이버금융 예의상 호출 간 간격(초)
-NAVER_HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 
 # ---------------- 날짜 유틸 ----------------
@@ -215,78 +212,6 @@ def collect_accumulation(fromdate: str, todate: str) -> dict[str, float]:
     return acc
 
 
-def fetch_margin_ratio(ticker: str) -> tuple[float | None, str]:
-    """네이버금융 개별 종목 페이지에서 신용잔고율(%) 파싱.
-       KRX엔 전종목 일괄 조회 API가 없어(공매도와 달리) 종목별 개별 호출이 불가피하므로,
-       1차 채점 상위 후보군에 한해서만 호출한다(호출부는 collect_margin_balance).
-       반환: (ratio 또는 None, 실패 시 진단용 사유 태그)"""
-    url = f"https://finance.naver.com/item/main.naver?code={ticker}"
-    try:
-        resp = requests.get(url, headers=NAVER_HEADERS, timeout=5)
-        resp.raise_for_status()
-    except Exception as e:
-        return None, f"http:{type(e).__name__}"
-    soup = BeautifulSoup(resp.text, "html.parser")
-    th = next((t for t in soup.find_all("th") if "신용잔고율" in t.get_text()), None)
-    if th is None:
-        return None, "no_th"
-    td = th.find_next("td")
-    if td is None:
-        return None, "no_td"
-    text = td.get_text(strip=True).replace("%", "").replace(",", "")
-    try:
-        return float(text), "ok"
-    except ValueError:
-        return None, "parse_fail"
-
-
-DEBUG_CANDIDATE_URLS = [
-    ("finance/main", "https://finance.naver.com/item/main.naver?code={t}"),
-    ("finance/sise", "https://finance.naver.com/item/sise.naver?code={t}"),
-    ("finance/frgn", "https://finance.naver.com/item/frgn.naver?code={t}"),
-    ("finance/coinfo", "https://finance.naver.com/item/coinfo.naver?code={t}&target=finansummary"),
-    ("mstock/basic", "https://m.stock.naver.com/api/stock/{t}/basic"),
-    ("mstock/integration", "https://m.stock.naver.com/api/stock/{t}/integration"),
-    ("mstock/finance", "https://m.stock.naver.com/api/stock/{t}/finance/annual"),
-]
-
-
-def debug_dump_naver_labels(ticker: str) -> None:
-    """임시 진단용(정확한 소스 확인 후 제거 예정): 신용잔고 후보 URL 여러 개를 시도해
-       어디에 '신용' 텍스트가 있는지 로그로 남긴다."""
-    for label, tmpl in DEBUG_CANDIDATE_URLS:
-        url = tmpl.format(t=ticker)
-        try:
-            resp = requests.get(url, headers=NAVER_HEADERS, timeout=5)
-            status = resp.status_code
-            text = resp.text
-        except Exception as e:
-            print(f"   [진단:{label}] 요청 실패: {type(e).__name__}: {e}")
-            continue
-        has_credit = "신용" in text
-        print(f"   [진단:{label}] {status}, 길이 {len(text)}자, '신용' 포함: {has_credit}")
-        if has_credit:
-            idx = text.find("신용")
-            print(f"   [진단:{label}] 주변 텍스트: ...{text[max(0,idx-80):idx+80]}...")
-        time.sleep(NAVER_REQUEST_PAUSE)
-
-
-def collect_margin_balance(tickers: list[str]) -> dict[str, float]:
-    """상위 후보군에 한해 신용잔고율(%) 수집 {ticker: ratio}."""
-    if tickers:
-        debug_dump_naver_labels(tickers[0])
-    out: dict[str, float] = {}
-    reasons: dict[str, int] = {}
-    for tkr in tickers:
-        ratio, reason = fetch_margin_ratio(tkr)
-        reasons[reason] = reasons.get(reason, 0) + 1
-        if ratio is not None:
-            out[tkr] = ratio
-        time.sleep(NAVER_REQUEST_PAUSE)
-    print(f"   실패 사유 분포: {reasons}")
-    return out
-
-
 # ---------------- 파생 계산 ----------------
 def series_for_ticker(matrix, tkr):
     """시간순 (close, volume) 리스트."""
@@ -366,8 +291,8 @@ def run():
     except Exception:
         idx_ret = 0.0
 
-    print("7) 1차 채점(7개 신호)…")
-    prelim = []
+    print("7) 채점(7개 신호)…")
+    results = []
     for tkr, name in universe.items():
         closes, vols = series_for_ticker(matrix, tkr)
         if len(closes) < 60 or len(vols) < 120:
@@ -412,30 +337,11 @@ def run():
         comp = sg.composite_score(scores)
         if comp["composite"] is None:
             continue
-        prelim.append({
-            "ticker": tkr, "name": name, "close": round(last_close),
-            "scores": scores, "composite": comp["composite"],
-        })
-
-    prelim.sort(key=lambda x: x["composite"], reverse=True)
-    candidates = prelim[:CANDIDATE_POOL]
-
-    print(f"8) 상위 {len(candidates)}개 후보 신용잔고 수집(네이버)…")
-    margin = collect_margin_balance([c["ticker"] for c in candidates])
-    peer_ratios = list(margin.values())
-    print(f"   {len(margin)}개 후보에서 신용잔고율 확보")
-
-    print("9) 2차 채점(신용잔고 반영)…")
-    results = []
-    for c in candidates:
-        scores = dict(c["scores"])
-        scores["margin_balance"] = sg.score_margin_balance(margin.get(c["ticker"]), peer_ratios)
-        comp = sg.composite_score(scores)
         results.append({
-            "ticker": c["ticker"], "name": c["name"],
+            "ticker": tkr, "name": name,
             "score": comp["composite"], "n_signals": comp["n_signals_used"],
             "breakdown": comp["breakdown"],
-            "close": c["close"],
+            "close": round(last_close),
         })
 
     results.sort(key=lambda x: x["score"], reverse=True)
@@ -445,7 +351,7 @@ def run():
         "generated_at": dt.datetime.now().isoformat(timespec="minutes"),
         "as_of_date": latest_date,
         "universe_size": len(universe),
-        "scored": len(prelim),
+        "scored": len(results),
         "params": {
             "ohlcv_lookback": OHLCV_LOOKBACK_DAYS, "accum_window": ACCUM_WINDOW_DAYS,
             "min_market_cap": MIN_MARKET_CAP, "min_trading_value": MIN_AVG_TRADING_VALUE,
