@@ -319,8 +319,9 @@ def run():
         # 기존 60일 상대강도(바닥 신호)는 이전과 동일하게 60일 구간만 사용한다.
         idx = stock.get_index_ohlcv(ohlcv_dates[0], latest_date, "1001")  # 1001 = 코스피
         idx_by_date = index_close_by_date(idx)
-        idx_ret = (idx_by_date.get(latest_date, 0.0) / idx_by_date[ohlcv_dates[-60]]) - 1 \
-            if idx_by_date.get(ohlcv_dates[-60]) else 0.0
+        idx_c_latest = idx_by_date.get(latest_date)
+        idx_c_60ago = idx_by_date.get(ohlcv_dates[-60])
+        idx_ret = (idx_c_latest / idx_c_60ago - 1) if idx_c_latest and idx_c_60ago else 0.0
     except Exception:
         idx_ret = 0.0
         idx_by_date = {}
