@@ -337,6 +337,16 @@ def run():
         if len(closes) < 60 or len(vols) < 120:
             continue
 
+        if tkr == "078130":  # 임시 진단: 상대강도 +775% 이상치 원인 확인용, 확인 후 제거
+            print(f"   [진단:078130] 종가 {len(closes)}개, 날짜 {dates[0]}~{dates[-1]}")
+            print(f"   [진단:078130] closes[-60]={closes[-60]}, closes[-1]={closes[-1]}, "
+                  f"ret60={closes[-1]/closes[-60]-1:.4f}")
+            print(f"   [진단:078130] 전체 종가: {list(zip(dates, closes))}")
+            jumps = [(dates[i], closes[i-1], closes[i], closes[i] / closes[i-1])
+                     for i in range(1, len(closes)) if closes[i-1] > 0 and
+                     (closes[i] / closes[i-1] > 1.5 or closes[i] / closes[i-1] < 0.67)]
+            print(f"   [진단:078130] 급격한 일간 변동(1.5배 이상/0.67배 이하) 지점: {jumps}")
+
         # --- 생존 게이트 ---
         last_close = closes[-1]
         avg_trading_value = median(vols[-20:]) * last_close
