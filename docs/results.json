@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-14T14:01",
+  "generated_at": "2026-07-14T14:43",
   "as_of_date": "20260714",
   "universe_size": 2766,
-  "scored": 59,
+  "scored": 61,
   "params": {
     "ohlcv_lookback": 130,
     "accum_window": 20,
@@ -29,10 +29,10 @@
     {
       "ticker": "021240",
       "name": "코웨이",
-      "score": 74.4,
+      "score": 73.3,
       "n_signals": 7,
       "breakdown": {
-        "volume_dryness": 54.4,
+        "volume_dryness": 48.3,
         "accumulation": 100.0,
         "short_covering": 100.0,
         "pbr_low": 67.9,
@@ -42,7 +42,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 0.6189365884880903
+          "ratio": 0.6620964529001835
         },
         "accumulation": {
           "net_buy_krw": 25203495650.0,
@@ -112,17 +112,17 @@
       "close": 94200,
       "explanation": {
         "summary": "바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
-        "bottom": "최근 20일간 기관·외국인이 252억원(유통시총의 2.8%)을 순매수했고, 그동안 주가는 +2.6%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. PBR이 1.77배로 최근 5년 밴드 하위 32% 구간입니다. 최근 60일 코스피는 +6.8%인데 이 종목은 +13.1%로 지수보다 +6.2%p 선방했습니다. 최근 20일 거래량이 과거 120일 평균의 62%로 크게 줄었습니다. 볼린저밴드폭이 최근 구간 중 하위 50%로 가격이 좁게 눌려 있습니다.",
+        "bottom": "최근 20일간 기관·외국인이 252억원(유통시총의 2.8%)을 순매수했고, 그동안 주가는 +2.6%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. PBR이 1.77배로 최근 5년 밴드 하위 32% 구간입니다. 최근 60일 코스피는 +6.8%인데 이 종목은 +13.1%로 지수보다 +6.2%p 선방했습니다. 볼린저밴드폭이 최근 구간 중 하위 50%로 가격이 좁게 눌려 있습니다.",
         "turnaround": "상대강도가 이전 10일 +1.9%p에서 최근 10일 +23.4%p로 +21.5%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 331%로 매집이 강해졌습니다. 현재가가 최근 60일 박스권 고점의 97%까지 올라왔습니다. 20일 이평선이 60일 이평선보다 +1.0% 위로 정배열이고, 종가는 60일 이평선을 +5.0% 돌파했습니다."
       }
     },
     {
       "ticker": "002310",
       "name": "아세아제지",
-      "score": 73.1,
+      "score": 71.5,
       "n_signals": 6,
       "breakdown": {
-        "volume_dryness": 68.4,
+        "volume_dryness": 60.3,
         "accumulation": 86.1,
         "short_covering": 100.0,
         "pbr_low": 84.9,
@@ -132,7 +132,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 0.5209912049817038
+          "ratio": 0.5776182833665019
         },
         "accumulation": {
           "net_buy_krw": 2064138950.0,
@@ -202,17 +202,17 @@
       "close": 7740,
       "explanation": {
         "summary": "바닥 신호(공매도 감소, 변동성 수축)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
-        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 볼린저밴드폭이 최근 구간 중 하위 11%로 가격이 좁게 눌려 있습니다. 최근 20일간 기관·외국인이 21억원(유통시총의 5.3%)을 순매수했고, 그동안 주가는 -7.1%로 조용했습니다. PBR이 0.35배로 최근 5년 밴드 하위 15% 구간입니다. 최근 20일 거래량이 과거 120일 평균의 52%로 크게 줄었습니다.",
+        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 볼린저밴드폭이 최근 구간 중 하위 11%로 가격이 좁게 눌려 있습니다. 최근 20일간 기관·외국인이 21억원(유통시총의 5.3%)을 순매수했고, 그동안 주가는 -7.1%로 조용했습니다. PBR이 0.35배로 최근 5년 밴드 하위 15% 구간입니다. 6~25일 전 거래량이 과거 120일 평균의 58%로 크게 줄었습니다.",
         "turnaround": "상대강도가 이전 10일 -3.1%p에서 최근 10일 +18.6%p로 +21.7%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 171%로 매집이 강해졌습니다."
       }
     },
     {
       "ticker": "317450",
       "name": "명인제약",
-      "score": 69.3,
+      "score": 68.5,
       "n_signals": 7,
       "breakdown": {
-        "volume_dryness": 41.3,
+        "volume_dryness": 37.0,
         "accumulation": 84.1,
         "short_covering": 100.0,
         "pbr_low": 87.5,
@@ -222,7 +222,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 0.7105911075248795
+          "ratio": 0.741170628762957
         },
         "accumulation": {
           "net_buy_krw": 726491350.0,
@@ -297,192 +297,12 @@
       }
     },
     {
-      "ticker": "017940",
-      "name": "E1",
-      "score": 69.1,
-      "n_signals": 6,
-      "breakdown": {
-        "volume_dryness": 54.2,
-        "accumulation": 100.0,
-        "short_covering": 100.0,
-        "pbr_low": 64.2,
-        "dividend_yield": null,
-        "relative_strength": 0.0,
-        "volatility_squeeze": 74.8
-      },
-      "raw": {
-        "volume_dryness": {
-          "ratio": 0.6203168144165092
-        },
-        "accumulation": {
-          "net_buy_krw": 1537090200.0,
-          "intensity_pct": 3.4214652850723573,
-          "price_change_pct": -1.4051522248243575
-        },
-        "short_covering": {
-          "current_ratio_pct": 0.0,
-          "max_ratio_3m_pct": 0.1300048828125,
-          "pct_of_max": 0.0
-        },
-        "pbr_low": {
-          "pbr": 0.23,
-          "percentile": 35.84905660377358
-        },
-        "dividend_yield": {
-          "div_pct": 5.73,
-          "percentile": 66.0377358490566
-        },
-        "relative_strength": {
-          "stock_ret_pct": -14.16921508664628,
-          "index_ret_pct": 6.838653584566989,
-          "excess_pct": -21.00786867121327
-        },
-        "volatility_squeeze": {
-          "bandwidth_pct": 13.948419595921399,
-          "percentile": 25.24271844660194
-        }
-      },
-      "turnaround_score": 55.0,
-      "n_turnaround_signals": 5,
-      "turnaround_breakdown": {
-        "volume_surge": 0.0,
-        "ma_breakout": 0.0,
-        "short_term_breakout": 0.0,
-        "relative_strength_accel": 100.0,
-        "accumulation_accel": 100.0
-      },
-      "turnaround_raw": {
-        "volume_surge": {
-          "ratio": 0.9032087949475832
-        },
-        "ma_breakout": {
-          "close": 84200.0,
-          "ma20": 82385.0,
-          "ma60": 90368.33333333333,
-          "close_vs_ma60_pct": -6.825768613636778,
-          "ma20_vs_ma60_pct": -8.834215525349952
-        },
-        "short_term_breakout": {
-          "close": 84200.0,
-          "high60": 108400.0,
-          "pct_of_high60": 77.67527675276753
-        },
-        "relative_strength_accel": {
-          "rs_recent10_pct": 25.152917724129185,
-          "rs_prior10_pct": -6.494551325622055,
-          "accel_pct": 31.647469049751244
-        },
-        "accumulation_accel": {
-          "recent5_avg_krw": 147613090.0,
-          "prior15_avg_krw": 53268316.666666664,
-          "ratio": 2.7711236103762746
-        }
-      },
-      "status": "confirmed_turnaround",
-      "close": 84200,
-      "explanation": {
-        "summary": "바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
-        "bottom": "최근 20일간 기관·외국인이 15억원(유통시총의 3.4%)을 순매수했고, 그동안 주가는 -1.4%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 볼린저밴드폭이 최근 구간 중 하위 25%로 가격이 좁게 눌려 있습니다. PBR이 0.23배로 최근 5년 밴드 하위 36% 구간입니다. 최근 20일 거래량이 과거 120일 평균의 62%로 크게 줄었습니다.",
-        "turnaround": "상대강도가 이전 10일 -6.5%p에서 최근 10일 +25.2%p로 +31.6%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 277%로 매집이 강해졌습니다."
-      }
-    },
-    {
-      "ticker": "005180",
-      "name": "빙그레",
+      "ticker": "102460",
+      "name": "이연제약",
       "score": 68.3,
       "n_signals": 6,
       "breakdown": {
-        "volume_dryness": 47.9,
-        "accumulation": 100.0,
-        "short_covering": 100.0,
-        "pbr_low": 73.6,
-        "dividend_yield": null,
-        "relative_strength": 0.0,
-        "volatility_squeeze": 66.0
-      },
-      "raw": {
-        "volume_dryness": {
-          "ratio": 0.6644854055314118
-        },
-        "accumulation": {
-          "net_buy_krw": 1657060250.0,
-          "intensity_pct": 2.5203670613082854,
-          "price_change_pct": -4.0756914119359555
-        },
-        "short_covering": {
-          "current_ratio_pct": 0.0,
-          "max_ratio_3m_pct": 1.76953125,
-          "pct_of_max": 0.0
-        },
-        "pbr_low": {
-          "pbr": 0.76,
-          "percentile": 26.41509433962264
-        },
-        "dividend_yield": {
-          "div_pct": 5.15,
-          "percentile": 100.0
-        },
-        "relative_strength": {
-          "stock_ret_pct": -13.175230566534912,
-          "index_ret_pct": 6.838653584566989,
-          "excess_pct": -20.0138841511019
-        },
-        "volatility_squeeze": {
-          "bandwidth_pct": 10.017660869376087,
-          "percentile": 33.980582524271846
-        }
-      },
-      "turnaround_score": 55.1,
-      "n_turnaround_signals": 5,
-      "turnaround_breakdown": {
-        "volume_surge": 6.8,
-        "ma_breakout": 0.0,
-        "short_term_breakout": 25.2,
-        "relative_strength_accel": 100.0,
-        "accumulation_accel": 87.5
-      },
-      "turnaround_raw": {
-        "volume_surge": {
-          "ratio": 1.101966136055592
-        },
-        "ma_breakout": {
-          "close": 65900.0,
-          "ma20": 65495.0,
-          "ma60": 70230.0,
-          "close_vs_ma60_pct": -6.165456357681903,
-          "ma20_vs_ma60_pct": -6.742132991599031
-        },
-        "short_term_breakout": {
-          "close": 65900.0,
-          "high60": 77500.0,
-          "pct_of_high60": 85.03225806451613
-        },
-        "relative_strength_accel": {
-          "rs_recent10_pct": 21.915689998244346,
-          "rs_prior10_pct": -4.503762928546539,
-          "accel_pct": 26.41945292679089
-        },
-        "accumulation_accel": {
-          "recent5_avg_krw": 124829870.0,
-          "prior15_avg_krw": 68860726.66666667,
-          "ratio": 1.812787579257804
-        }
-      },
-      "status": "confirmed_turnaround",
-      "close": 65900,
-      "explanation": {
-        "summary": "바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
-        "bottom": "최근 20일간 기관·외국인이 17억원(유통시총의 2.5%)을 순매수했고, 그동안 주가는 -4.1%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. PBR이 0.76배로 최근 5년 밴드 하위 26% 구간입니다. 볼린저밴드폭이 최근 구간 중 하위 34%로 가격이 좁게 눌려 있습니다.",
-        "turnaround": "상대강도가 이전 10일 -4.5%p에서 최근 10일 +21.9%p로 +26.4%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 181%로 매집이 강해졌습니다."
-      }
-    },
-    {
-      "ticker": "102460",
-      "name": "이연제약",
-      "score": 68.2,
-      "n_signals": 6,
-      "breakdown": {
-        "volume_dryness": 13.5,
+        "volume_dryness": 13.8,
         "accumulation": 100.0,
         "short_covering": 100.0,
         "pbr_low": 75.5,
@@ -492,7 +312,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 0.9053375298257341
+          "ratio": 0.9031557251483163
         },
         "accumulation": {
           "net_buy_krw": 524580745.0,
@@ -567,12 +387,372 @@
       }
     },
     {
-      "ticker": "028670",
-      "name": "팬오션",
-      "score": 67.6,
+      "ticker": "017940",
+      "name": "E1",
+      "score": 67.7,
       "n_signals": 6,
       "breakdown": {
-        "volume_dryness": 43.3,
+        "volume_dryness": 47.2,
+        "accumulation": 100.0,
+        "short_covering": 100.0,
+        "pbr_low": 64.2,
+        "dividend_yield": null,
+        "relative_strength": 0.0,
+        "volatility_squeeze": 74.8
+      },
+      "raw": {
+        "volume_dryness": {
+          "ratio": 0.6692922540328441
+        },
+        "accumulation": {
+          "net_buy_krw": 1537090200.0,
+          "intensity_pct": 3.4214652850723573,
+          "price_change_pct": -1.4051522248243575
+        },
+        "short_covering": {
+          "current_ratio_pct": 0.0,
+          "max_ratio_3m_pct": 0.1300048828125,
+          "pct_of_max": 0.0
+        },
+        "pbr_low": {
+          "pbr": 0.23,
+          "percentile": 35.84905660377358
+        },
+        "dividend_yield": {
+          "div_pct": 5.73,
+          "percentile": 66.0377358490566
+        },
+        "relative_strength": {
+          "stock_ret_pct": -14.16921508664628,
+          "index_ret_pct": 6.838653584566989,
+          "excess_pct": -21.00786867121327
+        },
+        "volatility_squeeze": {
+          "bandwidth_pct": 13.948419595921399,
+          "percentile": 25.24271844660194
+        }
+      },
+      "turnaround_score": 55.0,
+      "n_turnaround_signals": 5,
+      "turnaround_breakdown": {
+        "volume_surge": 0.0,
+        "ma_breakout": 0.0,
+        "short_term_breakout": 0.0,
+        "relative_strength_accel": 100.0,
+        "accumulation_accel": 100.0
+      },
+      "turnaround_raw": {
+        "volume_surge": {
+          "ratio": 0.9032087949475832
+        },
+        "ma_breakout": {
+          "close": 84200.0,
+          "ma20": 82385.0,
+          "ma60": 90368.33333333333,
+          "close_vs_ma60_pct": -6.825768613636778,
+          "ma20_vs_ma60_pct": -8.834215525349952
+        },
+        "short_term_breakout": {
+          "close": 84200.0,
+          "high60": 108400.0,
+          "pct_of_high60": 77.67527675276753
+        },
+        "relative_strength_accel": {
+          "rs_recent10_pct": 25.152917724129185,
+          "rs_prior10_pct": -6.494551325622055,
+          "accel_pct": 31.647469049751244
+        },
+        "accumulation_accel": {
+          "recent5_avg_krw": 147613090.0,
+          "prior15_avg_krw": 53268316.666666664,
+          "ratio": 2.7711236103762746
+        }
+      },
+      "status": "confirmed_turnaround",
+      "close": 84200,
+      "explanation": {
+        "summary": "바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
+        "bottom": "최근 20일간 기관·외국인이 15억원(유통시총의 3.4%)을 순매수했고, 그동안 주가는 -1.4%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 볼린저밴드폭이 최근 구간 중 하위 25%로 가격이 좁게 눌려 있습니다. PBR이 0.23배로 최근 5년 밴드 하위 36% 구간입니다.",
+        "turnaround": "상대강도가 이전 10일 -6.5%p에서 최근 10일 +25.2%p로 +31.6%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 277%로 매집이 강해졌습니다."
+      }
+    },
+    {
+      "ticker": "033270",
+      "name": "유나이티드제약",
+      "score": 67.3,
+      "n_signals": 7,
+      "breakdown": {
+        "volume_dryness": 27.4,
+        "accumulation": 92.1,
+        "short_covering": 100.0,
+        "pbr_low": 98.1,
+        "dividend_yield": 100.0,
+        "relative_strength": 0.0,
+        "volatility_squeeze": 60.2
+      },
+      "raw": {
+        "volume_dryness": {
+          "ratio": 0.8079063770055658
+        },
+        "accumulation": {
+          "net_buy_krw": 836398325.0,
+          "intensity_pct": 2.9808791579676663,
+          "price_change_pct": -6.186121570736958
+        },
+        "short_covering": {
+          "current_ratio_pct": 0.0,
+          "max_ratio_3m_pct": 0.75,
+          "pct_of_max": 0.0
+        },
+        "pbr_low": {
+          "pbr": 0.61,
+          "percentile": 1.8867924528301887
+        },
+        "dividend_yield": {
+          "div_pct": 3.5,
+          "percentile": 100.0
+        },
+        "relative_strength": {
+          "stock_ret_pct": -17.345971563981045,
+          "index_ret_pct": 6.838653584566989,
+          "excess_pct": -24.184625148548033
+        },
+        "volatility_squeeze": {
+          "bandwidth_pct": 9.579472755008798,
+          "percentile": 39.80582524271845
+        }
+      },
+      "turnaround_score": 57.7,
+      "n_turnaround_signals": 5,
+      "turnaround_breakdown": {
+        "volume_surge": 9.6,
+        "ma_breakout": 0.0,
+        "short_term_breakout": 7.5,
+        "relative_strength_accel": 100.0,
+        "accumulation_accel": 100.0
+      },
+      "turnaround_raw": {
+        "volume_surge": {
+          "ratio": 1.1442219048685496
+        },
+        "ma_breakout": {
+          "close": 17440.0,
+          "ma20": 17470.5,
+          "ma60": 18754.833333333332,
+          "close_vs_ma60_pct": -7.010637257951277,
+          "ma20_vs_ma60_pct": -6.848012512330149
+        },
+        "short_term_breakout": {
+          "close": 17440.0,
+          "high60": 21400.0,
+          "pct_of_high60": 81.49532710280374
+        },
+        "relative_strength_accel": {
+          "rs_recent10_pct": 19.050271083493485,
+          "rs_prior10_pct": -3.5179409036885767,
+          "accel_pct": 22.568211987182064
+        },
+        "accumulation_accel": {
+          "recent5_avg_krw": 77507044.0,
+          "prior15_avg_krw": 29924207.0,
+          "ratio": 2.590111878319783
+        }
+      },
+      "status": "confirmed_turnaround",
+      "close": 17440,
+      "explanation": {
+        "summary": "바닥 신호(공매도 감소, 배당수익률)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
+        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 배당수익률이 3.5%로 최근 5년 대비 상위 0% 구간입니다. PBR이 0.61배로 최근 5년 밴드 하위 2% 구간입니다. 최근 20일간 기관·외국인이 8억원(유통시총의 3.0%)을 순매수했고, 그동안 주가는 -6.2%로 조용했습니다. 볼린저밴드폭이 최근 구간 중 하위 40%로 가격이 좁게 눌려 있습니다.",
+        "turnaround": "상대강도가 이전 10일 -3.5%p에서 최근 10일 +19.1%p로 +22.6%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 259%로 매집이 강해졌습니다."
+      }
+    },
+    {
+      "ticker": "016880",
+      "name": "웅진",
+      "score": 67.2,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 79.4,
+        "accumulation": 57.9,
+        "short_covering": 100.0,
+        "pbr_low": 98.1,
+        "dividend_yield": null,
+        "relative_strength": 0.0,
+        "volatility_squeeze": 67.0
+      },
+      "raw": {
+        "volume_dryness": {
+          "ratio": 0.4441795669445188
+        },
+        "accumulation": {
+          "net_buy_krw": 975967522.0,
+          "intensity_pct": 3.2702741023200956,
+          "price_change_pct": -11.308203991130817
+        },
+        "short_covering": {
+          "current_ratio_pct": 0.0,
+          "max_ratio_3m_pct": 0.1500244140625,
+          "pct_of_max": 0.0
+        },
+        "pbr_low": {
+          "pbr": 0.82,
+          "percentile": 1.8867924528301887
+        },
+        "dividend_yield": {
+          "div_pct": 0.0,
+          "percentile": null
+        },
+        "relative_strength": {
+          "stock_ret_pct": -27.536231884057973,
+          "index_ret_pct": 6.838653584566989,
+          "excess_pct": -34.37488546862496
+        },
+        "volatility_squeeze": {
+          "bandwidth_pct": 21.76639881804893,
+          "percentile": 33.00970873786408
+        }
+      },
+      "turnaround_score": 55.0,
+      "n_turnaround_signals": 5,
+      "turnaround_breakdown": {
+        "volume_surge": 0.0,
+        "ma_breakout": 0.0,
+        "short_term_breakout": 0.0,
+        "relative_strength_accel": 100.0,
+        "accumulation_accel": 100.0
+      },
+      "turnaround_raw": {
+        "volume_surge": {
+          "ratio": 0.7024997478462128
+        },
+        "ma_breakout": {
+          "close": 2000.0,
+          "ma20": 1953.95,
+          "ma60": 2284.766666666667,
+          "close_vs_ma60_pct": -12.463708912653379,
+          "ma20_vs_ma60_pct": -14.479232014939534
+        },
+        "short_term_breakout": {
+          "close": 2000.0,
+          "high60": 3015.0,
+          "pct_of_high60": 66.33499170812604
+        },
+        "relative_strength_accel": {
+          "rs_recent10_pct": 25.26469020029064,
+          "rs_prior10_pct": -7.419535017729039,
+          "accel_pct": 32.68422521801968
+        },
+        "accumulation_accel": {
+          "recent5_avg_krw": 115882176.2,
+          "prior15_avg_krw": 26437109.4,
+          "ratio": 4.383314924739843
+        }
+      },
+      "status": "confirmed_turnaround",
+      "close": 2000,
+      "explanation": {
+        "summary": "바닥 신호(공매도 감소, PBR 역사적 저점)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
+        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. PBR이 0.82배로 최근 5년 밴드 하위 2% 구간입니다. 6~25일 전 거래량이 과거 120일 평균의 44%로 크게 줄었습니다. 볼린저밴드폭이 최근 구간 중 하위 33%로 가격이 좁게 눌려 있습니다. 최근 20일간 기관·외국인이 10억원(유통시총의 3.3%)을 순매수했고, 그동안 주가는 -11.3%로 조용했습니다.",
+        "turnaround": "상대강도가 이전 10일 -7.4%p에서 최근 10일 +25.3%p로 +32.7%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 438%로 매집이 강해졌습니다."
+      }
+    },
+    {
+      "ticker": "005180",
+      "name": "빙그레",
+      "score": 67.0,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 40.9,
+        "accumulation": 100.0,
+        "short_covering": 100.0,
+        "pbr_low": 73.6,
+        "dividend_yield": null,
+        "relative_strength": 0.0,
+        "volatility_squeeze": 66.0
+      },
+      "raw": {
+        "volume_dryness": {
+          "ratio": 0.7139717268594835
+        },
+        "accumulation": {
+          "net_buy_krw": 1657060250.0,
+          "intensity_pct": 2.5203670613082854,
+          "price_change_pct": -4.0756914119359555
+        },
+        "short_covering": {
+          "current_ratio_pct": 0.0,
+          "max_ratio_3m_pct": 1.76953125,
+          "pct_of_max": 0.0
+        },
+        "pbr_low": {
+          "pbr": 0.76,
+          "percentile": 26.41509433962264
+        },
+        "dividend_yield": {
+          "div_pct": 5.15,
+          "percentile": 100.0
+        },
+        "relative_strength": {
+          "stock_ret_pct": -13.175230566534912,
+          "index_ret_pct": 6.838653584566989,
+          "excess_pct": -20.0138841511019
+        },
+        "volatility_squeeze": {
+          "bandwidth_pct": 10.017660869376087,
+          "percentile": 33.980582524271846
+        }
+      },
+      "turnaround_score": 55.1,
+      "n_turnaround_signals": 5,
+      "turnaround_breakdown": {
+        "volume_surge": 6.8,
+        "ma_breakout": 0.0,
+        "short_term_breakout": 25.2,
+        "relative_strength_accel": 100.0,
+        "accumulation_accel": 87.5
+      },
+      "turnaround_raw": {
+        "volume_surge": {
+          "ratio": 1.101966136055592
+        },
+        "ma_breakout": {
+          "close": 65900.0,
+          "ma20": 65495.0,
+          "ma60": 70230.0,
+          "close_vs_ma60_pct": -6.165456357681903,
+          "ma20_vs_ma60_pct": -6.742132991599031
+        },
+        "short_term_breakout": {
+          "close": 65900.0,
+          "high60": 77500.0,
+          "pct_of_high60": 85.03225806451613
+        },
+        "relative_strength_accel": {
+          "rs_recent10_pct": 21.915689998244346,
+          "rs_prior10_pct": -4.503762928546539,
+          "accel_pct": 26.41945292679089
+        },
+        "accumulation_accel": {
+          "recent5_avg_krw": 124829870.0,
+          "prior15_avg_krw": 68860726.66666667,
+          "ratio": 1.812787579257804
+        }
+      },
+      "status": "confirmed_turnaround",
+      "close": 65900,
+      "explanation": {
+        "summary": "바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
+        "bottom": "최근 20일간 기관·외국인이 17억원(유통시총의 2.5%)을 순매수했고, 그동안 주가는 -4.1%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. PBR이 0.76배로 최근 5년 밴드 하위 26% 구간입니다. 볼린저밴드폭이 최근 구간 중 하위 34%로 가격이 좁게 눌려 있습니다.",
+        "turnaround": "상대강도가 이전 10일 -4.5%p에서 최근 10일 +21.9%p로 +26.4%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 181%로 매집이 강해졌습니다."
+      }
+    },
+    {
+      "ticker": "028670",
+      "name": "팬오션",
+      "score": 66.6,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 37.9,
         "accumulation": 100.0,
         "short_covering": 100.0,
         "pbr_low": 66.0,
@@ -582,7 +762,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 0.6966360971293365
+          "ratio": 0.7347437332235971
         },
         "accumulation": {
           "net_buy_krw": 18972373167.0,
@@ -657,186 +837,6 @@
       }
     },
     {
-      "ticker": "016880",
-      "name": "웅진",
-      "score": 66.8,
-      "n_signals": 6,
-      "breakdown": {
-        "volume_dryness": 77.3,
-        "accumulation": 57.9,
-        "short_covering": 100.0,
-        "pbr_low": 98.1,
-        "dividend_yield": null,
-        "relative_strength": 0.0,
-        "volatility_squeeze": 67.0
-      },
-      "raw": {
-        "volume_dryness": {
-          "ratio": 0.4591421969088565
-        },
-        "accumulation": {
-          "net_buy_krw": 975967522.0,
-          "intensity_pct": 3.2702741023200956,
-          "price_change_pct": -11.308203991130817
-        },
-        "short_covering": {
-          "current_ratio_pct": 0.0,
-          "max_ratio_3m_pct": 0.1500244140625,
-          "pct_of_max": 0.0
-        },
-        "pbr_low": {
-          "pbr": 0.82,
-          "percentile": 1.8867924528301887
-        },
-        "dividend_yield": {
-          "div_pct": 0.0,
-          "percentile": null
-        },
-        "relative_strength": {
-          "stock_ret_pct": -27.536231884057973,
-          "index_ret_pct": 6.838653584566989,
-          "excess_pct": -34.37488546862496
-        },
-        "volatility_squeeze": {
-          "bandwidth_pct": 21.76639881804893,
-          "percentile": 33.00970873786408
-        }
-      },
-      "turnaround_score": 55.0,
-      "n_turnaround_signals": 5,
-      "turnaround_breakdown": {
-        "volume_surge": 0.0,
-        "ma_breakout": 0.0,
-        "short_term_breakout": 0.0,
-        "relative_strength_accel": 100.0,
-        "accumulation_accel": 100.0
-      },
-      "turnaround_raw": {
-        "volume_surge": {
-          "ratio": 0.7024997478462128
-        },
-        "ma_breakout": {
-          "close": 2000.0,
-          "ma20": 1953.95,
-          "ma60": 2284.766666666667,
-          "close_vs_ma60_pct": -12.463708912653379,
-          "ma20_vs_ma60_pct": -14.479232014939534
-        },
-        "short_term_breakout": {
-          "close": 2000.0,
-          "high60": 3015.0,
-          "pct_of_high60": 66.33499170812604
-        },
-        "relative_strength_accel": {
-          "rs_recent10_pct": 25.26469020029064,
-          "rs_prior10_pct": -7.419535017729039,
-          "accel_pct": 32.68422521801968
-        },
-        "accumulation_accel": {
-          "recent5_avg_krw": 115882176.2,
-          "prior15_avg_krw": 26437109.4,
-          "ratio": 4.383314924739843
-        }
-      },
-      "status": "confirmed_turnaround",
-      "close": 2000,
-      "explanation": {
-        "summary": "바닥 신호(공매도 감소, PBR 역사적 저점)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
-        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. PBR이 0.82배로 최근 5년 밴드 하위 2% 구간입니다. 최근 20일 거래량이 과거 120일 평균의 46%로 크게 줄었습니다. 볼린저밴드폭이 최근 구간 중 하위 33%로 가격이 좁게 눌려 있습니다. 최근 20일간 기관·외국인이 10억원(유통시총의 3.3%)을 순매수했고, 그동안 주가는 -11.3%로 조용했습니다.",
-        "turnaround": "상대강도가 이전 10일 -7.4%p에서 최근 10일 +25.3%p로 +32.7%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 438%로 매집이 강해졌습니다."
-      }
-    },
-    {
-      "ticker": "100120",
-      "name": "뷰웍스",
-      "score": 66.4,
-      "n_signals": 6,
-      "breakdown": {
-        "volume_dryness": 98.4,
-        "accumulation": 38.6,
-        "short_covering": 100.0,
-        "pbr_low": 88.7,
-        "dividend_yield": null,
-        "relative_strength": 0.0,
-        "volatility_squeeze": 85.4
-      },
-      "raw": {
-        "volume_dryness": {
-          "ratio": 0.3111810487278782
-        },
-        "accumulation": {
-          "net_buy_krw": 1327248400.0,
-          "intensity_pct": 4.814423955383685,
-          "price_change_pct": -14.203454894433776
-        },
-        "short_covering": {
-          "current_ratio_pct": 0.0,
-          "max_ratio_3m_pct": 1.1201171875,
-          "pct_of_max": 0.0
-        },
-        "pbr_low": {
-          "pbr": 0.84,
-          "percentile": 11.320754716981131
-        },
-        "dividend_yield": {
-          "div_pct": 2.94,
-          "percentile": 94.33962264150944
-        },
-        "relative_strength": {
-          "stock_ret_pct": -24.620573355817875,
-          "index_ret_pct": 6.838653584566989,
-          "excess_pct": -31.459226940384866
-        },
-        "volatility_squeeze": {
-          "bandwidth_pct": 17.23015362338894,
-          "percentile": 14.563106796116505
-        }
-      },
-      "turnaround_score": 55.0,
-      "n_turnaround_signals": 5,
-      "turnaround_breakdown": {
-        "volume_surge": 0.2,
-        "ma_breakout": 0.0,
-        "short_term_breakout": 0.0,
-        "relative_strength_accel": 100.0,
-        "accumulation_accel": 100.0
-      },
-      "turnaround_raw": {
-        "volume_surge": {
-          "ratio": 1.0025622824432407
-        },
-        "ma_breakout": {
-          "close": 22350.0,
-          "ma20": 23525.0,
-          "ma60": 26811.666666666668,
-          "close_vs_ma60_pct": -16.640765835768015,
-          "ma20_vs_ma60_pct": -12.25834524771555
-        },
-        "short_term_breakout": {
-          "close": 22350.0,
-          "high60": 32950.0,
-          "pct_of_high60": 67.83004552352048
-        },
-        "relative_strength_accel": {
-          "rs_recent10_pct": 14.41674611724817,
-          "rs_prior10_pct": -5.710818782697014,
-          "accel_pct": 20.127564899945185
-        },
-        "accumulation_accel": {
-          "recent5_avg_krw": 114084910.0,
-          "prior15_avg_krw": 50454923.333333336,
-          "ratio": 2.26112542568525
-        }
-      },
-      "status": "confirmed_turnaround",
-      "close": 22350,
-      "explanation": {
-        "summary": "바닥 신호(공매도 감소, 거래량 고갈)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
-        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 최근 20일 거래량이 과거 120일 평균의 31%로 크게 줄었습니다. PBR이 0.84배로 최근 5년 밴드 하위 11% 구간입니다. 볼린저밴드폭이 최근 구간 중 하위 15%로 가격이 좁게 눌려 있습니다.",
-        "turnaround": "상대강도가 이전 10일 -5.7%p에서 최근 10일 +14.4%p로 +20.1%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 226%로 매집이 강해졌습니다."
-      }
-    },
-    {
       "ticker": "439090",
       "name": "마녀공장",
       "score": 66.1,
@@ -852,7 +852,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 2.1240342814557196
+          "ratio": 1.7959259719289529
         },
         "accumulation": {
           "net_buy_krw": 5810497900.0,
@@ -927,6 +927,96 @@
       }
     },
     {
+      "ticker": "100120",
+      "name": "뷰웍스",
+      "score": 66.0,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 96.4,
+        "accumulation": 38.6,
+        "short_covering": 100.0,
+        "pbr_low": 88.7,
+        "dividend_yield": null,
+        "relative_strength": 0.0,
+        "volatility_squeeze": 85.4
+      },
+      "raw": {
+        "volume_dryness": {
+          "ratio": 0.32499337765051656
+        },
+        "accumulation": {
+          "net_buy_krw": 1327248400.0,
+          "intensity_pct": 4.814423955383685,
+          "price_change_pct": -14.203454894433776
+        },
+        "short_covering": {
+          "current_ratio_pct": 0.0,
+          "max_ratio_3m_pct": 1.1201171875,
+          "pct_of_max": 0.0
+        },
+        "pbr_low": {
+          "pbr": 0.84,
+          "percentile": 11.320754716981131
+        },
+        "dividend_yield": {
+          "div_pct": 2.94,
+          "percentile": 94.33962264150944
+        },
+        "relative_strength": {
+          "stock_ret_pct": -24.620573355817875,
+          "index_ret_pct": 6.838653584566989,
+          "excess_pct": -31.459226940384866
+        },
+        "volatility_squeeze": {
+          "bandwidth_pct": 17.23015362338894,
+          "percentile": 14.563106796116505
+        }
+      },
+      "turnaround_score": 55.0,
+      "n_turnaround_signals": 5,
+      "turnaround_breakdown": {
+        "volume_surge": 0.2,
+        "ma_breakout": 0.0,
+        "short_term_breakout": 0.0,
+        "relative_strength_accel": 100.0,
+        "accumulation_accel": 100.0
+      },
+      "turnaround_raw": {
+        "volume_surge": {
+          "ratio": 1.0025622824432407
+        },
+        "ma_breakout": {
+          "close": 22350.0,
+          "ma20": 23525.0,
+          "ma60": 26811.666666666668,
+          "close_vs_ma60_pct": -16.640765835768015,
+          "ma20_vs_ma60_pct": -12.25834524771555
+        },
+        "short_term_breakout": {
+          "close": 22350.0,
+          "high60": 32950.0,
+          "pct_of_high60": 67.83004552352048
+        },
+        "relative_strength_accel": {
+          "rs_recent10_pct": 14.41674611724817,
+          "rs_prior10_pct": -5.710818782697014,
+          "accel_pct": 20.127564899945185
+        },
+        "accumulation_accel": {
+          "recent5_avg_krw": 114084910.0,
+          "prior15_avg_krw": 50454923.333333336,
+          "ratio": 2.26112542568525
+        }
+      },
+      "status": "confirmed_turnaround",
+      "close": 22350,
+      "explanation": {
+        "summary": "바닥 신호(공매도 감소, 거래량 고갈)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
+        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 6~25일 전 거래량이 과거 120일 평균의 32%로 크게 줄었습니다. PBR이 0.84배로 최근 5년 밴드 하위 11% 구간입니다. 볼린저밴드폭이 최근 구간 중 하위 15%로 가격이 좁게 눌려 있습니다.",
+        "turnaround": "상대강도가 이전 10일 -5.7%p에서 최근 10일 +14.4%p로 +20.1%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 226%로 매집이 강해졌습니다."
+      }
+    },
+    {
       "ticker": "005500",
       "name": "삼진제약",
       "score": 65.7,
@@ -942,7 +1032,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 1.7996302748999216
+          "ratio": 1.9406311925629398
         },
         "accumulation": {
           "net_buy_krw": 1164940150.0,
@@ -1017,6 +1107,96 @@
       }
     },
     {
+      "ticker": "453340",
+      "name": "현대그린푸드",
+      "score": 65.5,
+      "n_signals": 7,
+      "breakdown": {
+        "volume_dryness": 16.6,
+        "accumulation": 100.0,
+        "short_covering": 100.0,
+        "pbr_low": 62.5,
+        "dividend_yield": 100.0,
+        "relative_strength": 61.7,
+        "volatility_squeeze": 19.4
+      },
+      "raw": {
+        "volume_dryness": {
+          "ratio": 0.8836025938027942
+        },
+        "accumulation": {
+          "net_buy_krw": 1164688885.0,
+          "intensity_pct": 2.4650549099025683,
+          "price_change_pct": 3.0303030303030276
+        },
+        "short_covering": {
+          "current_ratio_pct": 0.0,
+          "max_ratio_3m_pct": 0.040008544921875,
+          "pct_of_max": 0.0
+        },
+        "pbr_low": {
+          "pbr": 0.74,
+          "percentile": 37.5
+        },
+        "dividend_yield": {
+          "div_pct": 4.08,
+          "percentile": 100.0
+        },
+        "relative_strength": {
+          "stock_ret_pct": 11.509900990099009,
+          "index_ret_pct": 6.838653584566989,
+          "excess_pct": 4.67124740553202
+        },
+        "volatility_squeeze": {
+          "bandwidth_pct": 17.68967585749731,
+          "percentile": 80.58252427184466
+        }
+      },
+      "turnaround_score": 78.7,
+      "n_turnaround_signals": 5,
+      "turnaround_breakdown": {
+        "volume_surge": 32.2,
+        "ma_breakout": 70.6,
+        "short_term_breakout": 66.8,
+        "relative_strength_accel": 100.0,
+        "accumulation_accel": 100.0
+      },
+      "turnaround_raw": {
+        "volume_surge": {
+          "ratio": 1.4828181262314015
+        },
+        "ma_breakout": {
+          "close": 18020.0,
+          "ma20": 17208.0,
+          "ma60": 17245.5,
+          "close_vs_ma60_pct": 4.491026644631933,
+          "ma20_vs_ma60_pct": -0.2174480299208489
+        },
+        "short_term_breakout": {
+          "close": 18020.0,
+          "high60": 19300.0,
+          "pct_of_high60": 93.3678756476684
+        },
+        "relative_strength_accel": {
+          "rs_recent10_pct": 27.924002794524306,
+          "rs_prior10_pct": -2.5052493034433243,
+          "accel_pct": 30.42925209796763
+        },
+        "accumulation_accel": {
+          "recent5_avg_krw": 244296453.0,
+          "prior15_avg_krw": -3786225.3333333335,
+          "ratio": null
+        }
+      },
+      "status": "confirmed_turnaround",
+      "close": 18020,
+      "explanation": {
+        "summary": "바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
+        "bottom": "최근 20일간 기관·외국인이 12억원(유통시총의 2.5%)을 순매수했고, 그동안 주가는 +3.0%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 배당수익률이 4.1%로 최근 5년 대비 상위 0% 구간입니다. PBR이 0.74배로 최근 5년 밴드 하위 38% 구간입니다. 최근 60일 코스피는 +6.8%인데 이 종목은 +11.5%로 지수보다 +4.7%p 선방했습니다.",
+        "turnaround": "상대강도가 이전 10일 -2.5%p에서 최근 10일 +27.9%p로 +30.4%p 가속됐습니다. 20일 이평선이 60일 이평선보다 -0.2% 위로 정배열이고, 종가는 60일 이평선을 +4.5% 돌파했습니다. 현재가가 최근 60일 박스권 고점의 93%까지 올라왔습니다."
+      }
+    },
+    {
       "ticker": "025770",
       "name": "한국정보통신",
       "score": 64.8,
@@ -1032,7 +1212,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 1.2041123561247047
+          "ratio": 1.4459943593261682
         },
         "accumulation": {
           "net_buy_krw": 741515805.0,
@@ -1109,10 +1289,10 @@
     {
       "ticker": "240550",
       "name": "동방메디컬",
-      "score": 64.6,
+      "score": 64.1,
       "n_signals": 6,
       "breakdown": {
-        "volume_dryness": 28.1,
+        "volume_dryness": 25.6,
         "accumulation": 100.0,
         "short_covering": 100.0,
         "pbr_low": 93.8,
@@ -1122,7 +1302,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 0.8034180598832703
+          "ratio": 0.8209196020435601
         },
         "accumulation": {
           "net_buy_krw": 994694684.0,
@@ -1212,7 +1392,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 0.2985890038785536
+          "ratio": 0.2900833840374474
         },
         "accumulation": {
           "net_buy_krw": 1236479627.0,
@@ -1282,8 +1462,188 @@
       "close": 1072,
       "explanation": {
         "summary": "바닥 신호(거래량 고갈, 공매도 감소)와 턴어라운드 신호(상대강도 가속, 거래량 동반 상승)가 동시에 확인됐습니다.",
-        "bottom": "최근 20일 거래량이 과거 120일 평균의 30%로 크게 줄었습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. PBR이 0.47배로 최근 5년 밴드 하위 8% 구간입니다. 볼린저밴드폭이 최근 구간 중 하위 19%로 가격이 좁게 눌려 있습니다.",
+        "bottom": "6~25일 전 거래량이 과거 120일 평균의 29%로 크게 줄었습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. PBR이 0.47배로 최근 5년 밴드 하위 8% 구간입니다. 볼린저밴드폭이 최근 구간 중 하위 19%로 가격이 좁게 눌려 있습니다.",
         "turnaround": "상대강도가 이전 10일 -15.1%p에서 최근 10일 +22.3%p로 +37.3%p 가속됐습니다. 최근 5일 거래량이 20일 평균 대비 185%로 늘었습니다."
+      }
+    },
+    {
+      "ticker": "214420",
+      "name": "토니모리",
+      "score": 63.7,
+      "n_signals": 7,
+      "breakdown": {
+        "volume_dryness": 39.0,
+        "accumulation": 100.0,
+        "short_covering": 100.0,
+        "pbr_low": 92.5,
+        "dividend_yield": 15.4,
+        "relative_strength": 0.0,
+        "volatility_squeeze": 36.9
+      },
+      "raw": {
+        "volume_dryness": {
+          "ratio": 0.727282406003394
+        },
+        "accumulation": {
+          "net_buy_krw": 1253765638.0,
+          "intensity_pct": 3.3327412349899097,
+          "price_change_pct": -2.4955436720142554
+        },
+        "short_covering": {
+          "current_ratio_pct": 0.0,
+          "max_ratio_3m_pct": 1.259765625,
+          "pct_of_max": 0.0
+        },
+        "pbr_low": {
+          "pbr": 1.01,
+          "percentile": 7.547169811320755
+        },
+        "dividend_yield": {
+          "div_pct": 1.0,
+          "percentile": 15.384615384615385
+        },
+        "relative_strength": {
+          "stock_ret_pct": -23.17415730337079,
+          "index_ret_pct": 6.838653584566989,
+          "excess_pct": -30.01281088793778
+        },
+        "volatility_squeeze": {
+          "bandwidth_pct": 27.33005314300762,
+          "percentile": 63.10679611650485
+        }
+      },
+      "turnaround_score": 61.2,
+      "n_turnaround_signals": 5,
+      "turnaround_breakdown": {
+        "volume_surge": 31.2,
+        "ma_breakout": 0.0,
+        "short_term_breakout": 0.0,
+        "relative_strength_accel": 100.0,
+        "accumulation_accel": 100.0
+      },
+      "turnaround_raw": {
+        "volume_surge": {
+          "ratio": 1.468496613763743
+        },
+        "ma_breakout": {
+          "close": 5470.0,
+          "ma20": 5290.25,
+          "ma60": 6180.916666666667,
+          "close_vs_ma60_pct": -11.50179989483761,
+          "ma20_vs_ma60_pct": -14.409944587507251
+        },
+        "short_term_breakout": {
+          "close": 5470.0,
+          "high60": 7780.0,
+          "pct_of_high60": 70.30848329048844
+        },
+        "relative_strength_accel": {
+          "rs_recent10_pct": 28.50757767375137,
+          "rs_prior10_pct": -8.007261017219747,
+          "accel_pct": 36.51483869097112
+        },
+        "accumulation_accel": {
+          "recent5_avg_krw": 107107016.0,
+          "prior15_avg_krw": 47882037.2,
+          "ratio": 2.2368934628370405
+        }
+      },
+      "status": "confirmed_turnaround",
+      "close": 5470,
+      "explanation": {
+        "summary": "바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
+        "bottom": "최근 20일간 기관·외국인이 13억원(유통시총의 3.3%)을 순매수했고, 그동안 주가는 -2.5%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. PBR이 1.01배로 최근 5년 밴드 하위 8% 구간입니다.",
+        "turnaround": "상대강도가 이전 10일 -8.0%p에서 최근 10일 +28.5%p로 +36.5%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 224%로 매집이 강해졌습니다."
+      }
+    },
+    {
+      "ticker": "039830",
+      "name": "오로라",
+      "score": 63.4,
+      "n_signals": 7,
+      "breakdown": {
+        "volume_dryness": 19.6,
+        "accumulation": 79.7,
+        "short_covering": 100.0,
+        "pbr_low": 30.2,
+        "dividend_yield": 100.0,
+        "relative_strength": 100.0,
+        "volatility_squeeze": 39.8
+      },
+      "raw": {
+        "volume_dryness": {
+          "ratio": 0.8631352514116698
+        },
+        "accumulation": {
+          "net_buy_krw": 1490773500.0,
+          "intensity_pct": 1.7388827205809987,
+          "price_change_pct": 6.246663107314476
+        },
+        "short_covering": {
+          "current_ratio_pct": 0.0,
+          "max_ratio_3m_pct": 2.080078125,
+          "pct_of_max": 0.0
+        },
+        "pbr_low": {
+          "pbr": 0.92,
+          "percentile": 69.81132075471699
+        },
+        "dividend_yield": {
+          "div_pct": 3.61,
+          "percentile": 100.0
+        },
+        "relative_strength": {
+          "stock_ret_pct": 91.53031761308952,
+          "index_ret_pct": 6.838653584566989,
+          "excess_pct": 84.69166402852252
+        },
+        "volatility_squeeze": {
+          "bandwidth_pct": 34.64497070501862,
+          "percentile": 60.19417475728155
+        }
+      },
+      "turnaround_score": 55.3,
+      "n_turnaround_signals": 5,
+      "turnaround_breakdown": {
+        "volume_surge": 0.0,
+        "ma_breakout": 100.0,
+        "short_term_breakout": 54.3,
+        "relative_strength_accel": 100.0,
+        "accumulation_accel": 32.8
+      },
+      "turnaround_raw": {
+        "volume_surge": {
+          "ratio": 0.6787122015552839
+        },
+        "ma_breakout": {
+          "close": 19900.0,
+          "ma20": 18535.0,
+          "ma60": 16904.0,
+          "close_vs_ma60_pct": 17.723615712257455,
+          "ma20_vs_ma60_pct": 9.648603880738287
+        },
+        "short_term_breakout": {
+          "close": 19900.0,
+          "high60": 21900.0,
+          "pct_of_high60": 90.8675799086758
+        },
+        "relative_strength_accel": {
+          "rs_recent10_pct": 38.84283639817977,
+          "rs_prior10_pct": -3.5000179151133404,
+          "accel_pct": 42.34285431329311
+        },
+        "accumulation_accel": {
+          "recent5_avg_krw": 74059812.0,
+          "prior15_avg_krw": 74698296.0,
+          "ratio": 0.9914524957838395
+        }
+      },
+      "status": "confirmed_turnaround",
+      "close": 19900,
+      "explanation": {
+        "summary": "바닥 신호(공매도 감소, 배당수익률)와 턴어라운드 신호(이평선 돌파, 상대강도 가속)가 동시에 확인됐습니다.",
+        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 배당수익률이 3.6%로 최근 5년 대비 상위 0% 구간입니다. 최근 60일 코스피는 +6.8%인데 이 종목은 +91.5%로 지수보다 +84.7%p 선방했습니다. 최근 20일간 기관·외국인이 15억원(유통시총의 1.7%)을 순매수했고, 그동안 주가는 +6.2%로 조용했습니다.",
+        "turnaround": "20일 이평선이 60일 이평선보다 +9.6% 위로 정배열이고, 종가는 60일 이평선을 +17.7% 돌파했습니다. 상대강도가 이전 10일 -3.5%p에서 최근 10일 +38.8%p로 +42.3%p 가속됐습니다. 현재가가 최근 60일 박스권 고점의 91%까지 올라왔습니다."
       }
     },
     {
@@ -1377,96 +1737,6 @@
       }
     },
     {
-      "ticker": "082640",
-      "name": "동양생명",
-      "score": 63.2,
-      "n_signals": 6,
-      "breakdown": {
-        "volume_dryness": 83.9,
-        "accumulation": 100.0,
-        "short_covering": 100.0,
-        "pbr_low": 1.9,
-        "dividend_yield": null,
-        "relative_strength": 5.1,
-        "volatility_squeeze": 54.4
-      },
-      "raw": {
-        "volume_dryness": {
-          "ratio": 0.41296824247190694
-        },
-        "accumulation": {
-          "net_buy_krw": 958727460.0,
-          "intensity_pct": 2.4322205010730498,
-          "price_change_pct": -4.249999999999998
-        },
-        "short_covering": {
-          "current_ratio_pct": 0.0,
-          "max_ratio_3m_pct": 0.040008544921875,
-          "pct_of_max": 0.0
-        },
-        "pbr_low": {
-          "pbr": 0.71,
-          "percentile": 98.11320754716981
-        },
-        "dividend_yield": {
-          "div_pct": 0.0,
-          "percentile": 0.0
-        },
-        "relative_strength": {
-          "stock_ret_pct": -11.1368909512761,
-          "index_ret_pct": 6.838653584566989,
-          "excess_pct": -17.975544535843092
-        },
-        "volatility_squeeze": {
-          "bandwidth_pct": 15.518778605532518,
-          "percentile": 45.63106796116505
-        }
-      },
-      "turnaround_score": 60.2,
-      "n_turnaround_signals": 5,
-      "turnaround_breakdown": {
-        "volume_surge": 0.0,
-        "ma_breakout": 15.6,
-        "short_term_breakout": 28.9,
-        "relative_strength_accel": 100.0,
-        "accumulation_accel": 100.0
-      },
-      "turnaround_raw": {
-        "volume_surge": {
-          "ratio": 0.8200710621420916
-        },
-        "ma_breakout": {
-          "close": 7660.0,
-          "ma20": 7513.5,
-          "ma60": 7806.333333333333,
-          "close_vs_ma60_pct": -1.8745463085528806,
-          "ma20_vs_ma60_pct": -3.7512276356804266
-        },
-        "short_term_breakout": {
-          "close": 7660.0,
-          "high60": 8930.0,
-          "pct_of_high60": 85.77827547592385
-        },
-        "relative_strength_accel": {
-          "rs_recent10_pct": 28.06917084587085,
-          "rs_prior10_pct": -10.770184368378388,
-          "accel_pct": 38.83935521424924
-        },
-        "accumulation_accel": {
-          "recent5_avg_krw": 177076411.0,
-          "prior15_avg_krw": 4889693.666666667,
-          "ratio": 36.21421362388005
-        }
-      },
-      "status": "confirmed_turnaround",
-      "close": 7660,
-      "explanation": {
-        "summary": "바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
-        "bottom": "최근 20일간 기관·외국인이 10억원(유통시총의 2.4%)을 순매수했고, 그동안 주가는 -4.2%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 최근 20일 거래량이 과거 120일 평균의 41%로 크게 줄었습니다. 볼린저밴드폭이 최근 구간 중 하위 46%로 가격이 좁게 눌려 있습니다.",
-        "turnaround": "상대강도가 이전 10일 -10.8%p에서 최근 10일 +28.1%p로 +38.8%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 3621%로 매집이 강해졌습니다."
-      }
-    },
-    {
       "ticker": "323410",
       "name": "카카오뱅크",
       "score": 63.0,
@@ -1482,7 +1752,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 1.0293136005003367
+          "ratio": 1.0
         },
         "accumulation": {
           "net_buy_krw": 30691060460.0,
@@ -1557,276 +1827,6 @@
       }
     },
     {
-      "ticker": "259960",
-      "name": "크래프톤",
-      "score": 62.5,
-      "n_signals": 7,
-      "breakdown": {
-        "volume_dryness": 20.1,
-        "accumulation": 87.4,
-        "short_covering": 100.0,
-        "pbr_low": 94.2,
-        "dividend_yield": 100.0,
-        "relative_strength": 7.1,
-        "volatility_squeeze": 35.9
-      },
-      "raw": {
-        "volume_dryness": {
-          "ratio": 0.8594279492984556
-        },
-        "accumulation": {
-          "net_buy_krw": 33126919050.0,
-          "intensity_pct": 2.416662812996698,
-          "price_change_pct": -6.882591093117407
-        },
-        "short_covering": {
-          "current_ratio_pct": 0.0,
-          "max_ratio_3m_pct": 0.77001953125,
-          "pct_of_max": 0.0
-        },
-        "pbr_low": {
-          "pbr": 1.5,
-          "percentile": 5.769230769230769
-        },
-        "dividend_yield": {
-          "div_pct": 0.95,
-          "percentile": 100.0
-        },
-        "relative_strength": {
-          "stock_ret_pct": -10.331384015594548,
-          "index_ret_pct": 6.838653584566989,
-          "excess_pct": -17.170037600161535
-        },
-        "volatility_squeeze": {
-          "bandwidth_pct": 20.62765104609569,
-          "percentile": 64.07766990291262
-        }
-      },
-      "turnaround_score": 40.1,
-      "n_turnaround_signals": 5,
-      "turnaround_breakdown": {
-        "volume_surge": 0.0,
-        "ma_breakout": 0.0,
-        "short_term_breakout": 0.0,
-        "relative_strength_accel": 100.0,
-        "accumulation_accel": 50.4
-      },
-      "turnaround_raw": {
-        "volume_surge": {
-          "ratio": 0.8888533411573023
-        },
-        "ma_breakout": {
-          "close": 230000.0,
-          "ma20": 232925.0,
-          "ma60": 253225.0,
-          "close_vs_ma60_pct": -9.171685260144141,
-          "ma20_vs_ma60_pct": -8.016586040082931
-        },
-        "short_term_breakout": {
-          "close": 230000.0,
-          "high60": 293500.0,
-          "pct_of_high60": 78.36456558773425
-        },
-        "relative_strength_accel": {
-          "rs_recent10_pct": 16.565204792395427,
-          "rs_prior10_pct": 2.44423833971521,
-          "accel_pct": 14.120966452680218
-        },
-        "accumulation_accel": {
-          "recent5_avg_krw": 1955665250.0,
-          "prior15_avg_krw": 1556572853.3333333,
-          "ratio": 1.2563917235303363
-        }
-      },
-      "status": "confirmed_turnaround",
-      "close": 230000,
-      "explanation": {
-        "summary": "바닥 신호(공매도 감소, 배당수익률)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
-        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 배당수익률이 0.9%로 최근 5년 대비 상위 0% 구간입니다. PBR이 1.50배로 최근 5년 밴드 하위 6% 구간입니다. 최근 20일간 기관·외국인이 331억원(유통시총의 2.4%)을 순매수했고, 그동안 주가는 -6.9%로 조용했습니다.",
-        "turnaround": "상대강도가 이전 10일 +2.4%p에서 최근 10일 +16.6%p로 +14.1%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 126%로 매집이 강해졌습니다."
-      }
-    },
-    {
-      "ticker": "453340",
-      "name": "현대그린푸드",
-      "score": 62.5,
-      "n_signals": 7,
-      "breakdown": {
-        "volume_dryness": 0.0,
-        "accumulation": 100.0,
-        "short_covering": 100.0,
-        "pbr_low": 62.5,
-        "dividend_yield": 100.0,
-        "relative_strength": 61.7,
-        "volatility_squeeze": 19.4
-      },
-      "raw": {
-        "volume_dryness": {
-          "ratio": 1.0609806678738707
-        },
-        "accumulation": {
-          "net_buy_krw": 1164688885.0,
-          "intensity_pct": 2.4650549099025683,
-          "price_change_pct": 3.0303030303030276
-        },
-        "short_covering": {
-          "current_ratio_pct": 0.0,
-          "max_ratio_3m_pct": 0.040008544921875,
-          "pct_of_max": 0.0
-        },
-        "pbr_low": {
-          "pbr": 0.74,
-          "percentile": 37.5
-        },
-        "dividend_yield": {
-          "div_pct": 4.08,
-          "percentile": 100.0
-        },
-        "relative_strength": {
-          "stock_ret_pct": 11.509900990099009,
-          "index_ret_pct": 6.838653584566989,
-          "excess_pct": 4.67124740553202
-        },
-        "volatility_squeeze": {
-          "bandwidth_pct": 17.68967585749731,
-          "percentile": 80.58252427184466
-        }
-      },
-      "turnaround_score": 78.7,
-      "n_turnaround_signals": 5,
-      "turnaround_breakdown": {
-        "volume_surge": 32.2,
-        "ma_breakout": 70.6,
-        "short_term_breakout": 66.8,
-        "relative_strength_accel": 100.0,
-        "accumulation_accel": 100.0
-      },
-      "turnaround_raw": {
-        "volume_surge": {
-          "ratio": 1.4828181262314015
-        },
-        "ma_breakout": {
-          "close": 18020.0,
-          "ma20": 17208.0,
-          "ma60": 17245.5,
-          "close_vs_ma60_pct": 4.491026644631933,
-          "ma20_vs_ma60_pct": -0.2174480299208489
-        },
-        "short_term_breakout": {
-          "close": 18020.0,
-          "high60": 19300.0,
-          "pct_of_high60": 93.3678756476684
-        },
-        "relative_strength_accel": {
-          "rs_recent10_pct": 27.924002794524306,
-          "rs_prior10_pct": -2.5052493034433243,
-          "accel_pct": 30.42925209796763
-        },
-        "accumulation_accel": {
-          "recent5_avg_krw": 244296453.0,
-          "prior15_avg_krw": -3786225.3333333335,
-          "ratio": null
-        }
-      },
-      "status": "confirmed_turnaround",
-      "close": 18020,
-      "explanation": {
-        "summary": "바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
-        "bottom": "최근 20일간 기관·외국인이 12억원(유통시총의 2.5%)을 순매수했고, 그동안 주가는 +3.0%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 배당수익률이 4.1%로 최근 5년 대비 상위 0% 구간입니다. PBR이 0.74배로 최근 5년 밴드 하위 38% 구간입니다. 최근 60일 코스피는 +6.8%인데 이 종목은 +11.5%로 지수보다 +4.7%p 선방했습니다.",
-        "turnaround": "상대강도가 이전 10일 -2.5%p에서 최근 10일 +27.9%p로 +30.4%p 가속됐습니다. 20일 이평선이 60일 이평선보다 -0.2% 위로 정배열이고, 종가는 60일 이평선을 +4.5% 돌파했습니다. 현재가가 최근 60일 박스권 고점의 93%까지 올라왔습니다."
-      }
-    },
-    {
-      "ticker": "033270",
-      "name": "유나이티드제약",
-      "score": 62.4,
-      "n_signals": 7,
-      "breakdown": {
-        "volume_dryness": 0.0,
-        "accumulation": 92.1,
-        "short_covering": 100.0,
-        "pbr_low": 98.1,
-        "dividend_yield": 100.0,
-        "relative_strength": 0.0,
-        "volatility_squeeze": 60.2
-      },
-      "raw": {
-        "volume_dryness": {
-          "ratio": 1.0504023373104607
-        },
-        "accumulation": {
-          "net_buy_krw": 836398325.0,
-          "intensity_pct": 2.9808791579676663,
-          "price_change_pct": -6.186121570736958
-        },
-        "short_covering": {
-          "current_ratio_pct": 0.0,
-          "max_ratio_3m_pct": 0.75,
-          "pct_of_max": 0.0
-        },
-        "pbr_low": {
-          "pbr": 0.61,
-          "percentile": 1.8867924528301887
-        },
-        "dividend_yield": {
-          "div_pct": 3.5,
-          "percentile": 100.0
-        },
-        "relative_strength": {
-          "stock_ret_pct": -17.345971563981045,
-          "index_ret_pct": 6.838653584566989,
-          "excess_pct": -24.184625148548033
-        },
-        "volatility_squeeze": {
-          "bandwidth_pct": 9.579472755008798,
-          "percentile": 39.80582524271845
-        }
-      },
-      "turnaround_score": 57.7,
-      "n_turnaround_signals": 5,
-      "turnaround_breakdown": {
-        "volume_surge": 9.6,
-        "ma_breakout": 0.0,
-        "short_term_breakout": 7.5,
-        "relative_strength_accel": 100.0,
-        "accumulation_accel": 100.0
-      },
-      "turnaround_raw": {
-        "volume_surge": {
-          "ratio": 1.1442219048685496
-        },
-        "ma_breakout": {
-          "close": 17440.0,
-          "ma20": 17470.5,
-          "ma60": 18754.833333333332,
-          "close_vs_ma60_pct": -7.010637257951277,
-          "ma20_vs_ma60_pct": -6.848012512330149
-        },
-        "short_term_breakout": {
-          "close": 17440.0,
-          "high60": 21400.0,
-          "pct_of_high60": 81.49532710280374
-        },
-        "relative_strength_accel": {
-          "rs_recent10_pct": 19.050271083493485,
-          "rs_prior10_pct": -3.5179409036885767,
-          "accel_pct": 22.568211987182064
-        },
-        "accumulation_accel": {
-          "recent5_avg_krw": 77507044.0,
-          "prior15_avg_krw": 29924207.0,
-          "ratio": 2.590111878319783
-        }
-      },
-      "status": "confirmed_turnaround",
-      "close": 17440,
-      "explanation": {
-        "summary": "바닥 신호(공매도 감소, 배당수익률)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
-        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 배당수익률이 3.5%로 최근 5년 대비 상위 0% 구간입니다. PBR이 0.61배로 최근 5년 밴드 하위 2% 구간입니다. 최근 20일간 기관·외국인이 8억원(유통시총의 3.0%)을 순매수했고, 그동안 주가는 -6.2%로 조용했습니다. 볼린저밴드폭이 최근 구간 중 하위 40%로 가격이 좁게 눌려 있습니다.",
-        "turnaround": "상대강도가 이전 10일 -3.5%p에서 최근 10일 +19.1%p로 +22.6%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 259%로 매집이 강해졌습니다."
-      }
-    },
-    {
       "ticker": "101530",
       "name": "해태제과식품",
       "score": 62.4,
@@ -1842,7 +1842,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 2.9515372540010723
+          "ratio": 2.8153476529596446
         },
         "accumulation": {
           "net_buy_krw": 944106340.0,
@@ -2009,10 +2009,10 @@
     {
       "ticker": "036800",
       "name": "나이스정보통신",
-      "score": 61.9,
+      "score": 62.0,
       "n_signals": 7,
       "breakdown": {
-        "volume_dryness": 0.0,
+        "volume_dryness": 0.7,
         "accumulation": 100.0,
         "short_covering": 100.0,
         "pbr_low": 54.7,
@@ -2022,7 +2022,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 1.1020361862628325
+          "ratio": 0.994753559072089
         },
         "accumulation": {
           "net_buy_krw": 1464714075.0,
@@ -2097,93 +2097,363 @@
       }
     },
     {
-      "ticker": "001450",
-      "name": "현대해상",
-      "score": 61.7,
+      "ticker": "082640",
+      "name": "동양생명",
+      "score": 61.9,
       "n_signals": 6,
       "breakdown": {
-        "volume_dryness": 8.7,
-        "accumulation": 84.4,
+        "volume_dryness": 77.1,
+        "accumulation": 100.0,
         "short_covering": 100.0,
-        "pbr_low": 28.3,
+        "pbr_low": 1.9,
         "dividend_yield": null,
-        "relative_strength": 87.8,
-        "volatility_squeeze": 66.0
+        "relative_strength": 5.1,
+        "volatility_squeeze": 54.4
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 0.9387602988251841
+          "ratio": 0.46028051914700674
         },
         "accumulation": {
-          "net_buy_krw": 26133658475.0,
-          "intensity_pct": 3.002882912705338,
-          "price_change_pct": -7.347447073474466
+          "net_buy_krw": 958727460.0,
+          "intensity_pct": 2.4322205010730498,
+          "price_change_pct": -4.249999999999998
         },
         "short_covering": {
           "current_ratio_pct": 0.0,
-          "max_ratio_3m_pct": 0.280029296875,
+          "max_ratio_3m_pct": 0.040008544921875,
           "pct_of_max": 0.0
         },
         "pbr_low": {
-          "pbr": 0.53,
-          "percentile": 71.69811320754717
+          "pbr": 0.71,
+          "percentile": 98.11320754716981
         },
         "dividend_yield": {
           "div_pct": 0.0,
           "percentile": 0.0
         },
         "relative_strength": {
-          "stock_ret_pct": 21.96721311475409,
+          "stock_ret_pct": -11.1368909512761,
           "index_ret_pct": 6.838653584566989,
-          "excess_pct": 15.128559530187102
+          "excess_pct": -17.975544535843092
         },
         "volatility_squeeze": {
-          "bandwidth_pct": 17.97329090140524,
-          "percentile": 33.980582524271846
+          "bandwidth_pct": 15.518778605532518,
+          "percentile": 45.63106796116505
         }
       },
-      "turnaround_score": 71.1,
+      "turnaround_score": 60.2,
       "n_turnaround_signals": 5,
       "turnaround_breakdown": {
-        "volume_surge": 4.1,
-        "ma_breakout": 100.0,
-        "short_term_breakout": 50.9,
+        "volume_surge": 0.0,
+        "ma_breakout": 15.6,
+        "short_term_breakout": 28.9,
         "relative_strength_accel": 100.0,
-        "accumulation_accel": 84.0
+        "accumulation_accel": 100.0
       },
       "turnaround_raw": {
         "volume_surge": {
-          "ratio": 1.061782202299788
+          "ratio": 0.8200710621420916
         },
         "ma_breakout": {
-          "close": 37200.0,
-          "ma20": 36772.5,
-          "ma60": 34880.833333333336,
-          "close_vs_ma60_pct": 6.648828152997102,
-          "ma20_vs_ma60_pct": 5.4232267004324175
+          "close": 7660.0,
+          "ma20": 7513.5,
+          "ma60": 7806.333333333333,
+          "close_vs_ma60_pct": -1.8745463085528806,
+          "ma20_vs_ma60_pct": -3.7512276356804266
         },
         "short_term_breakout": {
-          "close": 37200.0,
-          "high60": 41250.0,
-          "pct_of_high60": 90.18181818181819
+          "close": 7660.0,
+          "high60": 8930.0,
+          "pct_of_high60": 85.77827547592385
         },
         "relative_strength_accel": {
-          "rs_recent10_pct": 25.850762752660973,
-          "rs_prior10_pct": -12.648972247166268,
-          "accel_pct": 38.49973499982724
+          "rs_recent10_pct": 28.06917084587085,
+          "rs_prior10_pct": -10.770184368378388,
+          "accel_pct": 38.83935521424924
         },
         "accumulation_accel": {
-          "recent5_avg_krw": 1932145185.0,
-          "prior15_avg_krw": 1098195503.3333333,
-          "ratio": 1.7593818032721806
+          "recent5_avg_krw": 177076411.0,
+          "prior15_avg_krw": 4889693.666666667,
+          "ratio": 36.21421362388005
         }
       },
       "status": "confirmed_turnaround",
-      "close": 37200,
+      "close": 7660,
       "explanation": {
-        "summary": "바닥 신호(공매도 감소, 상대강도)와 턴어라운드 신호(이평선 돌파, 상대강도 가속)가 동시에 확인됐습니다.",
-        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 최근 60일 코스피는 +6.8%인데 이 종목은 +22.0%로 지수보다 +15.1%p 선방했습니다. 최근 20일간 기관·외국인이 261억원(유통시총의 3.0%)을 순매수했고, 그동안 주가는 -7.3%로 조용했습니다. 볼린저밴드폭이 최근 구간 중 하위 34%로 가격이 좁게 눌려 있습니다.",
-        "turnaround": "20일 이평선이 60일 이평선보다 +5.4% 위로 정배열이고, 종가는 60일 이평선을 +6.6% 돌파했습니다. 상대강도가 이전 10일 -12.6%p에서 최근 10일 +25.9%p로 +38.5%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 176%로 매집이 강해졌습니다. 현재가가 최근 60일 박스권 고점의 90%까지 올라왔습니다."
+        "summary": "바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
+        "bottom": "최근 20일간 기관·외국인이 10억원(유통시총의 2.4%)을 순매수했고, 그동안 주가는 -4.2%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 6~25일 전 거래량이 과거 120일 평균의 46%로 크게 줄었습니다. 볼린저밴드폭이 최근 구간 중 하위 46%로 가격이 좁게 눌려 있습니다.",
+        "turnaround": "상대강도가 이전 10일 -10.8%p에서 최근 10일 +28.1%p로 +38.8%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 3621%로 매집이 강해졌습니다."
+      }
+    },
+    {
+      "ticker": "259960",
+      "name": "크래프톤",
+      "score": 61.6,
+      "n_signals": 7,
+      "breakdown": {
+        "volume_dryness": 14.9,
+        "accumulation": 87.4,
+        "short_covering": 100.0,
+        "pbr_low": 94.2,
+        "dividend_yield": 100.0,
+        "relative_strength": 7.1,
+        "volatility_squeeze": 35.9
+      },
+      "raw": {
+        "volume_dryness": {
+          "ratio": 0.8956732086463726
+        },
+        "accumulation": {
+          "net_buy_krw": 33126919050.0,
+          "intensity_pct": 2.416662812996698,
+          "price_change_pct": -6.882591093117407
+        },
+        "short_covering": {
+          "current_ratio_pct": 0.0,
+          "max_ratio_3m_pct": 0.77001953125,
+          "pct_of_max": 0.0
+        },
+        "pbr_low": {
+          "pbr": 1.5,
+          "percentile": 5.769230769230769
+        },
+        "dividend_yield": {
+          "div_pct": 0.95,
+          "percentile": 100.0
+        },
+        "relative_strength": {
+          "stock_ret_pct": -10.331384015594548,
+          "index_ret_pct": 6.838653584566989,
+          "excess_pct": -17.170037600161535
+        },
+        "volatility_squeeze": {
+          "bandwidth_pct": 20.62765104609569,
+          "percentile": 64.07766990291262
+        }
+      },
+      "turnaround_score": 40.1,
+      "n_turnaround_signals": 5,
+      "turnaround_breakdown": {
+        "volume_surge": 0.0,
+        "ma_breakout": 0.0,
+        "short_term_breakout": 0.0,
+        "relative_strength_accel": 100.0,
+        "accumulation_accel": 50.4
+      },
+      "turnaround_raw": {
+        "volume_surge": {
+          "ratio": 0.8888533411573023
+        },
+        "ma_breakout": {
+          "close": 230000.0,
+          "ma20": 232925.0,
+          "ma60": 253225.0,
+          "close_vs_ma60_pct": -9.171685260144141,
+          "ma20_vs_ma60_pct": -8.016586040082931
+        },
+        "short_term_breakout": {
+          "close": 230000.0,
+          "high60": 293500.0,
+          "pct_of_high60": 78.36456558773425
+        },
+        "relative_strength_accel": {
+          "rs_recent10_pct": 16.565204792395427,
+          "rs_prior10_pct": 2.44423833971521,
+          "accel_pct": 14.120966452680218
+        },
+        "accumulation_accel": {
+          "recent5_avg_krw": 1955665250.0,
+          "prior15_avg_krw": 1556572853.3333333,
+          "ratio": 1.2563917235303363
+        }
+      },
+      "status": "confirmed_turnaround",
+      "close": 230000,
+      "explanation": {
+        "summary": "바닥 신호(공매도 감소, 배당수익률)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
+        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 배당수익률이 0.9%로 최근 5년 대비 상위 0% 구간입니다. PBR이 1.50배로 최근 5년 밴드 하위 6% 구간입니다. 최근 20일간 기관·외국인이 331억원(유통시총의 2.4%)을 순매수했고, 그동안 주가는 -6.9%로 조용했습니다.",
+        "turnaround": "상대강도가 이전 10일 +2.4%p에서 최근 10일 +16.6%p로 +14.1%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 126%로 매집이 강해졌습니다."
+      }
+    },
+    {
+      "ticker": "042500",
+      "name": "링네트",
+      "score": 61.6,
+      "n_signals": 7,
+      "breakdown": {
+        "volume_dryness": 8.6,
+        "accumulation": 92.6,
+        "short_covering": 100.0,
+        "pbr_low": 62.3,
+        "dividend_yield": 100.0,
+        "relative_strength": 0.0,
+        "volatility_squeeze": 87.4
+      },
+      "raw": {
+        "volume_dryness": {
+          "ratio": 0.9400088865438287
+        },
+        "accumulation": {
+          "net_buy_krw": 1662457875.0,
+          "intensity_pct": 3.7248831834431297,
+          "price_change_pct": -6.110458284371322
+        },
+        "short_covering": {
+          "current_ratio_pct": 0.0,
+          "max_ratio_3m_pct": 0.669921875,
+          "pct_of_max": 0.0
+        },
+        "pbr_low": {
+          "pbr": 0.69,
+          "percentile": 37.735849056603776
+        },
+        "dividend_yield": {
+          "div_pct": 7.45,
+          "percentile": 100.0
+        },
+        "relative_strength": {
+          "stock_ret_pct": -27.363636363636367,
+          "index_ret_pct": 6.838653584566989,
+          "excess_pct": -34.20228994820336
+        },
+        "volatility_squeeze": {
+          "bandwidth_pct": 9.858397037530594,
+          "percentile": 12.62135922330097
+        }
+      },
+      "turnaround_score": 61.0,
+      "n_turnaround_signals": 5,
+      "turnaround_breakdown": {
+        "volume_surge": 30.2,
+        "ma_breakout": 0.0,
+        "short_term_breakout": 0.0,
+        "relative_strength_accel": 100.0,
+        "accumulation_accel": 100.0
+      },
+      "turnaround_raw": {
+        "volume_surge": {
+          "ratio": 1.4524124265767884
+        },
+        "ma_breakout": {
+          "close": 3995.0,
+          "ma20": 4022.0,
+          "ma60": 4663.5,
+          "close_vs_ma60_pct": -14.334727136271042,
+          "ma20_vs_ma60_pct": -13.75576283906937
+        },
+        "short_term_breakout": {
+          "close": 3995.0,
+          "high60": 6350.0,
+          "pct_of_high60": 62.91338582677165
+        },
+        "relative_strength_accel": {
+          "rs_recent10_pct": 18.362236058844527,
+          "rs_prior10_pct": -2.42793837907358,
+          "accel_pct": 20.790174437918107
+        },
+        "accumulation_accel": {
+          "recent5_avg_krw": 181758983.2,
+          "prior15_avg_krw": 50244197.266666666,
+          "ratio": 3.6175119334742307
+        }
+      },
+      "status": "confirmed_turnaround",
+      "close": 3995,
+      "explanation": {
+        "summary": "바닥 신호(공매도 감소, 배당수익률)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
+        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 배당수익률이 7.5%로 최근 5년 대비 상위 0% 구간입니다. 최근 20일간 기관·외국인이 17억원(유통시총의 3.7%)을 순매수했고, 그동안 주가는 -6.1%로 조용했습니다. 볼린저밴드폭이 최근 구간 중 하위 13%로 가격이 좁게 눌려 있습니다. PBR이 0.69배로 최근 5년 밴드 하위 38% 구간입니다.",
+        "turnaround": "상대강도가 이전 10일 -2.4%p에서 최근 10일 +18.4%p로 +20.8%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 362%로 매집이 강해졌습니다."
+      }
+    },
+    {
+      "ticker": "099190",
+      "name": "아이센스",
+      "score": 61.6,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 86.7,
+        "accumulation": 21.3,
+        "short_covering": 100.0,
+        "pbr_low": 94.3,
+        "dividend_yield": null,
+        "relative_strength": 0.0,
+        "volatility_squeeze": 95.1
+      },
+      "raw": {
+        "volume_dryness": {
+          "ratio": 0.3933506443080059
+        },
+        "accumulation": {
+          "net_buy_krw": 327676520.0,
+          "intensity_pct": 1.0580502250164598,
+          "price_change_pct": -13.952130764740222
+        },
+        "short_covering": {
+          "current_ratio_pct": 0.0,
+          "max_ratio_3m_pct": 0.3701171875,
+          "pct_of_max": 0.0
+        },
+        "pbr_low": {
+          "pbr": 1.42,
+          "percentile": 5.660377358490566
+        },
+        "dividend_yield": {
+          "div_pct": 0.62,
+          "percentile": 39.62264150943396
+        },
+        "relative_strength": {
+          "stock_ret_pct": -28.963855421686745,
+          "index_ret_pct": 6.838653584566989,
+          "excess_pct": -35.802509006253736
+        },
+        "volatility_squeeze": {
+          "bandwidth_pct": 15.498438136719123,
+          "percentile": 4.854368932038835
+        }
+      },
+      "turnaround_score": 48.6,
+      "n_turnaround_signals": 5,
+      "turnaround_breakdown": {
+        "volume_surge": 0.0,
+        "ma_breakout": 0.0,
+        "short_term_breakout": 0.0,
+        "relative_strength_accel": 100.0,
+        "accumulation_accel": 78.5
+      },
+      "turnaround_raw": {
+        "volume_surge": {
+          "ratio": 0.9436212046507627
+        },
+        "ma_breakout": {
+          "close": 14740.0,
+          "ma20": 15628.5,
+          "ma60": 17843.5,
+          "close_vs_ma60_pct": -17.39288816655925,
+          "ma20_vs_ma60_pct": -12.413483901700898
+        },
+        "short_term_breakout": {
+          "close": 14740.0,
+          "high60": 22800.0,
+          "pct_of_high60": 64.64912280701755
+        },
+        "relative_strength_accel": {
+          "rs_recent10_pct": 10.32044896088008,
+          "rs_prior10_pct": -0.7712685555090859,
+          "accel_pct": 11.091717516389165
+        },
+        "accumulation_accel": {
+          "recent5_avg_krw": 23503783.0,
+          "prior15_avg_krw": 14010507.0,
+          "ratio": 1.677582617103007
+        }
+      },
+      "status": "confirmed_turnaround",
+      "close": 14740,
+      "explanation": {
+        "summary": "바닥 신호(공매도 감소, 변동성 수축)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
+        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 볼린저밴드폭이 최근 구간 중 하위 5%로 가격이 좁게 눌려 있습니다. PBR이 1.42배로 최근 5년 밴드 하위 6% 구간입니다. 6~25일 전 거래량이 과거 120일 평균의 39%로 크게 줄었습니다.",
+        "turnaround": "상대강도가 이전 10일 -0.8%p에서 최근 10일 +10.3%p로 +11.1%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 168%로 매집이 강해졌습니다."
       }
     },
     {
@@ -2202,7 +2472,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 1.0896720331526595
+          "ratio": 1.1023259250303923
         },
         "accumulation": {
           "net_buy_krw": 1829208960.0,
@@ -2277,96 +2547,6 @@
       }
     },
     {
-      "ticker": "099190",
-      "name": "아이센스",
-      "score": 61.2,
-      "n_signals": 6,
-      "breakdown": {
-        "volume_dryness": 84.6,
-        "accumulation": 21.3,
-        "short_covering": 100.0,
-        "pbr_low": 94.3,
-        "dividend_yield": null,
-        "relative_strength": 0.0,
-        "volatility_squeeze": 95.1
-      },
-      "raw": {
-        "volume_dryness": {
-          "ratio": 0.40790642366588203
-        },
-        "accumulation": {
-          "net_buy_krw": 327676520.0,
-          "intensity_pct": 1.0580502250164598,
-          "price_change_pct": -13.952130764740222
-        },
-        "short_covering": {
-          "current_ratio_pct": 0.0,
-          "max_ratio_3m_pct": 0.3701171875,
-          "pct_of_max": 0.0
-        },
-        "pbr_low": {
-          "pbr": 1.42,
-          "percentile": 5.660377358490566
-        },
-        "dividend_yield": {
-          "div_pct": 0.62,
-          "percentile": 39.62264150943396
-        },
-        "relative_strength": {
-          "stock_ret_pct": -28.963855421686745,
-          "index_ret_pct": 6.838653584566989,
-          "excess_pct": -35.802509006253736
-        },
-        "volatility_squeeze": {
-          "bandwidth_pct": 15.498438136719123,
-          "percentile": 4.854368932038835
-        }
-      },
-      "turnaround_score": 48.6,
-      "n_turnaround_signals": 5,
-      "turnaround_breakdown": {
-        "volume_surge": 0.0,
-        "ma_breakout": 0.0,
-        "short_term_breakout": 0.0,
-        "relative_strength_accel": 100.0,
-        "accumulation_accel": 78.5
-      },
-      "turnaround_raw": {
-        "volume_surge": {
-          "ratio": 0.9436212046507627
-        },
-        "ma_breakout": {
-          "close": 14740.0,
-          "ma20": 15628.5,
-          "ma60": 17843.5,
-          "close_vs_ma60_pct": -17.39288816655925,
-          "ma20_vs_ma60_pct": -12.413483901700898
-        },
-        "short_term_breakout": {
-          "close": 14740.0,
-          "high60": 22800.0,
-          "pct_of_high60": 64.64912280701755
-        },
-        "relative_strength_accel": {
-          "rs_recent10_pct": 10.32044896088008,
-          "rs_prior10_pct": -0.7712685555090859,
-          "accel_pct": 11.091717516389165
-        },
-        "accumulation_accel": {
-          "recent5_avg_krw": 23503783.0,
-          "prior15_avg_krw": 14010507.0,
-          "ratio": 1.677582617103007
-        }
-      },
-      "status": "confirmed_turnaround",
-      "close": 14740,
-      "explanation": {
-        "summary": "바닥 신호(공매도 감소, 변동성 수축)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
-        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 볼린저밴드폭이 최근 구간 중 하위 5%로 가격이 좁게 눌려 있습니다. PBR이 1.42배로 최근 5년 밴드 하위 6% 구간입니다. 최근 20일 거래량이 과거 120일 평균의 41%로 크게 줄었습니다.",
-        "turnaround": "상대강도가 이전 10일 -0.8%p에서 최근 10일 +10.3%p로 +11.1%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 168%로 매집이 강해졌습니다."
-      }
-    },
-    {
       "ticker": "004090",
       "name": "한국석유",
       "score": 61.0,
@@ -2382,7 +2562,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 0.24953358612080706
+          "ratio": 0.24718515674099245
         },
         "accumulation": {
           "net_buy_krw": -2046336515.0,
@@ -2452,17 +2632,107 @@
       "close": 11640,
       "explanation": {
         "summary": "바닥 신호(거래량 고갈, 공매도 감소)와 턴어라운드 신호(거래량 동반 상승, 상대강도 가속)가 동시에 확인됐습니다.",
-        "bottom": "최근 20일 거래량이 과거 120일 평균의 25%로 크게 줄었습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. PBR이 0.68배로 최근 5년 밴드 하위 2% 구간입니다. 배당수익률이 1.1%로 최근 5년 대비 상위 4% 구간입니다. 볼린저밴드폭이 최근 구간 중 하위 5%로 가격이 좁게 눌려 있습니다.",
+        "bottom": "6~25일 전 거래량이 과거 120일 평균의 25%로 크게 줄었습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. PBR이 0.68배로 최근 5년 밴드 하위 2% 구간입니다. 배당수익률이 1.1%로 최근 5년 대비 상위 4% 구간입니다. 볼린저밴드폭이 최근 구간 중 하위 5%로 가격이 좁게 눌려 있습니다.",
         "turnaround": "최근 5일 거래량이 20일 평균 대비 342%로 늘었습니다. 상대강도가 이전 10일 -6.8%p에서 최근 10일 +25.6%p로 +32.4%p 가속됐습니다."
+      }
+    },
+    {
+      "ticker": "068270",
+      "name": "셀트리온",
+      "score": 60.9,
+      "n_signals": 6,
+      "breakdown": {
+        "volume_dryness": 7.9,
+        "accumulation": 100.0,
+        "short_covering": 100.0,
+        "pbr_low": 73.6,
+        "dividend_yield": null,
+        "relative_strength": 0.0,
+        "volatility_squeeze": 67.0
+      },
+      "raw": {
+        "volume_dryness": {
+          "ratio": 0.9447288307216338
+        },
+        "accumulation": {
+          "net_buy_krw": 245118253600.0,
+          "intensity_pct": 4.598723361885245,
+          "price_change_pct": -1.0309278350515427
+        },
+        "short_covering": {
+          "current_ratio_pct": 0.0,
+          "max_ratio_3m_pct": 0.1600341796875,
+          "pct_of_max": 0.0
+        },
+        "pbr_low": {
+          "pbr": 2.31,
+          "percentile": 26.41509433962264
+        },
+        "dividend_yield": {
+          "div_pct": 0.43,
+          "percentile": 82.22222222222223
+        },
+        "relative_strength": {
+          "stock_ret_pct": -17.320574162679424,
+          "index_ret_pct": 6.838653584566989,
+          "excess_pct": -24.159227747246415
+        },
+        "volatility_squeeze": {
+          "bandwidth_pct": 10.965974875297523,
+          "percentile": 33.00970873786408
+        }
+      },
+      "turnaround_score": 56.3,
+      "n_turnaround_signals": 5,
+      "turnaround_breakdown": {
+        "volume_surge": 0.0,
+        "ma_breakout": 0.0,
+        "short_term_breakout": 13.4,
+        "relative_strength_accel": 100.0,
+        "accumulation_accel": 100.0
+      },
+      "turnaround_raw": {
+        "volume_surge": {
+          "ratio": 0.9860448475123457
+        },
+        "ma_breakout": {
+          "close": 172800.0,
+          "ma20": 173675.0,
+          "ma60": 185068.33333333334,
+          "close_vs_ma60_pct": -6.629082951342302,
+          "ma20_vs_ma60_pct": -6.156284615592444
+        },
+        "short_term_breakout": {
+          "close": 172800.0,
+          "high60": 209000.0,
+          "pct_of_high60": 82.67942583732058
+        },
+        "relative_strength_accel": {
+          "rs_recent10_pct": 18.81906065124703,
+          "rs_prior10_pct": 2.178500184890686,
+          "accel_pct": 16.640560466356348
+        },
+        "accumulation_accel": {
+          "recent5_avg_krw": 23056020770.0,
+          "prior15_avg_krw": 8655876650.0,
+          "ratio": 2.663626308722872
+        }
+      },
+      "status": "confirmed_turnaround",
+      "close": 172800,
+      "explanation": {
+        "summary": "바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
+        "bottom": "최근 20일간 기관·외국인이 2,451억원(유통시총의 4.6%)을 순매수했고, 그동안 주가는 -1.0%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. PBR이 2.31배로 최근 5년 밴드 하위 26% 구간입니다. 볼린저밴드폭이 최근 구간 중 하위 33%로 가격이 좁게 눌려 있습니다.",
+        "turnaround": "상대강도가 이전 10일 +2.2%p에서 최근 10일 +18.8%p로 +16.6%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 266%로 매집이 강해졌습니다."
       }
     },
     {
       "ticker": "257720",
       "name": "실리콘투",
-      "score": 60.7,
+      "score": 60.9,
       "n_signals": 7,
       "breakdown": {
-        "volume_dryness": 10.9,
+        "volume_dryness": 12.1,
         "accumulation": 100.0,
         "short_covering": 100.0,
         "pbr_low": 64.7,
@@ -2472,7 +2742,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 0.9234862987391997
+          "ratio": 0.9155333375672513
         },
         "accumulation": {
           "net_buy_krw": 27689296350.0,
@@ -2549,10 +2819,10 @@
     {
       "ticker": "096530",
       "name": "씨젠",
-      "score": 60.2,
+      "score": 60.3,
       "n_signals": 6,
       "breakdown": {
-        "volume_dryness": 0.0,
+        "volume_dryness": 0.5,
         "accumulation": 91.5,
         "short_covering": 100.0,
         "pbr_low": 34.0,
@@ -2562,7 +2832,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 1.0185849727567642
+          "ratio": 0.9962777371397541
         },
         "accumulation": {
           "net_buy_krw": 16678739175.0,
@@ -2637,192 +2907,102 @@
       }
     },
     {
-      "ticker": "383220",
-      "name": "F&F",
-      "score": 60.1,
-      "n_signals": 7,
-      "breakdown": {
-        "volume_dryness": 9.7,
-        "accumulation": 36.9,
-        "short_covering": 100.0,
-        "pbr_low": 88.9,
-        "dividend_yield": 97.8,
-        "relative_strength": 72.6,
-        "volatility_squeeze": 76.7
-      },
-      "raw": {
-        "volume_dryness": {
-          "ratio": 0.9322849522696076
-        },
-        "accumulation": {
-          "net_buy_krw": 2908753500.0,
-          "intensity_pct": 0.8426554561107436,
-          "price_change_pct": -6.867469879518073
-        },
-        "short_covering": {
-          "current_ratio_pct": 0.0,
-          "max_ratio_3m_pct": 0.43994140625,
-          "pct_of_max": 0.0
-        },
-        "pbr_low": {
-          "pbr": 1.54,
-          "percentile": 11.11111111111111
-        },
-        "dividend_yield": {
-          "div_pct": 3.5,
-          "percentile": 97.77777777777777
-        },
-        "relative_strength": {
-          "stock_ret_pct": 15.892053973013498,
-          "index_ret_pct": 6.838653584566989,
-          "excess_pct": 9.053400388446509
-        },
-        "volatility_squeeze": {
-          "bandwidth_pct": 14.727867491837642,
-          "percentile": 23.300970873786408
-        }
-      },
-      "turnaround_score": 71.8,
-      "n_turnaround_signals": 5,
-      "turnaround_breakdown": {
-        "volume_surge": 0.0,
-        "ma_breakout": 79.4,
-        "short_term_breakout": 48.9,
-        "relative_strength_accel": 100.0,
-        "accumulation_accel": 100.0
-      },
-      "turnaround_raw": {
-        "volume_surge": {
-          "ratio": 0.9525432781060967
-        },
-        "ma_breakout": {
-          "close": 77300.0,
-          "ma20": 78075.0,
-          "ma60": 76106.66666666667,
-          "close_vs_ma60_pct": 1.567974772249468,
-          "ma20_vs_ma60_pct": 2.58628241065171
-        },
-        "short_term_breakout": {
-          "close": 77300.0,
-          "high60": 86100.0,
-          "pct_of_high60": 89.77932636469221
-        },
-        "relative_strength_accel": {
-          "rs_recent10_pct": 19.237111352507842,
-          "rs_prior10_pct": -0.7542951390060115,
-          "accel_pct": 19.991406491513853
-        },
-        "accumulation_accel": {
-          "recent5_avg_krw": 370630400.0,
-          "prior15_avg_krw": 70373433.33333333,
-          "ratio": 5.266623815900224
-        }
-      },
-      "status": "confirmed_turnaround",
-      "close": 77300,
-      "explanation": {
-        "summary": "바닥 신호(공매도 감소, 배당수익률)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
-        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 배당수익률이 3.5%로 최근 5년 대비 상위 2% 구간입니다. PBR이 1.54배로 최근 5년 밴드 하위 11% 구간입니다. 볼린저밴드폭이 최근 구간 중 하위 23%로 가격이 좁게 눌려 있습니다. 최근 60일 코스피는 +6.8%인데 이 종목은 +15.9%로 지수보다 +9.1%p 선방했습니다.",
-        "turnaround": "상대강도가 이전 10일 -0.8%p에서 최근 10일 +19.2%p로 +20.0%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 527%로 매집이 강해졌습니다. 20일 이평선이 60일 이평선보다 +2.6% 위로 정배열이고, 종가는 60일 이평선을 +1.6% 돌파했습니다."
-      }
-    },
-    {
-      "ticker": "042500",
-      "name": "링네트",
-      "score": 60.1,
-      "n_signals": 7,
+      "ticker": "001450",
+      "name": "현대해상",
+      "score": 60.0,
+      "n_signals": 6,
       "breakdown": {
         "volume_dryness": 0.0,
-        "accumulation": 92.6,
+        "accumulation": 84.4,
         "short_covering": 100.0,
-        "pbr_low": 62.3,
-        "dividend_yield": 100.0,
-        "relative_strength": 0.0,
-        "volatility_squeeze": 87.4
+        "pbr_low": 28.3,
+        "dividend_yield": null,
+        "relative_strength": 87.8,
+        "volatility_squeeze": 66.0
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 1.034148396025123
+          "ratio": 1.042263680019903
         },
         "accumulation": {
-          "net_buy_krw": 1662457875.0,
-          "intensity_pct": 3.7248831834431297,
-          "price_change_pct": -6.110458284371322
+          "net_buy_krw": 26133658475.0,
+          "intensity_pct": 3.002882912705338,
+          "price_change_pct": -7.347447073474466
         },
         "short_covering": {
           "current_ratio_pct": 0.0,
-          "max_ratio_3m_pct": 0.669921875,
+          "max_ratio_3m_pct": 0.280029296875,
           "pct_of_max": 0.0
         },
         "pbr_low": {
-          "pbr": 0.69,
-          "percentile": 37.735849056603776
+          "pbr": 0.53,
+          "percentile": 71.69811320754717
         },
         "dividend_yield": {
-          "div_pct": 7.45,
-          "percentile": 100.0
+          "div_pct": 0.0,
+          "percentile": 0.0
         },
         "relative_strength": {
-          "stock_ret_pct": -27.363636363636367,
+          "stock_ret_pct": 21.96721311475409,
           "index_ret_pct": 6.838653584566989,
-          "excess_pct": -34.20228994820336
+          "excess_pct": 15.128559530187102
         },
         "volatility_squeeze": {
-          "bandwidth_pct": 9.858397037530594,
-          "percentile": 12.62135922330097
+          "bandwidth_pct": 17.97329090140524,
+          "percentile": 33.980582524271846
         }
       },
-      "turnaround_score": 61.0,
+      "turnaround_score": 71.1,
       "n_turnaround_signals": 5,
       "turnaround_breakdown": {
-        "volume_surge": 30.2,
-        "ma_breakout": 0.0,
-        "short_term_breakout": 0.0,
+        "volume_surge": 4.1,
+        "ma_breakout": 100.0,
+        "short_term_breakout": 50.9,
         "relative_strength_accel": 100.0,
-        "accumulation_accel": 100.0
+        "accumulation_accel": 84.0
       },
       "turnaround_raw": {
         "volume_surge": {
-          "ratio": 1.4524124265767884
+          "ratio": 1.061782202299788
         },
         "ma_breakout": {
-          "close": 3995.0,
-          "ma20": 4022.0,
-          "ma60": 4663.5,
-          "close_vs_ma60_pct": -14.334727136271042,
-          "ma20_vs_ma60_pct": -13.75576283906937
+          "close": 37200.0,
+          "ma20": 36772.5,
+          "ma60": 34880.833333333336,
+          "close_vs_ma60_pct": 6.648828152997102,
+          "ma20_vs_ma60_pct": 5.4232267004324175
         },
         "short_term_breakout": {
-          "close": 3995.0,
-          "high60": 6350.0,
-          "pct_of_high60": 62.91338582677165
+          "close": 37200.0,
+          "high60": 41250.0,
+          "pct_of_high60": 90.18181818181819
         },
         "relative_strength_accel": {
-          "rs_recent10_pct": 18.362236058844527,
-          "rs_prior10_pct": -2.42793837907358,
-          "accel_pct": 20.790174437918107
+          "rs_recent10_pct": 25.850762752660973,
+          "rs_prior10_pct": -12.648972247166268,
+          "accel_pct": 38.49973499982724
         },
         "accumulation_accel": {
-          "recent5_avg_krw": 181758983.2,
-          "prior15_avg_krw": 50244197.266666666,
-          "ratio": 3.6175119334742307
+          "recent5_avg_krw": 1932145185.0,
+          "prior15_avg_krw": 1098195503.3333333,
+          "ratio": 1.7593818032721806
         }
       },
       "status": "confirmed_turnaround",
-      "close": 3995,
+      "close": 37200,
       "explanation": {
-        "summary": "바닥 신호(공매도 감소, 배당수익률)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
-        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 배당수익률이 7.5%로 최근 5년 대비 상위 0% 구간입니다. 최근 20일간 기관·외국인이 17억원(유통시총의 3.7%)을 순매수했고, 그동안 주가는 -6.1%로 조용했습니다. 볼린저밴드폭이 최근 구간 중 하위 13%로 가격이 좁게 눌려 있습니다. PBR이 0.69배로 최근 5년 밴드 하위 38% 구간입니다.",
-        "turnaround": "상대강도가 이전 10일 -2.4%p에서 최근 10일 +18.4%p로 +20.8%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 362%로 매집이 강해졌습니다."
+        "summary": "바닥 신호(공매도 감소, 상대강도)와 턴어라운드 신호(이평선 돌파, 상대강도 가속)가 동시에 확인됐습니다.",
+        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 최근 60일 코스피는 +6.8%인데 이 종목은 +22.0%로 지수보다 +15.1%p 선방했습니다. 최근 20일간 기관·외국인이 261억원(유통시총의 3.0%)을 순매수했고, 그동안 주가는 -7.3%로 조용했습니다. 볼린저밴드폭이 최근 구간 중 하위 34%로 가격이 좁게 눌려 있습니다.",
+        "turnaround": "20일 이평선이 60일 이평선보다 +5.4% 위로 정배열이고, 종가는 60일 이평선을 +6.6% 돌파했습니다. 상대강도가 이전 10일 -12.6%p에서 최근 10일 +25.9%p로 +38.5%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 176%로 매집이 강해졌습니다. 현재가가 최근 60일 박스권 고점의 90%까지 올라왔습니다."
       }
     },
     {
       "ticker": "108670",
       "name": "LX하우시스",
-      "score": 74.6,
+      "score": 73.9,
       "n_signals": 6,
       "breakdown": {
-        "volume_dryness": 48.7,
+        "volume_dryness": 44.8,
         "accumulation": 100.0,
         "short_covering": 100.0,
         "pbr_low": 67.9,
@@ -2832,7 +3012,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 0.6592122166132913
+          "ratio": 0.6864245779731857
         },
         "accumulation": {
           "net_buy_krw": 1024258300.0,
@@ -2909,10 +3089,10 @@
     {
       "ticker": "000070",
       "name": "삼양홀딩스",
-      "score": 71.3,
+      "score": 71.2,
       "n_signals": 7,
       "breakdown": {
-        "volume_dryness": 39.1,
+        "volume_dryness": 38.5,
         "accumulation": 100.0,
         "short_covering": 100.0,
         "pbr_low": 98.1,
@@ -2922,7 +3102,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 0.7260891337005508
+          "ratio": 0.7302024465269332
         },
         "accumulation": {
           "net_buy_krw": 1565947300.0,
@@ -2997,102 +3177,102 @@
       }
     },
     {
-      "ticker": "067160",
-      "name": "SOOP",
-      "score": 70.3,
+      "ticker": "136490",
+      "name": "선진",
+      "score": 70.9,
       "n_signals": 7,
       "breakdown": {
-        "volume_dryness": 18.9,
+        "volume_dryness": 42.8,
         "accumulation": 100.0,
         "short_covering": 100.0,
-        "pbr_low": 98.1,
+        "pbr_low": 81.1,
         "dividend_yield": 100.0,
-        "relative_strength": 0.0,
-        "volatility_squeeze": 83.5
+        "relative_strength": 14.6,
+        "volatility_squeeze": 55.3
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 0.8674695603803738
+          "ratio": 0.7005579226341382
         },
         "accumulation": {
-          "net_buy_krw": 5477000775.0,
-          "intensity_pct": 4.68464345950906,
-          "price_change_pct": -1.855670103092788
+          "net_buy_krw": 1592396055.0,
+          "intensity_pct": 3.3164230984525975,
+          "price_change_pct": 3.9460020768431914
         },
         "short_covering": {
           "current_ratio_pct": 0.0,
-          "max_ratio_3m_pct": 1.3095703125,
+          "max_ratio_3m_pct": 0.1400146484375,
           "pct_of_max": 0.0
         },
         "pbr_low": {
-          "pbr": 1.12,
-          "percentile": 1.8867924528301887
+          "pbr": 0.39,
+          "percentile": 18.867924528301888
         },
         "dividend_yield": {
-          "div_pct": 6.87,
+          "div_pct": 2.17,
           "percentile": 100.0
         },
         "relative_strength": {
-          "stock_ret_pct": -21.452145214521458,
+          "stock_ret_pct": -7.314814814814818,
           "index_ret_pct": 6.838653584566989,
-          "excess_pct": -28.290798799088446
+          "excess_pct": -14.153468399381808
         },
         "volatility_squeeze": {
-          "bandwidth_pct": 10.571971096153035,
-          "percentile": 16.50485436893204
+          "bandwidth_pct": 14.963582271746153,
+          "percentile": 44.66019417475728
         }
       },
-      "turnaround_score": 30.9,
+      "turnaround_score": 44.1,
       "n_turnaround_signals": 5,
       "turnaround_breakdown": {
-        "volume_surge": 0.0,
-        "ma_breakout": 0.0,
-        "short_term_breakout": 0.0,
+        "volume_surge": 17.1,
+        "ma_breakout": 24.7,
+        "short_term_breakout": 31.5,
         "relative_strength_accel": 100.0,
-        "accumulation_accel": 19.5
+        "accumulation_accel": 29.6
       },
       "turnaround_raw": {
         "volume_surge": {
-          "ratio": 0.9813605665790103
+          "ratio": 1.2565917462045304
         },
         "ma_breakout": {
-          "close": 47600.0,
-          "ma20": 47882.5,
-          "ma60": 51468.333333333336,
-          "close_vs_ma60_pct": -7.5159483177358295,
-          "ma20_vs_ma60_pct": -6.967067128655165
+          "close": 10010.0,
+          "ma20": 9228.5,
+          "ma60": 10016.166666666666,
+          "close_vs_ma60_pct": -0.061567133134759415,
+          "ma20_vs_ma60_pct": -7.863953275537875
         },
         "short_term_breakout": {
-          "close": 47600.0,
-          "high60": 60600.0,
-          "pct_of_high60": 78.54785478547855
+          "close": 10010.0,
+          "high60": 11600.0,
+          "pct_of_high60": 86.29310344827587
         },
         "relative_strength_accel": {
-          "rs_recent10_pct": 15.855545153426165,
-          "rs_prior10_pct": 4.72953330525232,
-          "accel_pct": 11.126011848173844
+          "rs_recent10_pct": 27.558281899103488,
+          "rs_prior10_pct": -0.18003921940971113,
+          "accel_pct": 27.7383211185132
         },
         "accumulation_accel": {
-          "recent5_avg_krw": 228979855.0,
-          "prior15_avg_krw": 288806766.6666667,
-          "ratio": 0.7928479572789325
+          "recent5_avg_krw": 76213268.0,
+          "prior15_avg_krw": 80755314.33333333,
+          "ratio": 0.9437554497703378
         }
       },
       "status": "watching",
-      "close": 47600,
+      "close": 10010,
       "explanation": {
         "summary": null,
-        "bottom": "최근 20일간 기관·외국인이 55억원(유통시총의 4.7%)을 순매수했고, 그동안 주가는 -1.9%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 배당수익률이 6.9%로 최근 5년 대비 상위 0% 구간입니다. PBR이 1.12배로 최근 5년 밴드 하위 2% 구간입니다. 볼린저밴드폭이 최근 구간 중 하위 17%로 가격이 좁게 눌려 있습니다.",
-        "turnaround": "상대강도가 이전 10일 +4.7%p에서 최근 10일 +15.9%p로 +11.1%p 가속됐습니다."
+        "bottom": "최근 20일간 기관·외국인이 16억원(유통시총의 3.3%)을 순매수했고, 그동안 주가는 +3.9%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 배당수익률이 2.2%로 최근 5년 대비 상위 0% 구간입니다. PBR이 0.39배로 최근 5년 밴드 하위 19% 구간입니다. 볼린저밴드폭이 최근 구간 중 하위 45%로 가격이 좁게 눌려 있습니다.",
+        "turnaround": "상대강도가 이전 10일 -0.2%p에서 최근 10일 +27.6%p로 +27.7%p 가속됐습니다."
       }
     },
     {
       "ticker": "483650",
       "name": "달바글로벌",
-      "score": 68.5,
+      "score": 67.7,
       "n_signals": 7,
       "breakdown": {
-        "volume_dryness": 4.5,
+        "volume_dryness": 0.0,
         "accumulation": 100.0,
         "short_covering": 100.0,
         "pbr_low": 84.6,
@@ -3102,7 +3282,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 0.968768381745481
+          "ratio": 1.0380919335117809
         },
         "accumulation": {
           "net_buy_krw": 78863308100.0,
@@ -3174,96 +3354,6 @@
         "summary": null,
         "bottom": "최근 20일간 기관·외국인이 789억원(유통시총의 5.4%)을 순매수했고, 그동안 주가는 -3.7%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 배당수익률이 1.1%로 최근 5년 대비 상위 8% 구간입니다. PBR이 14.45배로 최근 5년 밴드 하위 15% 구간입니다. 볼린저밴드폭이 최근 구간 중 하위 41%로 가격이 좁게 눌려 있습니다.",
         "turnaround": ""
-      }
-    },
-    {
-      "ticker": "194370",
-      "name": "제이에스코퍼레이션",
-      "score": 67.3,
-      "n_signals": 6,
-      "breakdown": {
-        "volume_dryness": 2.2,
-        "accumulation": 100.0,
-        "short_covering": 100.0,
-        "pbr_low": 88.7,
-        "dividend_yield": null,
-        "relative_strength": 10.1,
-        "volatility_squeeze": 99.0
-      },
-      "raw": {
-        "volume_dryness": {
-          "ratio": 0.984724985300869
-        },
-        "accumulation": {
-          "net_buy_krw": 2431245625.0,
-          "intensity_pct": 3.3337438044916614,
-          "price_change_pct": -2.3731587561374834
-        },
-        "short_covering": {
-          "current_ratio_pct": 0.0,
-          "max_ratio_3m_pct": 0.419921875,
-          "pct_of_max": 0.0
-        },
-        "pbr_low": {
-          "pbr": 0.61,
-          "percentile": 11.320754716981131
-        },
-        "dividend_yield": {
-          "div_pct": 5.4,
-          "percentile": 79.24528301886792
-        },
-        "relative_strength": {
-          "stock_ret_pct": -9.139375476009137,
-          "index_ret_pct": 6.838653584566989,
-          "excess_pct": -15.978029060576127
-        },
-        "volatility_squeeze": {
-          "bandwidth_pct": 12.344742176832982,
-          "percentile": 0.970873786407767
-        }
-      },
-      "turnaround_score": 25.9,
-      "n_turnaround_signals": 5,
-      "turnaround_breakdown": {
-        "volume_surge": 0.0,
-        "ma_breakout": 6.3,
-        "short_term_breakout": 0.0,
-        "relative_strength_accel": 100.0,
-        "accumulation_accel": 0.0
-      },
-      "turnaround_raw": {
-        "volume_surge": {
-          "ratio": 0.8298593469159785
-        },
-        "ma_breakout": {
-          "close": 11930.0,
-          "ma20": 11743.5,
-          "ma60": 12392.833333333334,
-          "close_vs_ma60_pct": -3.734685369232222,
-          "ma20_vs_ma60_pct": -5.239587395941207
-        },
-        "short_term_breakout": {
-          "close": 11930.0,
-          "high60": 15370.0,
-          "pct_of_high60": 77.61873780091086
-        },
-        "relative_strength_accel": {
-          "rs_recent10_pct": 26.39175033562188,
-          "rs_prior10_pct": -0.689761755431928,
-          "accel_pct": 27.081512091053806
-        },
-        "accumulation_accel": {
-          "recent5_avg_krw": -90162938.0,
-          "prior15_avg_krw": 192137354.33333334,
-          "ratio": -0.469262930744737
-        }
-      },
-      "status": "watching",
-      "close": 11930,
-      "explanation": {
-        "summary": null,
-        "bottom": "최근 20일간 기관·외국인이 24억원(유통시총의 3.3%)을 순매수했고, 그동안 주가는 -2.4%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 볼린저밴드폭이 최근 구간 중 하위 1%로 가격이 좁게 눌려 있습니다. PBR이 0.61배로 최근 5년 밴드 하위 11% 구간입니다.",
-        "turnaround": "상대강도가 이전 10일 -0.7%p에서 최근 10일 +26.4%p로 +27.1%p 가속됐습니다."
       }
     },
     {
@@ -3357,102 +3447,12 @@
       }
     },
     {
-      "ticker": "136490",
-      "name": "선진",
-      "score": 67.0,
-      "n_signals": 7,
-      "breakdown": {
-        "volume_dryness": 21.6,
-        "accumulation": 100.0,
-        "short_covering": 100.0,
-        "pbr_low": 81.1,
-        "dividend_yield": 100.0,
-        "relative_strength": 14.6,
-        "volatility_squeeze": 55.3
-      },
-      "raw": {
-        "volume_dryness": {
-          "ratio": 0.8489184441878266
-        },
-        "accumulation": {
-          "net_buy_krw": 1592396055.0,
-          "intensity_pct": 3.3164230984525975,
-          "price_change_pct": 3.9460020768431914
-        },
-        "short_covering": {
-          "current_ratio_pct": 0.0,
-          "max_ratio_3m_pct": 0.1400146484375,
-          "pct_of_max": 0.0
-        },
-        "pbr_low": {
-          "pbr": 0.39,
-          "percentile": 18.867924528301888
-        },
-        "dividend_yield": {
-          "div_pct": 2.17,
-          "percentile": 100.0
-        },
-        "relative_strength": {
-          "stock_ret_pct": -7.314814814814818,
-          "index_ret_pct": 6.838653584566989,
-          "excess_pct": -14.153468399381808
-        },
-        "volatility_squeeze": {
-          "bandwidth_pct": 14.963582271746153,
-          "percentile": 44.66019417475728
-        }
-      },
-      "turnaround_score": 44.1,
-      "n_turnaround_signals": 5,
-      "turnaround_breakdown": {
-        "volume_surge": 17.1,
-        "ma_breakout": 24.7,
-        "short_term_breakout": 31.5,
-        "relative_strength_accel": 100.0,
-        "accumulation_accel": 29.6
-      },
-      "turnaround_raw": {
-        "volume_surge": {
-          "ratio": 1.2565917462045304
-        },
-        "ma_breakout": {
-          "close": 10010.0,
-          "ma20": 9228.5,
-          "ma60": 10016.166666666666,
-          "close_vs_ma60_pct": -0.061567133134759415,
-          "ma20_vs_ma60_pct": -7.863953275537875
-        },
-        "short_term_breakout": {
-          "close": 10010.0,
-          "high60": 11600.0,
-          "pct_of_high60": 86.29310344827587
-        },
-        "relative_strength_accel": {
-          "rs_recent10_pct": 27.558281899103488,
-          "rs_prior10_pct": -0.18003921940971113,
-          "accel_pct": 27.7383211185132
-        },
-        "accumulation_accel": {
-          "recent5_avg_krw": 76213268.0,
-          "prior15_avg_krw": 80755314.33333333,
-          "ratio": 0.9437554497703378
-        }
-      },
-      "status": "watching",
-      "close": 10010,
-      "explanation": {
-        "summary": null,
-        "bottom": "최근 20일간 기관·외국인이 16억원(유통시총의 3.3%)을 순매수했고, 그동안 주가는 +3.9%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 배당수익률이 2.2%로 최근 5년 대비 상위 0% 구간입니다. PBR이 0.39배로 최근 5년 밴드 하위 19% 구간입니다. 볼린저밴드폭이 최근 구간 중 하위 45%로 가격이 좁게 눌려 있습니다.",
-        "turnaround": "상대강도가 이전 10일 -0.2%p에서 최근 10일 +27.6%p로 +27.7%p 가속됐습니다."
-      }
-    },
-    {
       "ticker": "005880",
       "name": "대한해운",
-      "score": 66.8,
+      "score": 67.1,
       "n_signals": 6,
       "breakdown": {
-        "volume_dryness": 88.2,
+        "volume_dryness": 90.1,
         "accumulation": 44.9,
         "short_covering": 100.0,
         "pbr_low": 88.7,
@@ -3462,7 +3462,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 0.3823417020407749
+          "ratio": 0.3693022351397724
         },
         "accumulation": {
           "net_buy_krw": 4259800601.0,
@@ -3532,98 +3532,98 @@
       "close": 1856,
       "explanation": {
         "summary": null,
-        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 볼린저밴드폭이 최근 구간 중 하위 9%로 가격이 좁게 눌려 있습니다. PBR이 0.28배로 최근 5년 밴드 하위 11% 구간입니다. 최근 20일 거래량이 과거 120일 평균의 38%로 크게 줄었습니다.",
+        "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 볼린저밴드폭이 최근 구간 중 하위 9%로 가격이 좁게 눌려 있습니다. 6~25일 전 거래량이 과거 120일 평균의 37%로 크게 줄었습니다. PBR이 0.28배로 최근 5년 밴드 하위 11% 구간입니다.",
         "turnaround": "상대강도가 이전 10일 -9.9%p에서 최근 10일 +19.3%p로 +29.2%p 가속됐습니다."
       }
     },
     {
-      "ticker": "140860",
-      "name": "파크시스템스",
-      "score": 66.1,
+      "ticker": "067160",
+      "name": "SOOP",
+      "score": 66.9,
       "n_signals": 7,
       "breakdown": {
         "volume_dryness": 0.0,
         "accumulation": 100.0,
         "short_covering": 100.0,
-        "pbr_low": 90.6,
-        "dividend_yield": 54.7,
-        "relative_strength": 25.1,
-        "volatility_squeeze": 77.7
+        "pbr_low": 98.1,
+        "dividend_yield": 100.0,
+        "relative_strength": 0.0,
+        "volatility_squeeze": 83.5
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 1.1410100873941273
+          "ratio": 1.0359889454956426
         },
         "accumulation": {
-          "net_buy_krw": 23435998000.0,
-          "intensity_pct": 3.713900117416287,
-          "price_change_pct": -2.3575638506876273
+          "net_buy_krw": 5477000775.0,
+          "intensity_pct": 4.68464345950906,
+          "price_change_pct": -1.855670103092788
         },
         "short_covering": {
           "current_ratio_pct": 0.0,
-          "max_ratio_3m_pct": 6.78125,
+          "max_ratio_3m_pct": 1.3095703125,
           "pct_of_max": 0.0
         },
         "pbr_low": {
-          "pbr": 7.67,
-          "percentile": 9.433962264150944
+          "pbr": 1.12,
+          "percentile": 1.8867924528301887
         },
         "dividend_yield": {
-          "div_pct": 0.2,
-          "percentile": 54.716981132075475
+          "div_pct": 6.87,
+          "percentile": 100.0
         },
         "relative_strength": {
-          "stock_ret_pct": -3.1189083820662766,
+          "stock_ret_pct": -21.452145214521458,
           "index_ret_pct": 6.838653584566989,
-          "excess_pct": -9.957561966633266
+          "excess_pct": -28.290798799088446
         },
         "volatility_squeeze": {
-          "bandwidth_pct": 19.813445813017,
-          "percentile": 22.33009708737864
+          "bandwidth_pct": 10.571971096153035,
+          "percentile": 16.50485436893204
         }
       },
-      "turnaround_score": 38.6,
+      "turnaround_score": 30.9,
       "n_turnaround_signals": 5,
       "turnaround_breakdown": {
-        "volume_surge": 9.4,
+        "volume_surge": 0.0,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 100.0,
-        "accumulation_accel": 39.1
+        "accumulation_accel": 19.5
       },
       "turnaround_raw": {
         "volume_surge": {
-          "ratio": 1.1415629733110841
+          "ratio": 0.9813605665790103
         },
         "ma_breakout": {
-          "close": 248500.0,
-          "ma20": 257300.0,
-          "ma60": 272691.6666666667,
-          "close_vs_ma60_pct": -8.87143599303243,
-          "ma20_vs_ma60_pct": -5.644348012101587
+          "close": 47600.0,
+          "ma20": 47882.5,
+          "ma60": 51468.333333333336,
+          "close_vs_ma60_pct": -7.5159483177358295,
+          "ma20_vs_ma60_pct": -6.967067128655165
         },
         "short_term_breakout": {
-          "close": 248500.0,
-          "high60": 339500.0,
-          "pct_of_high60": 73.19587628865979
+          "close": 47600.0,
+          "high60": 60600.0,
+          "pct_of_high60": 78.54785478547855
         },
         "relative_strength_accel": {
-          "rs_recent10_pct": 19.107577673751365,
-          "rs_prior10_pct": 2.465377664778834,
-          "accel_pct": 16.64220000897253
+          "rs_recent10_pct": 15.855545153426165,
+          "rs_prior10_pct": 4.72953330525232,
+          "accel_pct": 11.126011848173844
         },
         "accumulation_accel": {
-          "recent5_avg_krw": 1246552450.0,
-          "prior15_avg_krw": 1146882383.3333333,
-          "ratio": 1.0869052207227934
+          "recent5_avg_krw": 228979855.0,
+          "prior15_avg_krw": 288806766.6666667,
+          "ratio": 0.7928479572789325
         }
       },
       "status": "watching",
-      "close": 248500,
+      "close": 47600,
       "explanation": {
         "summary": null,
-        "bottom": "최근 20일간 기관·외국인이 234억원(유통시총의 3.7%)을 순매수했고, 그동안 주가는 -2.4%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. PBR이 7.67배로 최근 5년 밴드 하위 9% 구간입니다. 볼린저밴드폭이 최근 구간 중 하위 22%로 가격이 좁게 눌려 있습니다. 배당수익률이 0.2%로 최근 5년 대비 상위 45% 구간입니다.",
-        "turnaround": "상대강도가 이전 10일 +2.5%p에서 최근 10일 +19.1%p로 +16.6%p 가속됐습니다."
+        "bottom": "최근 20일간 기관·외국인이 55억원(유통시총의 4.7%)을 순매수했고, 그동안 주가는 -1.9%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 배당수익률이 6.9%로 최근 5년 대비 상위 0% 구간입니다. PBR이 1.12배로 최근 5년 밴드 하위 2% 구간입니다. 볼린저밴드폭이 최근 구간 중 하위 17%로 가격이 좁게 눌려 있습니다.",
+        "turnaround": "상대강도가 이전 10일 +4.7%p에서 최근 10일 +15.9%p로 +11.1%p 가속됐습니다."
       }
     }
   ]
