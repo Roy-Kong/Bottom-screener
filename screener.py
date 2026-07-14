@@ -23,6 +23,7 @@ from statistics import median
 
 from pykrx import stock
 import signals as sg
+import explain as ex
 
 # ---------------- 설정 (백테스트로 조정할 파라미터) ----------------
 TARGET_MARKETS = ["KOSPI", "KOSDAQ"]
@@ -370,6 +371,35 @@ def run():
             "relative_strength": sg.score_relative_strength(ret60, idx_ret),
             "volatility_squeeze": sg.score_volatility_squeeze(bw_series),
         }
+
+        # --- 정규화 전 원본 수치 (설명 문장 생성용, explain.py가 사용) ---
+        net_buy_20d = accum.get(tkr, 0.0)
+        cur_short = short_cur.get(tkr, 0.0)
+        max_short = short_max.get(tkr, 0.0)
+        cur_bw = bw_series[-1] if bw_series else None
+        raw = {
+            "volume_dryness": {"ratio": (rec20 / past120) if past120 else None},
+            "accumulation": {
+                "net_buy_krw": net_buy_20d,
+                "intensity_pct": (net_buy_20d / float_mc * 100) if float_mc else None,
+                "price_change_pct": ret20_price * 100,
+            },
+            "short_covering": {
+                "current_ratio_pct": cur_short, "max_ratio_3m_pct": max_short,
+                "pct_of_max": (cur_short / max_short * 100) if max_short else None,
+            },
+            "pbr_low": {"pbr": cur_pbr, "percentile": sg.percentile_rank(pbr_series, cur_pbr)},
+            "dividend_yield": {"div_pct": cur_div, "percentile": sg.percentile_rank(div_series, cur_div)},
+            "relative_strength": {
+                "stock_ret_pct": ret60 * 100, "index_ret_pct": idx_ret * 100,
+                "excess_pct": (ret60 - idx_ret) * 100,
+            },
+            "volatility_squeeze": {
+                "bandwidth_pct": (cur_bw * 100) if cur_bw is not None else None,
+                "percentile": sg.percentile_rank(bw_series, cur_bw) if cur_bw is not None else None,
+            },
+        }
+
         comp = sg.composite_score(scores)
         if comp["composite"] is None or comp["composite"] < BOTTOM_SCORE_THRESHOLD:
             continue
@@ -377,6 +407,7 @@ def run():
         # --- 턴어라운드 신호 5개: "실제로 방향을 틀었는지"만 본다 (바닥 신호와 끝까지 분리) ---
         turnaround_scores = None
         turnaround_comp = None
+        turnaround_raw = None
         if len(closes) >= 21 and len(dates) >= 21:
             recent5_avg_vol = sum(vols[-5:]) / 5
             recent20_avg_vol = sum(vols[-20:]) / 20
@@ -405,6 +436,32 @@ def run():
             }
             turnaround_comp = sg.composite_score(turnaround_scores)
 
+            rs_recent10 = (stock_ret_recent10 - index_ret_recent10) if index_ret_recent10 is not None else None
+            rs_prior10 = (stock_ret_prior10 - index_ret_prior10) if index_ret_prior10 is not None else None
+            turnaround_raw = {
+                "volume_surge": {"ratio": (recent5_avg_vol / recent20_avg_vol) if recent20_avg_vol else None},
+                "ma_breakout": {
+                    "close": closes[-1], "ma20": ma20, "ma60": ma60,
+                    "close_vs_ma60_pct": ((closes[-1] - ma60) / ma60 * 100) if ma60 else None,
+                    "ma20_vs_ma60_pct": ((ma20 - ma60) / ma60 * 100) if ma60 else None,
+                },
+                "short_term_breakout": {
+                    "close": closes[-1], "high60": high60,
+                    "pct_of_high60": (closes[-1] / high60 * 100) if high60 else None,
+                },
+                "relative_strength_accel": {
+                    "rs_recent10_pct": (rs_recent10 * 100) if rs_recent10 is not None else None,
+                    "rs_prior10_pct": (rs_prior10 * 100) if rs_prior10 is not None else None,
+                    "accel_pct": ((rs_recent10 - rs_prior10) * 100)
+                        if rs_recent10 is not None and rs_prior10 is not None else None,
+                },
+                "accumulation_accel": {
+                    "recent5_avg_krw": net_buy_recent5_avg, "prior15_avg_krw": net_buy_prior15_avg,
+                    "ratio": (net_buy_recent5_avg / net_buy_prior15_avg)
+                        if net_buy_prior15_avg and net_buy_prior15_avg > 0 else None,
+                },
+            }
+
         # --- 최종 분류: 바닥(≥60점) 중에서 턴어라운드가 확인됐는지 ---
         strong_turnaround_count = sum(
             1 for v in (turnaround_scores or {}).values()
@@ -414,16 +471,20 @@ def run():
                   if strong_turnaround_count >= TURNAROUND_MIN_STRONG_SIGNALS
                   else "watching")
 
-        results.append({
+        item = {
             "ticker": tkr, "name": name,
             "score": comp["composite"], "n_signals": comp["n_signals_used"],
             "breakdown": comp["breakdown"],
+            "raw": raw,
             "turnaround_score": turnaround_comp["composite"] if turnaround_comp else None,
             "n_turnaround_signals": turnaround_comp["n_signals_used"] if turnaround_comp else 0,
             "turnaround_breakdown": turnaround_comp["breakdown"] if turnaround_comp else None,
+            "turnaround_raw": turnaround_raw,
             "status": status,
             "close": round(last_close),
-        })
+        }
+        item["explanation"] = ex.explain_result(item)
+        results.append(item)
 
     # confirmed_turnaround를 먼저, 그 다음 watching — 각 그룹 내에서는 바닥 점수 내림차순
     results.sort(key=lambda x: (x["status"] != "confirmed_turnaround", -x["score"]))
