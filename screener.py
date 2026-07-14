@@ -355,6 +355,7 @@ def run():
 
     print("7) 채점(바닥 7개 + 턴어라운드 5개 신호)…")
     results = []
+    outlier_count = 0  # 임시 진단: 60일 수익률 +100% 이상 잔존 이상치 확인용, 확인 후 제거
     for tkr, name in universe.items():
         dates, closes, vols = series_for_ticker(matrix, tkr)
         if len(closes) < 60 or len(vols) < 120:
@@ -376,6 +377,17 @@ def run():
         past120 = median(vols[-120:])
         ret60 = (closes[-1] / closes[-60]) - 1
         ret20_price = (closes[-1] / closes[-20]) - 1
+
+        if ret60 > 1.0:  # 임시 진단: +100% 이상 잔존 이상치 확인용, 확인 후 제거
+            outlier_count += 1
+            try:
+                expected_days = ohlcv_dates.index(dates[-1]) - ohlcv_dates.index(dates[0]) + 1
+            except ValueError:
+                expected_days = None
+            missing = (expected_days - len(dates)) if expected_days is not None else None
+            print(f"   [진단:이상치] {name}({tkr}) ret60={ret60:.2f} "
+                  f"60일전({dates[-60]})={closes[-60]:.0f} 현재({dates[-1]})={closes[-1]:.0f} "
+                  f"보유일수={len(dates)} 예상거래일={expected_days} 결측추정={missing}")
 
         pbr_series = [r["PBR"] for r in fh if r["PBR"] > 0]
         div_series = [r["DIV"] for r in fh if r["DIV"] > 0]
@@ -511,6 +523,8 @@ def run():
         }
         item["explanation"] = ex.explain_result(item)
         results.append(item)
+
+    print(f"   [진단:이상치] 총 {outlier_count}개 종목이 생존 게이트 통과 종목 중 60일 +100% 이상")
 
     # confirmed_turnaround를 먼저, 그 다음 watching — 각 그룹 내에서는 바닥 점수 내림차순
     results.sort(key=lambda x: (x["status"] != "confirmed_turnaround", -x["score"]))
