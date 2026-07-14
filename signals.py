@@ -70,12 +70,18 @@ def percentile_rank(history: list[float], value: float) -> float | None:
 
 
 # ---------- 개별 신호 ----------
-def score_volume_dryness(recent20_median_vol: float, past120_median_vol: float) -> float | None:
-    """① 거래량 고갈. 최근 20일 중앙값 / 과거 120일 중앙값. 낮을수록 고점.
-       비율 1.0 이상 → 0점, 0.3 이하 → 100점."""
-    if not _valid(recent20_median_vol, past120_median_vol) or past120_median_vol <= 0:
+def score_volume_dryness(recent6to25_median_vol: float, past120_median_vol: float) -> float | None:
+    """① 거래량 고갈. 최근 6~25일(가장 최근 5일 제외) 중앙값 / 과거 120일 중앙값.
+       낮을수록 고점. 비율 1.0 이상 → 0점, 0.3 이하 → 100점.
+
+       가장 최근 5일을 일부러 빼는 이유: 턴어라운드 신호 '거래량 동반 상승'(⑨)이
+       보는 구간(최근 5일 vs 최근 20일)과 겹치면, 실제로 반응이 막 시작된 순간에
+       그 반응 자체가 이 신호의 '최근' 구간에 섞여 들어가 "조용했다"는 판정을
+       흐린다. 구간을 분리해야 '오래 조용했다(①) → 최근에 반응했다(⑨)'가
+       서로 다른 날짜로 깔끔하게 구분된다."""
+    if not _valid(recent6to25_median_vol, past120_median_vol) or past120_median_vol <= 0:
         return None
-    ratio = recent20_median_vol / past120_median_vol
+    ratio = recent6to25_median_vol / past120_median_vol
     return _lin(ratio, 1.0, 0.3, 0.0, 100.0)
 
 

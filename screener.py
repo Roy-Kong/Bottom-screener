@@ -373,7 +373,10 @@ def run():
             continue
 
         # --- 신호 입력값 ---
-        rec20 = median(vols[-20:])
+        # 거래량 고갈(①)은 최근 5일을 일부러 제외한 6~25일 전 구간을 본다 —
+        # 턴어라운드 신호 '거래량 동반 상승'(⑨, 최근 5일 vs 최근 20일)과
+        # 구간이 겹치지 않게 하기 위함. 자세한 이유는 signals.py 참고.
+        rec6to25 = median(vols[-25:-5])
         past120 = median(vols[-120:])
         ret60 = (closes[-1] / closes[-60]) - 1
         ret20_price = (closes[-1] / closes[-20]) - 1
@@ -401,7 +404,7 @@ def run():
 
         # --- 바닥 신호 7개: "매도세 소진·역사적으로 싸다"만 본다 ---
         scores = {
-            "volume_dryness": sg.score_volume_dryness(rec20, past120),
+            "volume_dryness": sg.score_volume_dryness(rec6to25, past120),
             "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100),
             "short_covering": sg.score_short_covering(short_cur.get(tkr, 0.0), short_max.get(tkr, 0.0)),
             "pbr_low": sg.score_pbr_low(cur_pbr, pbr_series),
@@ -416,7 +419,7 @@ def run():
         max_short = short_max.get(tkr, 0.0)
         cur_bw = bw_series[-1] if bw_series else None
         raw = {
-            "volume_dryness": {"ratio": (rec20 / past120) if past120 else None},
+            "volume_dryness": {"ratio": (rec6to25 / past120) if past120 else None},
             "accumulation": {
                 "net_buy_krw": net_buy_20d,
                 "intensity_pct": (net_buy_20d / float_mc * 100) if float_mc else None,

@@ -34,7 +34,7 @@ def _sentence_volume_dryness(raw: dict) -> str | None:
     r = raw.get("ratio")
     if r is None:
         return None
-    return f"최근 20일 거래량이 과거 120일 평균의 {r * 100:.0f}%로 크게 줄었습니다."
+    return f"6~25일 전 거래량이 과거 120일 평균의 {r * 100:.0f}%로 크게 줄었습니다."
 
 
 def _sentence_accumulation(raw: dict) -> str | None:
