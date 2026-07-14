@@ -32,15 +32,27 @@
   .ld{width:8px;height:8px;border-radius:50%}
 
   .row{background:var(--deep);border:1px solid var(--line);border-radius:13px;margin-bottom:9px;overflow:hidden}
+  .row.confirmed{border-color:var(--go);box-shadow:0 0 0 1px var(--go) inset}
   .rhead{display:grid;grid-template-columns:34px 1fr auto auto;gap:12px;align-items:center;padding:13px 15px;cursor:pointer}
   .rank{font-family:var(--disp);font-weight:700;font-size:17px;color:var(--mute);text-align:center}
   .nm{font-family:var(--disp);font-weight:500;font-size:16px}
   .tk{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:2px}
+  .badge{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;color:var(--abyss);
+    background:var(--go);border-radius:5px;padding:2px 6px;margin-top:3px;letter-spacing:.2px}
   .dots{display:flex;gap:4px}
   .d{width:9px;height:9px;border-radius:50%}
   .sc{font-family:var(--disp);font-weight:700;font-size:20px;min-width:44px;text-align:right}
   .rbody{display:none;padding:0 15px 14px;border-top:1px dashed var(--line)}
   .row.open .rbody{display:block}
+  .grp-head{font-family:var(--mono);font-size:11px;color:var(--mute);letter-spacing:.3px;
+    margin:20px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between}
+  .grp-head:first-child{margin-top:0}
+  .grp-head .go{color:var(--go)}
+  .subhead{font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:.3px;
+    margin-top:14px;padding-top:10px;border-top:1px solid var(--line);display:flex;justify-content:space-between}
+  .subhead:first-of-type{border-top:none;padding-top:0;margin-top:11px}
+  .subhead .ssc{color:var(--ink);font-weight:600}
   .bar{display:grid;grid-template-columns:120px 1fr 40px;gap:10px;align-items:center;margin-top:11px;font-family:var(--mono);font-size:12px}
   .bar .bl{color:var(--mute)}
   .track{height:7px;background:var(--abyss);border-radius:4px;overflow:hidden}
@@ -67,10 +79,11 @@
     </h1>
     <div class="meta" id="meta"></div>
   </div>
-  <div class="sub">코스피·코스닥 전종목을 7개 바닥 신호로 매일 채점해 상위 종목을 보여줍니다. 종목을 탭하면 신호별 점수가 열립니다.</div>
+  <div class="sub">코스피·코스닥 전종목을 바닥 신호 7개로 채점(60점 이상만 통과)한 뒤, 턴어라운드 신호 5개로
+    실제로 방향을 틀었는지 확인합니다. 종목을 탭하면 두 그룹의 신호별 점수가 각각 열립니다.</div>
 
   <div class="legend">
-    <span class="lg"><span class="ld" style="background:var(--go)"></span>바닥 신호 강함(≥66)</span>
+    <span class="lg"><span class="ld" style="background:var(--go)"></span>신호 강함(≥66)</span>
     <span class="lg"><span class="ld" style="background:var(--mid)"></span>중간(34–65)</span>
     <span class="lg"><span class="ld" style="background:var(--hot)"></span>약함(&lt;34)</span>
     <span class="lg"><span class="ld" style="background:#2b4359"></span>미적용</span>
@@ -89,46 +102,90 @@ const LABELS = {
 };
 const ORDER = ["volume_dryness","accumulation","short_covering","pbr_low","dividend_yield","relative_strength","volatility_squeeze"];
 
+const TURNAROUND_LABELS = {
+  volume_surge:"거래량 동반 상승", ma_breakout:"이평선 돌파", short_term_breakout:"단기 고점 돌파",
+  relative_strength_accel:"상대강도 가속", accumulation_accel:"매집 가속"
+};
+const TURNAROUND_ORDER = ["volume_surge","ma_breakout","short_term_breakout","relative_strength_accel","accumulation_accel"];
+
 // 미리보기용 샘플 (호스팅되면 실제 results.json로 대체됨)
 const SAMPLE = {
   generated_at:"(미리보기)", as_of_date:"—", universe_size:2600, scored:0,
   results:[
-    {rank:1,ticker:"000660",name:"예시종목 A",score:91.2,close:207000,breakdown:{volume_dryness:88,accumulation:100,short_covering:95,pbr_low:92,dividend_yield:80,relative_strength:92}},
-    {rank:2,ticker:"005930",name:"예시종목 B",score:78.5,close:71000,breakdown:{volume_dryness:70,accumulation:85,short_covering:60,pbr_low:88,dividend_yield:null,relative_strength:89}},
-    {rank:3,ticker:"012345",name:"예시종목 C",score:64.0,close:15300,breakdown:{volume_dryness:55,accumulation:40,short_covering:72,pbr_low:95,dividend_yield:60,relative_strength:62}},
+    {ticker:"000660",name:"예시종목 A",score:91.2,close:207000,status:"confirmed_turnaround",
+      breakdown:{volume_dryness:88,accumulation:100,short_covering:95,pbr_low:92,dividend_yield:80,relative_strength:92,volatility_squeeze:70},
+      turnaround_score:74.0,
+      turnaround_breakdown:{volume_surge:82,ma_breakout:90,short_term_breakout:65,relative_strength_accel:71,accumulation_accel:62}},
+    {ticker:"005930",name:"예시종목 B",score:78.5,close:71000,status:"watching",
+      breakdown:{volume_dryness:70,accumulation:85,short_covering:60,pbr_low:88,dividend_yield:null,relative_strength:89,volatility_squeeze:55},
+      turnaround_score:22.0,
+      turnaround_breakdown:{volume_surge:10,ma_breakout:20,short_term_breakout:15,relative_strength_accel:30,accumulation_accel:35}},
+    {ticker:"012345",name:"예시종목 C",score:64.0,close:15300,status:"watching",
+      breakdown:{volume_dryness:55,accumulation:40,short_covering:72,pbr_low:95,dividend_yield:60,relative_strength:62,volatility_squeeze:48},
+      turnaround_score:null,
+      turnaround_breakdown:null},
   ]
 };
 
 function color(v){ if(v==null) return "#2b4359"; return v>=66?"#2FE0B6":v>=34?"#F4C15D":"#F5695C"; }
+
+function signalBars(breakdown, order, labels){
+  return order.map(k=>{
+    const v = breakdown ? breakdown[k] : null;
+    const val = v==null?'<span class="na">미적용</span>':Math.round(v);
+    const w = v==null?0:v;
+    return '<div class="bar"><span class="bl">'+labels[k]+'</span>'+
+      '<span class="track"><span class="fill" style="width:'+w+'%;background:'+color(v)+'"></span></span>'+
+      '<span class="bv">'+val+'</span></div>';
+  }).join("");
+}
+
+function renderRow(r, rank){
+  const confirmed = r.status === "confirmed_turnaround";
+  const dots = ORDER.map(k=>'<span class="d" style="background:'+color(r.breakdown[k])+'"></span>').join("");
+  const badge = confirmed ? '<div class="badge">✓ 턴어라운드 확인</div>' : "";
+  const bottomBars = signalBars(r.breakdown, ORDER, LABELS);
+  const turnScore = r.turnaround_score;
+  const turnaroundBars = r.turnaround_breakdown
+    ? signalBars(r.turnaround_breakdown, TURNAROUND_ORDER, TURNAROUND_LABELS)
+    : '<div class="na" style="margin-top:8px">턴어라운드 데이터 부족(상장 이력 부족 등)</div>';
+  return '<div class="row'+(confirmed?' confirmed':'')+'" onclick="this.classList.toggle(\'open\')">'+
+    '<div class="rhead"><div class="rank">'+rank+'</div>'+
+    '<div><div class="nm">'+r.name+'</div><div class="tk">'+r.ticker+'</div>'+badge+'</div>'+
+    '<div class="dots">'+dots+'</div>'+
+    '<div class="sc" style="color:'+color(r.score)+'">'+r.score+'</div></div>'+
+    '<div class="rbody">'+
+      '<div class="subhead">바닥 신호<span class="ssc">'+r.score+'</span></div>'+bottomBars+
+      '<div class="subhead">턴어라운드 신호<span class="ssc">'+(turnScore==null?'—':turnScore)+'</span></div>'+turnaroundBars+
+      '<div class="close">종가 '+(r.close?r.close.toLocaleString('ko-KR')+'원':'—')+'</div>'+
+    '</div>'+
+  '</div>';
+}
 
 function render(data){
   document.getElementById("meta").innerHTML =
     "기준일 "+data.as_of_date+"<br>갱신 "+data.generated_at+"<br>채점 "+(data.scored||0)+" / "+(data.universe_size||"—");
   const list = document.getElementById("list");
   if(!data.results || !data.results.length){ list.innerHTML='<div class="err">결과가 없습니다.</div>'; return; }
-  list.innerHTML = data.results.map((r,i)=>{
-    const rank = r.rank || i+1;
-    const dots = ORDER.map(k=>'<span class="d" style="background:'+color(r.breakdown[k])+'"></span>').join("");
-    const bars = ORDER.map(k=>{
-      const v=r.breakdown[k];
-      const val = v==null?'<span class="na">미적용</span>':Math.round(v);
-      const w = v==null?0:v;
-      return '<div class="bar"><span class="bl">'+LABELS[k]+'</span>'+
-        '<span class="track"><span class="fill" style="width:'+w+'%;background:'+color(v)+'"></span></span>'+
-        '<span class="bv">'+val+'</span></div>';
-    }).join("");
-    return '<div class="row" onclick="this.classList.toggle(\'open\')">'+
-      '<div class="rhead"><div class="rank">'+rank+'</div>'+
-      '<div><div class="nm">'+r.name+'</div><div class="tk">'+r.ticker+'</div></div>'+
-      '<div class="dots">'+dots+'</div>'+
-      '<div class="sc" style="color:'+color(r.score)+'">'+r.score+'</div></div>'+
-      '<div class="rbody">'+bars+'<div class="close">종가 '+(r.close?r.close.toLocaleString('ko-KR')+'원':'—')+'</div></div>'+
-    '</div>';
-  }).join("");
+
+  const confirmed = data.results.filter(r=>r.status==="confirmed_turnaround");
+  const watching = data.results.filter(r=>r.status!=="confirmed_turnaround");
+  let rank = 0;
+  let html = "";
+  if(confirmed.length){
+    html += '<div class="grp-head"><span class="go">✓ 턴어라운드 확인 · 바닥+방향전환 교집합</span><span>'+confirmed.length+'개</span></div>';
+    html += confirmed.map(r=>renderRow(r, ++rank)).join("");
+  }
+  if(watching.length){
+    html += '<div class="grp-head"><span>관찰 대상 · 바닥은 맞지만 아직 안 돔</span><span>'+watching.length+'개</span></div>';
+    html += watching.map(r=>renderRow(r, ++rank)).join("");
+  }
+  list.innerHTML = html;
 }
 
 document.getElementById("disc").textContent =
-  "신호 동일 가중 · 임계값은 백테스트 전 시작값 · 매수·매도 신호가 아닌 후보 발굴 도구입니다. 신용잔고·내부자매수는 무료로 종목별 조회할 API를 찾지 못해 제외했습니다.";
+  "신호 동일 가중 · 임계값은 백테스트 전 시작값 · 매수·매도 신호가 아닌 후보 발굴 도구입니다. 바닥 신호는 매도세 소진·저평가만, " +
+  "턴어라운드 신호는 실제 방향 전환만 봅니다 — 두 점수는 섞이지 않습니다. 신용잔고·내부자매수는 무료로 종목별 조회할 API를 찾지 못해 제외했습니다.";
 
 fetch("results.json").then(r=>{ if(!r.ok) throw new Error(); return r.json(); })
   .then(render)
