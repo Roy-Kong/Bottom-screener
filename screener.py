@@ -5,7 +5,9 @@ screener.py — 전종목 바닥 스크리너 파이프라인 (pykrx → signals
   1) 코스피+코스닥 종목 목록
   2) 효율적 수집: '하루치 전종목 스냅샷'을 여러 날짜에 대해 수집 (종목별 개별호출 최소화)
   3) 생존 게이트 통과 종목만 채점: 바닥 신호 7개 + 턴어라운드 신호 5개(별도 합성점수)
-  4) 상위 N개를 results.json으로 저장 (프론트가 읽음)
+  4) bottom_score < 60은 제외. 나머지는 강한 턴어라운드 신호(≥50점) 2개 이상이면
+     confirmed_turnaround, 아니면 watching으로 분류
+  5) 상위 N개를 results.json으로 저장 (프론트가 읽음)
 
 주의: KRX 접속이 되는 환경(예: GitHub Actions)에서 실행해야 한다.
 첫 실행은 디버그 패스가 필요할 수 있다(휴장일·결측·해외IP 차단 등).
@@ -33,6 +35,11 @@ TOP_N = 40                     # 결과에 담을 상위 종목 수
 # 생존 게이트 임계값
 MIN_MARKET_CAP = 30_000_000_000        # 시총 300억 이상
 MIN_AVG_TRADING_VALUE = 500_000_000    # 20일 평균 거래대금 5억 이상
+
+# 최종 분류 임계값
+BOTTOM_SCORE_THRESHOLD = 60            # 바닥 종합점수 이 값 미만이면 결과에서 제외
+TURNAROUND_STRONG_THRESHOLD = 50       # 개별 턴어라운드 신호가 이 값 이상이면 "강함"으로 침
+TURNAROUND_MIN_STRONG_SIGNALS = 2      # 강한 턴어라운드 신호가 이 개수 이상이면 confirmed_turnaround
 
 REQUEST_PAUSE = 0.10           # KRX 예의상 호출 간 간격(초)
 
@@ -363,7 +370,7 @@ def run():
             "volatility_squeeze": sg.score_volatility_squeeze(bw_series),
         }
         comp = sg.composite_score(scores)
-        if comp["composite"] is None:
+        if comp["composite"] is None or comp["composite"] < BOTTOM_SCORE_THRESHOLD:
             continue
 
         # --- 턴어라운드 신호 5개: "실제로 방향을 틀었는지"만 본다 (바닥 신호와 끝까지 분리) ---
@@ -397,6 +404,15 @@ def run():
             }
             turnaround_comp = sg.composite_score(turnaround_scores)
 
+        # --- 최종 분류: 바닥(≥60점) 중에서 턴어라운드가 확인됐는지 ---
+        strong_turnaround_count = sum(
+            1 for v in (turnaround_scores or {}).values()
+            if v is not None and v >= TURNAROUND_STRONG_THRESHOLD
+        )
+        status = ("confirmed_turnaround"
+                  if strong_turnaround_count >= TURNAROUND_MIN_STRONG_SIGNALS
+                  else "watching")
+
         results.append({
             "ticker": tkr, "name": name,
             "score": comp["composite"], "n_signals": comp["n_signals_used"],
@@ -404,10 +420,12 @@ def run():
             "turnaround_score": turnaround_comp["composite"] if turnaround_comp else None,
             "n_turnaround_signals": turnaround_comp["n_signals_used"] if turnaround_comp else 0,
             "turnaround_breakdown": turnaround_comp["breakdown"] if turnaround_comp else None,
+            "status": status,
             "close": round(last_close),
         })
 
-    results.sort(key=lambda x: x["score"], reverse=True)
+    # confirmed_turnaround를 먼저, 그 다음 watching — 각 그룹 내에서는 바닥 점수 내림차순
+    results.sort(key=lambda x: (x["status"] != "confirmed_turnaround", -x["score"]))
     top = results[:TOP_N]
 
     out = {
