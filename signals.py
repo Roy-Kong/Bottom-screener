@@ -131,6 +131,71 @@ def score_volatility_squeeze(bandwidth_history: list[float]) -> float | None:
     return _clamp(100.0 - pr)   # 가장 좁은 밴드 → 100
 
 
+# ---------- 턴어라운드 신호 (바닥 신호와 별도 그룹) ----------
+# 바닥 신호 7개는 전부 "매도세가 소진됐다·역사적으로 싸다"만 본다 — 하방이 막혔다는
+# 증거일 뿐 실제로 오르기 시작했다는 증거는 아니다. 아래 5개는 "방향을 실제로
+# 틀었는지"만 본다. 두 그룹은 절대 섞지 않고 끝까지 별도 합성점수로 유지한다.
+
+def score_volume_surge(recent5_avg_vol: float, recent20_avg_vol: float) -> float | None:
+    """⑨ 거래량 동반 상승. 최근 5일 평균거래량 ÷ 20일 평균거래량. 높을수록 고점.
+       주의: 바닥 신호의 '거래량 고갈'(①)과 정반대 방향이다 — 거래량 고갈은
+       낮을수록 좋고(매도 소진 확인), 이건 높을수록 좋다(매수 유입 확인). 헷갈리지 말 것."""
+    if not _valid(recent5_avg_vol, recent20_avg_vol) or recent20_avg_vol <= 0:
+        return None
+    ratio = recent5_avg_vol / recent20_avg_vol
+    return _lin(ratio, 1.0, 2.5, 0.0, 100.0)
+
+
+def score_ma_breakout(close: float, ma20: float, ma60: float) -> float | None:
+    """⑩ 이평선 돌파. 종가가 60일 이동평균선 위에 있는 이격도 + 20일선이
+       60일선 위에 위치하는(정배열) 이격도, 두 값의 평균. 둘 다 클수록 고점."""
+    if not _valid(close, ma20, ma60) or ma60 <= 0:
+        return None
+    close_gap = (close - ma60) / ma60 * 100      # 종가의 60일선 대비 이격도(%)
+    ma_gap = (ma20 - ma60) / ma60 * 100          # 20일선의 60일선 대비 이격도(%)
+    s1 = _lin(close_gap, -5.0, 5.0, 0.0, 100.0)
+    s2 = _lin(ma_gap, -3.0, 3.0, 0.0, 100.0)
+    return _clamp((s1 + s2) / 2)
+
+
+def score_short_term_breakout(close: float, high60: float) -> float | None:
+    """⑪ 최근 단기 고점(60일 박스권) 돌파. 현재가가 최근 60일 종가 기준 고점
+       대비 몇 %에 위치하는지. 반드시 60일 기준이어야 한다 — 52주 신고가나
+       역사적 전고점을 쓰면 PBR 역사적 저점(⑤) 같은 장기 바닥 신호와 논리적으로
+       충돌한다("역사적으로 싸다"와 "역사적 고점 돌파"는 동시에 참일 수 없음).
+       목적은 "장기적으론 여전히 저평가 구간이지만, 최근 두 달 단기 흐름은
+       방향을 틀었다"만 포착하는 것."""
+    if not _valid(close, high60) or high60 <= 0:
+        return None
+    pct_of_high = close / high60 * 100
+    return _lin(pct_of_high, 80.0, 100.0, 0.0, 100.0)
+
+
+def score_relative_strength_accel(stock_ret_recent10: float, index_ret_recent10: float,
+                                  stock_ret_prior10: float, index_ret_prior10: float) -> float | None:
+    """⑫ 상대강도 가속. (최근 10일 상대강도) - (이전 10일 상대강도).
+       상대강도의 수준(⑥)이 아니라 개선되는 속도(가속도)를 본다 — 이미 상대강도가
+       높아도 가속이 꺾이고 있으면 낮은 점수가 나올 수 있다."""
+    if not _valid(stock_ret_recent10, index_ret_recent10, stock_ret_prior10, index_ret_prior10):
+        return None
+    rs_recent = stock_ret_recent10 - index_ret_recent10
+    rs_prior = stock_ret_prior10 - index_ret_prior10
+    accel = rs_recent - rs_prior
+    return _lin(accel, -0.10, 0.10, 0.0, 100.0)
+
+
+def score_accumulation_accel(net_buy_recent5_avg: float, net_buy_prior15_avg: float) -> float | None:
+    """⑬ 매집 가속. 최근 5일 일평균 순매수 ÷ 이전 15일 일평균 순매수(둘 다 일평균이라
+       단위가 같음). 매집 강도(③)가 아니라 '최근 들어 매집이 강해지는 추세인지'를 본다.
+       이전 15일이 순매도(0 이하)였는데 최근 5일이 순매수로 전환되면 만점 처리."""
+    if not _valid(net_buy_recent5_avg, net_buy_prior15_avg):
+        return None
+    if net_buy_prior15_avg <= 0:
+        return 100.0 if net_buy_recent5_avg > 0 else 0.0
+    ratio = net_buy_recent5_avg / net_buy_prior15_avg
+    return _lin(ratio, 0.5, 2.0, 0.0, 100.0)
+
+
 # ---------- 종합 ----------
 SIGNAL_LABELS = {
     "volume_dryness": "거래량 고갈",
@@ -140,6 +205,14 @@ SIGNAL_LABELS = {
     "dividend_yield": "배당수익률(조건부)",
     "relative_strength": "상대강도",
     "volatility_squeeze": "변동성 수축",
+}
+
+TURNAROUND_SIGNAL_LABELS = {
+    "volume_surge": "거래량 동반 상승",
+    "ma_breakout": "이평선 돌파",
+    "short_term_breakout": "단기 고점 돌파",
+    "relative_strength_accel": "상대강도 가속",
+    "accumulation_accel": "매집 가속",
 }
 
 
@@ -202,10 +275,45 @@ if __name__ == "__main__":
     e_wide = score_volatility_squeeze(bw_hist[:-1] + [9.0])     # 현재값이 역대 최고 → 저점
     print(f"E. 변동성 수축 테스트: 최근 밴드 역대 최저 → {e_narrow}, 최고 → {e_wide}\n")
 
+    # 시나리오 F: 턴어라운드 확인 (바닥권에서 실제로 방향을 튼 케이스)
+    f = {
+        "volume_surge": score_volume_surge(220, 100),                  # 5일 평균이 20일 평균의 2.2배
+        "ma_breakout": score_ma_breakout(105, 103, 100),                # 종가>20일선>60일선, 정배열
+        "short_term_breakout": score_short_term_breakout(98, 100),      # 60일 박스권 고점의 98%
+        "relative_strength_accel": score_relative_strength_accel(0.08, 0.01, -0.02, 0.00),
+        "accumulation_accel": score_accumulation_accel(3.0e9, 0.5e9),   # 최근 5일 매집이 이전의 6배
+    }
+    rf = composite_score(f)
+    print("F. 턴어라운드 확인 종목")
+    for k, v in rf["breakdown"].items():
+        print(f"   {TURNAROUND_SIGNAL_LABELS[k]:<18} {v}")
+    print(f"   → 턴어라운드 종합 {rf['composite']} (신호 {rf['n_signals_used']}개)\n")
+
+    # 시나리오 G: 아직 안 도는 케이스 (바닥이지만 턴어라운드 미확인)
+    g = {
+        "volume_surge": score_volume_surge(90, 100),                   # 거래량 오히려 저조
+        "ma_breakout": score_ma_breakout(95, 97, 100),                  # 여전히 역배열
+        "short_term_breakout": score_short_term_breakout(82, 100),      # 60일 고점과 거리 있음
+        "relative_strength_accel": score_relative_strength_accel(-0.01, 0.00, 0.01, 0.00),
+        "accumulation_accel": score_accumulation_accel(0.2e9, 0.5e9),   # 매집 오히려 둔화
+    }
+    rg = composite_score(g)
+    print("G. 아직 안 도는 종목 (바닥 관찰 대상)")
+    for k, v in rg["breakdown"].items():
+        print(f"   {TURNAROUND_SIGNAL_LABELS[k]:<18} {v}")
+    print(f"   → 턴어라운드 종합 {rg['composite']} (신호 {rg['n_signals_used']}개)\n")
+
+    # 시나리오 H: 매집 가속 경계값 (이전 15일 순매도 → 최근 5일 순매수 전환)
+    h_flip = score_accumulation_accel(1.0e8, -5.0e8)
+    print(f"H. 매집 전환 테스트: 이전 순매도 → 최근 순매수 전환 → 점수 = {h_flip} (100점이어야 함)\n")
+
     # 검증 단언
     assert ra["composite"] > 75, "바닥 종목은 고득점이어야 함"
     assert rb["composite"] < 30, "고점 종목은 저득점이어야 함"
     assert c_div is None, "배당 함정은 배제(None)되어야 함"
     assert ra["n_signals_used"] == 6 and rb["n_signals_used"] == 5, "무배당주는 신호 5개"
     assert e_narrow > e_wide, "밴드 좁은 쪽이 고득점이어야 함"
-    print("✅ 모든 로직 검증 통과 (바닥 고득점 / 고점 저득점 / 함정 배제 / 무배당 분모조정 / 밴드 스퀴즈)")
+    assert rf["composite"] > 70, "턴어라운드 확인 종목은 고득점이어야 함"
+    assert rg["composite"] < 30, "아직 안 도는 종목은 저득점이어야 함"
+    assert h_flip == 100.0, "매집 전환은 만점이어야 함"
+    print("✅ 모든 로직 검증 통과 (바닥 고득점 / 고점 저득점 / 함정 배제 / 무배당 분모조정 / 밴드 스퀴즈 / 턴어라운드 확인 / 매집 전환)")
