@@ -77,7 +77,8 @@ def _sentence_relative_strength(raw: dict) -> str | None:
     stock_ret, idx_ret, excess = raw.get("stock_ret_pct"), raw.get("index_ret_pct"), raw.get("excess_pct")
     if stock_ret is None or idx_ret is None:
         return None
-    return f"최근 60일 코스피는 {idx_ret:+.1f}%인데 이 종목은 {stock_ret:+.1f}%로 지수보다 {excess:+.1f}%p 선방했습니다."
+    bench = "업종지수" if str(raw.get("benchmark", "")).startswith("sector:") else "코스피"
+    return f"최근 60일 {bench}는 {idx_ret:+.1f}%인데 이 종목은 {stock_ret:+.1f}%로 {bench}보다 {excess:+.1f}%p 선방했습니다."
 
 
 def _sentence_volatility_squeeze(raw: dict) -> str | None:

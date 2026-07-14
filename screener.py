@@ -127,6 +127,66 @@ def get_universe(asof: str) -> dict[str, str]:
     return uni
 
 
+MARKET_NAME_KO = {"KOSPI": "코스피", "KOSDAQ": "코스닥"}
+
+
+def get_sector_index_map(asof: str) -> dict[str, str]:
+    """{티커: 업종지수코드}. 코스피/코스닥 각 시장의 전체 지수 목록에서
+       이름에 시장명("코스피"/"코스닥")이 들어간 것(코스피 200, 코스피 대형주,
+       코스닥 150 소재 등 사이즈·스타일·서브 지수)은 제외하고, 이름에 시장명이
+       없는 것(화학·전기전자·유통 같은 순수 업종지수)만 남긴다.
+       종목 개수만큼이 아니라 지수 개수(수십 개)만큼만 호출하는 벌크 방식."""
+    ticker_to_sector: dict[str, str] = {}
+    for mkt in TARGET_MARKETS:
+        market_name = MARKET_NAME_KO[mkt]
+        try:
+            idx_codes = stock.get_index_ticker_list(asof, market=mkt)
+        except Exception:
+            continue
+        for code in idx_codes:
+            try:
+                name = stock.get_index_ticker_name(code)
+            except Exception:
+                continue
+            if market_name in name:      # 사이즈/스타일/서브 지수 — 순수 업종 아님
+                continue
+            try:
+                members = stock.get_index_portfolio_deposit_file(code)
+            except Exception:
+                continue
+            for tkr in members:
+                ticker_to_sector[tkr] = code
+    return ticker_to_sector
+
+
+def collect_sector_index_ohlcv(sector_codes: set[str], fromdate: str, todate: str) -> dict[str, dict[str, float]]:
+    """{업종지수코드: {날짜: 종가}}. 코스피 전체지수("1001")와 같은 방식으로,
+       매핑에 실제로 쓰이는 업종지수만 전체 구간 히스토리를 받는다."""
+    out: dict[str, dict[str, float]] = {}
+    for code in sector_codes:
+        try:
+            df = stock.get_index_ohlcv(fromdate, todate, code)
+        except Exception:
+            df = None
+        out[code] = index_close_by_date(df) if df is not None else {}
+        time.sleep(REQUEST_PAUSE)
+    return out
+
+
+def resolve_benchmark_series(tkr: str, sector_map: dict[str, str],
+                             sector_idx_by_date: dict[str, dict[str, float]],
+                             market_idx_by_date: dict[str, float]) -> tuple[dict[str, float], str]:
+    """종목의 업종지수 날짜별 종가 시계열을 우선 쓰고, 매핑이 없거나 그 업종지수
+       데이터를 못 받았으면 코스피 전체 지수로 폴백한다. (label, series) 대신
+       (series, label) 순서로 반환 — label은 진단/설명용."""
+    code = sector_map.get(tkr)
+    if code:
+        series = sector_idx_by_date.get(code)
+        if series:
+            return series, f"sector:{code}"
+    return market_idx_by_date, "market:1001"
+
+
 def collect_ohlcv_matrix(dates: list[str]) -> dict[str, dict[str, tuple]]:
     """날짜별 전종목 스냅샷 수집 → {date: {ticker: (close, volume)}}.
        하루 1~2호출로 전종목을 받아 개별호출을 피한다.
@@ -317,20 +377,9 @@ def run():
     universe = get_universe(asof)
     print(f"   {len(universe)}개 종목")
 
-    print("   [진단:업종지수] 시장별 지수 코드/이름 덤프 (업종지수 전환 검토용, 확인 후 제거)")
-    for mkt in TARGET_MARKETS:
-        try:
-            idx_codes = stock.get_index_ticker_list(asof, market=mkt)
-        except Exception as e:
-            print(f"   [진단:업종지수] {mkt} get_index_ticker_list 실패: {type(e).__name__}: {e}")
-            continue
-        names = []
-        for code in idx_codes:
-            try:
-                names.append((code, stock.get_index_ticker_name(code)))
-            except Exception as e:
-                names.append((code, f"<이름조회실패:{type(e).__name__}>"))
-        print(f"   [진단:업종지수] {mkt} 지수 {len(idx_codes)}개: {names}")
+    print("1b) 업종지수 매핑 수집…")
+    sector_map = get_sector_index_map(asof)
+    print(f"   {len(sector_map)}개 종목이 업종지수에 매핑됨")
 
     print("2) OHLCV 스냅샷 수집…")
     ohlcv_dates = recent_business_dates(OHLCV_LOOKBACK_DAYS, anchor)
@@ -368,6 +417,12 @@ def run():
         idx_ret = 0.0
         idx_by_date = {}
 
+    print("6b) 업종지수 OHLCV 수집…")
+    sector_codes_needed = set(sector_map.values())
+    sector_idx_by_date = collect_sector_index_ohlcv(sector_codes_needed, ohlcv_dates[0], latest_date)
+    print(f"   업종지수 {len(sector_codes_needed)}개 중 "
+          f"{sum(1 for v in sector_idx_by_date.values() if v)}개 데이터 확보")
+
     print("7) 채점(바닥 7개 + 턴어라운드 5개 신호)…")
     results = []
     outlier_count = 0  # 임시 진단: 60일 수익률 +100% 이상 잔존 이상치 확인용, 확인 후 제거
@@ -395,6 +450,13 @@ def run():
         past120 = median(vols[-120:])
         ret60 = (closes[-1] / closes[-60]) - 1
         ret20_price = (closes[-1] / closes[-20]) - 1
+
+        # 상대강도는 코스피 전체가 아니라 그 종목의 업종지수 대비로 본다
+        # (매핑 없거나 업종지수 데이터가 없으면 코스피 전체로 폴백).
+        bench_series, bench_label = resolve_benchmark_series(tkr, sector_map, sector_idx_by_date, idx_by_date)
+        bench_c_latest = bench_series.get(latest_date)
+        bench_c_60ago = bench_series.get(ohlcv_dates[-60])
+        idx_ret_t = (bench_c_latest / bench_c_60ago - 1) if bench_c_latest and bench_c_60ago else idx_ret
 
         if ret60 > 1.0:  # 임시 진단: +100% 이상 잔존 이상치 확인용, 확인 후 제거
             outlier_count += 1
@@ -424,7 +486,7 @@ def run():
             "short_covering": sg.score_short_covering(short_cur.get(tkr, 0.0), short_max.get(tkr, 0.0)),
             "pbr_low": sg.score_pbr_low(cur_pbr, pbr_series),
             "dividend_yield": sg.score_dividend_yield(cur_div, div_series, cur_dps, cur_eps, had_dividend_cut(fh)),
-            "relative_strength": sg.score_relative_strength(ret60, idx_ret),
+            "relative_strength": sg.score_relative_strength(ret60, idx_ret_t),
             "volatility_squeeze": sg.score_volatility_squeeze(bw_series),
         }
 
@@ -447,8 +509,8 @@ def run():
             "pbr_low": {"pbr": cur_pbr, "percentile": sg.percentile_rank(pbr_series, cur_pbr)},
             "dividend_yield": {"div_pct": cur_div, "percentile": sg.percentile_rank(div_series, cur_div)},
             "relative_strength": {
-                "stock_ret_pct": ret60 * 100, "index_ret_pct": idx_ret * 100,
-                "excess_pct": (ret60 - idx_ret) * 100,
+                "stock_ret_pct": ret60 * 100, "index_ret_pct": idx_ret_t * 100,
+                "excess_pct": (ret60 - idx_ret_t) * 100, "benchmark": bench_label,
             },
             "volatility_squeeze": {
                 "bandwidth_pct": (cur_bw * 100) if cur_bw is not None else None,
@@ -473,9 +535,9 @@ def run():
 
             stock_ret_recent10 = (closes[-1] / closes[-11]) - 1
             stock_ret_prior10 = (closes[-11] / closes[-21]) - 1
-            idx_c1, idx_c11, idx_c21 = (idx_by_date.get(dates[-1]),
-                                        idx_by_date.get(dates[-11]),
-                                        idx_by_date.get(dates[-21]))
+            idx_c1, idx_c11, idx_c21 = (bench_series.get(dates[-1]),
+                                        bench_series.get(dates[-11]),
+                                        bench_series.get(dates[-21]))
             index_ret_recent10 = (idx_c1 / idx_c11 - 1) if idx_c1 and idx_c11 else None
             index_ret_prior10 = (idx_c11 / idx_c21 - 1) if idx_c11 and idx_c21 else None
 
@@ -508,6 +570,7 @@ def run():
                 "relative_strength_accel": {
                     "rs_recent10_pct": (rs_recent10 * 100) if rs_recent10 is not None else None,
                     "rs_prior10_pct": (rs_prior10 * 100) if rs_prior10 is not None else None,
+                    "benchmark": bench_label,
                     "accel_pct": ((rs_recent10 - rs_prior10) * 100)
                         if rs_recent10 is not None and rs_prior10 is not None else None,
                 },
