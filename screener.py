@@ -317,6 +317,21 @@ def run():
     universe = get_universe(asof)
     print(f"   {len(universe)}개 종목")
 
+    print("   [진단:업종지수] 시장별 지수 코드/이름 덤프 (업종지수 전환 검토용, 확인 후 제거)")
+    for mkt in TARGET_MARKETS:
+        try:
+            idx_codes = stock.get_index_ticker_list(asof, market=mkt)
+        except Exception as e:
+            print(f"   [진단:업종지수] {mkt} get_index_ticker_list 실패: {type(e).__name__}: {e}")
+            continue
+        names = []
+        for code in idx_codes:
+            try:
+                names.append((code, stock.get_index_ticker_name(code)))
+            except Exception as e:
+                names.append((code, f"<이름조회실패:{type(e).__name__}>"))
+        print(f"   [진단:업종지수] {mkt} 지수 {len(idx_codes)}개: {names}")
+
     print("2) OHLCV 스냅샷 수집…")
     ohlcv_dates = recent_business_dates(OHLCV_LOOKBACK_DAYS, anchor)
     matrix = collect_ohlcv_matrix(ohlcv_dates)
