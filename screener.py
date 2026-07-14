@@ -4,7 +4,10 @@ screener.py — 전종목 바닥 스크리너 파이프라인 (pykrx → signals
 흐름:
   1) 코스피+코스닥 종목 목록
   2) 효율적 수집: '하루치 전종목 스냅샷'을 여러 날짜에 대해 수집 (종목별 개별호출 최소화)
-  3) 생존 게이트 통과 종목만 채점: 바닥 신호 7개 + 턴어라운드 신호 5개(별도 합성점수)
+  3) 생존 게이트 통과 종목만 채점: 바닥 신호 7개 + 턴어라운드 신호 5개(별도 합성점수).
+     둘 다 signals.py의 BOTTOM_WEIGHTS/TURNAROUND_WEIGHTS로 가중평균 —
+     이 가중치는 백테스트로 검증된 값이 아니라 신호의 증거 직접성에 따른
+     초기 추정값이며, 나중에 조정될 수 있다.
   4) bottom_score < 60은 제외. 나머지는 강한 턴어라운드 신호(≥50점) 2개 이상이면
      confirmed_turnaround, 아니면 watching으로 분류
   5) 상위 N개를 results.json으로 저장 (프론트가 읽음)
@@ -400,7 +403,7 @@ def run():
             },
         }
 
-        comp = sg.composite_score(scores)
+        comp = sg.composite_score(scores, sg.BOTTOM_WEIGHTS)
         if comp["composite"] is None or comp["composite"] < BOTTOM_SCORE_THRESHOLD:
             continue
 
@@ -434,7 +437,7 @@ def run():
                     stock_ret_recent10, index_ret_recent10, stock_ret_prior10, index_ret_prior10),
                 "accumulation_accel": sg.score_accumulation_accel(net_buy_recent5_avg, net_buy_prior15_avg),
             }
-            turnaround_comp = sg.composite_score(turnaround_scores)
+            turnaround_comp = sg.composite_score(turnaround_scores, sg.TURNAROUND_WEIGHTS)
 
             rs_recent10 = (stock_ret_recent10 - index_ret_recent10) if index_ret_recent10 is not None else None
             rs_prior10 = (stock_ret_prior10 - index_ret_prior10) if index_ret_prior10 is not None else None
