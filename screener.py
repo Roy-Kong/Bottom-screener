@@ -4,7 +4,7 @@ screener.py — 전종목 바닥 스크리너 파이프라인 (pykrx → signals
 흐름:
   1) 코스피+코스닥 종목 목록
   2) 효율적 수집: '하루치 전종목 스냅샷'을 여러 날짜에 대해 수집 (종목별 개별호출 최소화)
-  3) 생존 게이트 통과 종목만 채점 (signals.py 7개 신호, KRX 데이터만 사용)
+  3) 생존 게이트 통과 종목만 채점: 바닥 신호 7개 + 턴어라운드 신호 5개(별도 합성점수)
   4) 상위 N개를 results.json으로 저장 (프론트가 읽음)
 
 주의: KRX 접속이 되는 환경(예: GitHub Actions)에서 실행해야 한다.
@@ -214,14 +214,30 @@ def collect_accumulation(fromdate: str, todate: str) -> dict[str, float]:
 
 # ---------------- 파생 계산 ----------------
 def series_for_ticker(matrix, tkr):
-    """시간순 (close, volume) 리스트."""
-    closes, vols = [], []
+    """시간순 (date, close, volume) 병렬 리스트. date는 상대강도 가속 계산 시
+       지수 종가와 같은 날짜끼리 짝짓기 위해 필요하다."""
+    dates, closes, vols = [], [], []
     for d in sorted(matrix.keys()):
         if tkr in matrix[d]:
             c, v = matrix[d][tkr]
+            dates.append(d)
             closes.append(c)
             vols.append(v)
-    return closes, vols
+    return dates, closes, vols
+
+
+def index_close_by_date(idx_df) -> dict[str, float]:
+    """지수 OHLCV 데이터프레임 → {YYYYMMDD: 종가}."""
+    out: dict[str, float] = {}
+    if idx_df is None or idx_df.empty:
+        return out
+    for idx_date, close in idx_df["종가"].items():
+        try:
+            key = idx_date.strftime("%Y%m%d")
+        except AttributeError:
+            key = str(idx_date)
+        out[key] = float(close)
+    return out
 
 
 def bollinger_bandwidth_series(closes: list[float], window: int = 20) -> list[float]:
@@ -280,21 +296,32 @@ def run():
     latest_date = sorted(matrix.keys())[-1] if matrix else asof
     short_cur = collect_short_current(latest_date)
 
-    print("5) 20일 매집 수집…")
+    print("5) 매집 수집(20일 / 최근5일 / 이전15일)…")
     accum_from = ohlcv_dates[-ACCUM_WINDOW_DAYS] if len(ohlcv_dates) >= ACCUM_WINDOW_DAYS else ohlcv_dates[0]
     accum = collect_accumulation(accum_from, latest_date)
+    # 매집 가속(턴어라운드) 계산용: 최근 5일 vs 그 이전 15일을 별도 수집
+    accum_recent5_from = ohlcv_dates[-5] if len(ohlcv_dates) >= 5 else ohlcv_dates[0]
+    accum_recent5 = collect_accumulation(accum_recent5_from, latest_date)
+    accum_prior15_from = ohlcv_dates[-20] if len(ohlcv_dates) >= 20 else ohlcv_dates[0]
+    accum_prior15_to = ohlcv_dates[-6] if len(ohlcv_dates) >= 6 else ohlcv_dates[0]
+    accum_prior15 = collect_accumulation(accum_prior15_from, accum_prior15_to)
 
-    print("6) 지수 60일 수익률(코스피)…")
+    print("6) 지수 수익률(코스피)…")
     try:
-        idx = stock.get_index_ohlcv(ohlcv_dates[-60], latest_date, "1001")  # 1001 = 코스피
-        idx_ret = (idx["종가"].iloc[-1] / idx["종가"].iloc[0]) - 1 if not idx.empty else 0.0
+        # 상대강도 가속(턴어라운드)의 날짜별 조회를 위해 전체 구간을 받아 두되,
+        # 기존 60일 상대강도(바닥 신호)는 이전과 동일하게 60일 구간만 사용한다.
+        idx = stock.get_index_ohlcv(ohlcv_dates[0], latest_date, "1001")  # 1001 = 코스피
+        idx_by_date = index_close_by_date(idx)
+        idx_ret = (idx_by_date.get(latest_date, 0.0) / idx_by_date[ohlcv_dates[-60]]) - 1 \
+            if idx_by_date.get(ohlcv_dates[-60]) else 0.0
     except Exception:
         idx_ret = 0.0
+        idx_by_date = {}
 
-    print("7) 채점(7개 신호)…")
+    print("7) 채점(바닥 7개 + 턴어라운드 5개 신호)…")
     results = []
     for tkr, name in universe.items():
-        closes, vols = series_for_ticker(matrix, tkr)
+        dates, closes, vols = series_for_ticker(matrix, tkr)
         if len(closes) < 60 or len(vols) < 120:
             continue
 
@@ -325,6 +352,7 @@ def run():
         # 유통시총 근사 = 시총 대용(정밀도보다 강도 순위가 목적)
         float_mc = avg_trading_value * 50  # 대략적 스케일; 백테스트 시 실제 시총으로 교체 예정
 
+        # --- 바닥 신호 7개: "매도세 소진·역사적으로 싸다"만 본다 ---
         scores = {
             "volume_dryness": sg.score_volume_dryness(rec20, past120),
             "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100),
@@ -337,10 +365,45 @@ def run():
         comp = sg.composite_score(scores)
         if comp["composite"] is None:
             continue
+
+        # --- 턴어라운드 신호 5개: "실제로 방향을 틀었는지"만 본다 (바닥 신호와 끝까지 분리) ---
+        turnaround_scores = None
+        turnaround_comp = None
+        if len(closes) >= 21 and len(dates) >= 21:
+            recent5_avg_vol = sum(vols[-5:]) / 5
+            recent20_avg_vol = sum(vols[-20:]) / 20
+            ma20 = sum(closes[-20:]) / 20
+            ma60 = sum(closes[-60:]) / 60
+            high60 = max(closes[-60:])
+
+            stock_ret_recent10 = (closes[-1] / closes[-11]) - 1
+            stock_ret_prior10 = (closes[-11] / closes[-21]) - 1
+            idx_c1, idx_c11, idx_c21 = (idx_by_date.get(dates[-1]),
+                                        idx_by_date.get(dates[-11]),
+                                        idx_by_date.get(dates[-21]))
+            index_ret_recent10 = (idx_c1 / idx_c11 - 1) if idx_c1 and idx_c11 else None
+            index_ret_prior10 = (idx_c11 / idx_c21 - 1) if idx_c11 and idx_c21 else None
+
+            net_buy_recent5_avg = accum_recent5.get(tkr, 0.0) / 5
+            net_buy_prior15_avg = accum_prior15.get(tkr, 0.0) / 15
+
+            turnaround_scores = {
+                "volume_surge": sg.score_volume_surge(recent5_avg_vol, recent20_avg_vol),
+                "ma_breakout": sg.score_ma_breakout(closes[-1], ma20, ma60),
+                "short_term_breakout": sg.score_short_term_breakout(closes[-1], high60),
+                "relative_strength_accel": sg.score_relative_strength_accel(
+                    stock_ret_recent10, index_ret_recent10, stock_ret_prior10, index_ret_prior10),
+                "accumulation_accel": sg.score_accumulation_accel(net_buy_recent5_avg, net_buy_prior15_avg),
+            }
+            turnaround_comp = sg.composite_score(turnaround_scores)
+
         results.append({
             "ticker": tkr, "name": name,
             "score": comp["composite"], "n_signals": comp["n_signals_used"],
             "breakdown": comp["breakdown"],
+            "turnaround_score": turnaround_comp["composite"] if turnaround_comp else None,
+            "n_turnaround_signals": turnaround_comp["n_signals_used"] if turnaround_comp else 0,
+            "turnaround_breakdown": turnaround_comp["breakdown"] if turnaround_comp else None,
             "close": round(last_close),
         })
 
@@ -357,6 +420,7 @@ def run():
             "min_market_cap": MIN_MARKET_CAP, "min_trading_value": MIN_AVG_TRADING_VALUE,
         },
         "signal_labels": sg.SIGNAL_LABELS,
+        "turnaround_signal_labels": sg.TURNAROUND_SIGNAL_LABELS,
         "results": top,
     }
     with open("results.json", "w", encoding="utf-8") as f:
