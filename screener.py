@@ -40,6 +40,10 @@ TOP_N = 40                     # 결과에 담을 상위 종목 수
 MIN_MARKET_CAP = 30_000_000_000        # 시총 300억 이상
 MIN_AVG_TRADING_VALUE = 500_000_000    # 20일 평균 거래대금 5억 이상
 
+# 데이터 검증: 종가<=0 또는 전일 대비 이 배율을 넘는 하루 등락은 KRX 상하한가(±30%)
+# 밖이라 정상 거래로는 불가능 — 결측/장애/미조정 액면분할 등 데이터 이상으로 보고 제외
+MAX_DAILY_MOVE_RATIO = 1.32
+
 # 최종 분류 임계값
 BOTTOM_SCORE_THRESHOLD = 60            # 바닥 종합점수 이 값 미만이면 결과에서 제외
 TURNAROUND_STRONG_THRESHOLD = 50       # 개별 턴어라운드 신호가 이 값 이상이면 "강함"으로 침
@@ -125,8 +129,16 @@ def get_universe(asof: str) -> dict[str, str]:
 
 def collect_ohlcv_matrix(dates: list[str]) -> dict[str, dict[str, tuple]]:
     """날짜별 전종목 스냅샷 수집 → {date: {ticker: (close, volume)}}.
-       하루 1~2호출로 전종목을 받아 개별호출을 피한다."""
+       하루 1~2호출로 전종목을 받아 개별호출을 피한다.
+
+       종가<=0(결측/장애 데이터)이거나 전일 대비 ±30%(KRX 상하한가)를 넘는
+       하루 등락은 물리적으로 불가능한 정상 거래이므로, 그 종목의 그 날짜만
+       스냅샷에서 제외한다. (액면분할·병합처럼 실제 기업행동으로 인한 가격
+       불연속도 같은 방식으로 걸러진다 — 소급 조정은 하지 않고 그냥 배제.
+       그 이후 데이터가 계속 이상하면 해당 종목은 자연히 60일 데이터 기준을
+       못 채워 채점 대상에서 빠진다.)"""
     matrix = {}
+    last_close: dict[str, float] = {}
     for d in dates:
         day = {}
         for mkt in TARGET_MARKETS:
@@ -140,8 +152,19 @@ def collect_ohlcv_matrix(dates: list[str]) -> dict[str, dict[str, tuple]]:
                 # 컬럼명은 pykrx 버전에 따라 '종가'/'거래량'
                 close = row.get("종가")
                 vol = row.get("거래량")
-                if close is not None and vol is not None:
-                    day[tkr] = (float(close), float(vol))
+                if close is None or vol is None:
+                    continue
+                close = float(close)
+                vol = float(vol)
+                if close <= 0:
+                    continue
+                prev = last_close.get(tkr)
+                if prev is not None and prev > 0:
+                    ratio = close / prev
+                    if ratio > MAX_DAILY_MOVE_RATIO or ratio < 1 / MAX_DAILY_MOVE_RATIO:
+                        continue   # 데이터 이상으로 판단, 이 종목의 이 날짜만 제외
+                day[tkr] = (close, vol)
+                last_close[tkr] = close
             time.sleep(REQUEST_PAUSE)
         if day:
             matrix[d] = day
@@ -336,16 +359,6 @@ def run():
         dates, closes, vols = series_for_ticker(matrix, tkr)
         if len(closes) < 60 or len(vols) < 120:
             continue
-
-        if tkr == "078130":  # 임시 진단: 상대강도 +775% 이상치 원인 확인용, 확인 후 제거
-            print(f"   [진단:078130] 종가 {len(closes)}개, 날짜 {dates[0]}~{dates[-1]}")
-            print(f"   [진단:078130] closes[-60]={closes[-60]}, closes[-1]={closes[-1]}, "
-                  f"ret60={closes[-1]/closes[-60]-1:.4f}")
-            print(f"   [진단:078130] 전체 종가: {list(zip(dates, closes))}")
-            jumps = [(dates[i], closes[i-1], closes[i], closes[i] / closes[i-1])
-                     for i in range(1, len(closes)) if closes[i-1] > 0 and
-                     (closes[i] / closes[i-1] > 1.5 or closes[i] / closes[i-1] < 0.67)]
-            print(f"   [진단:078130] 급격한 일간 변동(1.5배 이상/0.67배 이하) 지점: {jumps}")
 
         # --- 생존 게이트 ---
         last_close = closes[-1]
