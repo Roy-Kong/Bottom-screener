@@ -651,6 +651,9 @@ def run():
     print(f"   [진단:이상치] 총 {outlier_count}개 종목이 생존 게이트 통과 종목 중 60일 +100% 이상")
     print(f"   [진단:분할의심] 총 {split_flag_count}개 종목이 ±30% 필터를 뚫은 잔존 분할/증자 의심"
           f"(relative_strength/ma_breakout/short_term_breakout None 처리됨)")
+    n_confirmed = sum(1 for r in results if r["status"] == "confirmed_turnaround")
+    print(f"   [진단:턴어라운드] 바닥 60점 이상 {len(results)}개 중 confirmed_turnaround {n_confirmed}개, "
+          f"watching {len(results) - n_confirmed}개")
 
     # confirmed_turnaround를 먼저, 그 다음 watching — 각 그룹 내에서는 바닥 점수 내림차순
     results.sort(key=lambda x: (x["status"] != "confirmed_turnaround", -x["score"]))
