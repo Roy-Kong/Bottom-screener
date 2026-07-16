@@ -8,8 +8,11 @@ screener.py — 전종목 바닥 스크리너 파이프라인 (pykrx → signals
      둘 다 signals.py의 BOTTOM_WEIGHTS/TURNAROUND_WEIGHTS로 가중평균 —
      이 가중치는 백테스트로 검증된 값이 아니라 신호의 증거 직접성에 따른
      초기 추정값이며, 나중에 조정될 수 있다.
-  4) bottom_score < 60은 제외. 나머지는 강한 턴어라운드 신호(≥50점) 2개 이상이면
-     confirmed_turnaround, 아니면 watching으로 분류
+  4) bottom_score < 60은 제외. 나머지는 가격 계열(이평선 돌파·단기 고점 돌파·
+     상대강도 가속) 1개 이상 + 수급 계열(거래량 동반 상승·매집 가속) 1개 이상이
+     각각 50점 이상이면 confirmed_turnaround, 아니면 watching으로 분류
+     (가격 계열 셋은 사실상 "최근에 올랐다"는 같은 사실의 다른 표현이라
+     서로를 대체 증거로 인정하지 않는다)
   5) 상위 N개를 results.json으로 저장 (프론트가 읽음)
 
 주의: KRX 접속이 되는 환경(예: GitHub Actions)에서 실행해야 한다.
@@ -47,7 +50,15 @@ MAX_DAILY_MOVE_RATIO = 1.32
 # 최종 분류 임계값
 BOTTOM_SCORE_THRESHOLD = 60            # 바닥 종합점수 이 값 미만이면 결과에서 제외
 TURNAROUND_STRONG_THRESHOLD = 50       # 개별 턴어라운드 신호가 이 값 이상이면 "강함"으로 침
-TURNAROUND_MIN_STRONG_SIGNALS = 2      # 강한 턴어라운드 신호가 이 개수 이상이면 confirmed_turnaround
+
+# 턴어라운드 신호 5개 중 이평선 돌파·단기 고점 돌파·상대강도 가속은 전부 "가격이
+# 최근에 올랐다"는 하나의 사실을 서로 다른 계산식으로 표현한 것에 가깝다 — 셋이
+# 동시에 켜져도 독립적 증거 3개가 아니라 사실상 1개 사건의 중복 카운트다. 반면
+# 거래량 동반 상승·매집 가속은 가격과 별개로 움직일 수 있는 진짜 다른 정보(거래량·
+# 거래주체)라서 confirmed_turnaround는 "가격 계열에서 1개 이상 + 수급 계열에서
+# 1개 이상"이 각각 독립적으로 확인돼야 인정한다(단순히 5개 중 N개 이상이 아님).
+PRICE_GROUP = ["ma_breakout", "short_term_breakout", "relative_strength_accel"]
+FLOW_GROUP = ["volume_surge", "accumulation_accel"]
 
 REQUEST_PAUSE = 0.10           # KRX 예의상 호출 간 간격(초)
 
@@ -609,13 +620,17 @@ def run():
             }
 
         # --- 최종 분류: 바닥(≥60점) 중에서 턴어라운드가 확인됐는지 ---
-        strong_turnaround_count = sum(
-            1 for v in (turnaround_scores or {}).values()
-            if v is not None and v >= TURNAROUND_STRONG_THRESHOLD
+        # 가격 계열(PRICE_GROUP)에서 1개 이상 + 수급 계열(FLOW_GROUP)에서 1개 이상이
+        # 각각 독립적으로 강해야 confirmed_turnaround. 가격 계열끼리는 서로를
+        # 대체 증거로 인정하지 않는다(위 상수 정의부 주석 참고).
+        ts = turnaround_scores or {}
+        price_confirmed = any(
+            ts.get(k) is not None and ts[k] >= TURNAROUND_STRONG_THRESHOLD for k in PRICE_GROUP
         )
-        status = ("confirmed_turnaround"
-                  if strong_turnaround_count >= TURNAROUND_MIN_STRONG_SIGNALS
-                  else "watching")
+        flow_confirmed = any(
+            ts.get(k) is not None and ts[k] >= TURNAROUND_STRONG_THRESHOLD for k in FLOW_GROUP
+        )
+        status = "confirmed_turnaround" if (price_confirmed and flow_confirmed) else "watching"
 
         item = {
             "ticker": tkr, "name": name,
