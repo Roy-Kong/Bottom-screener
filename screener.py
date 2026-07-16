@@ -41,7 +41,19 @@ TOP_N = 40                     # 결과에 담을 상위 종목 수
 
 # 생존 게이트 임계값
 MIN_MARKET_CAP = 30_000_000_000        # 시총 300억 이상
-MIN_AVG_TRADING_VALUE = 500_000_000    # 20일 평균 거래대금 5억 이상
+MIN_AVG_TRADING_VALUE = 3_000_000_000  # 20일 평균 거래대금 30억 이상 —
+                                        # 실사용자 매매 규모(5천만원)가 이 값의 약 1.7%로,
+                                        # 시장충격 없이 매매 가능한 수준이 되도록 설정
+
+# 유동성 안정성: 평균은 기준을 넘어도 특정일에 거래가 마르는 종목을 걸러내기 위한 보조 표시
+# (게이트로 제외하지는 않고 별도 플래그만 남긴다)
+LIQUIDITY_UNSTABLE_RATIO = 0.5          # 하루 거래대금이 MIN_AVG_TRADING_VALUE의 이 비율 미만이면 "마른 날"
+LIQUIDITY_UNSTABLE_MIN_DAYS = 4         # 최근 20일 중 "마른 날"이 이 값 이상이면 유동성 불안정 표시
+
+# 예상 시장충격 지표: 이 매매 규모(원)를 20일 평균 거래대금 대비 몇 %로 나눠서 참고용으로 표시
+TRADE_SIZE_KRW = 50_000_000            # 회당 매매 규모 5천만원 기준
+MARKET_IMPACT_LOW_PCT = 3.0            # 이 미만: "여유"
+MARKET_IMPACT_MID_PCT = 10.0           # 이 이하: "보통", 초과: "주의"
 
 # 데이터 검증: 종가<=0 또는 전일 대비 이 배율을 넘는 하루 등락은 KRX 상하한가(±30%)
 # 밖이라 정상 거래로는 불가능 — 결측/장애/미조정 액면분할 등 데이터 이상으로 보고 제외
@@ -475,6 +487,8 @@ def run():
     results = []
     outlier_count = 0  # 임시 진단: 60일 수익률 +100% 이상 잔존 이상치 확인용, 확인 후 제거
     split_flag_count = 0  # 임시 진단: ±30% 필터를 뚫은 잔존 분할/증자 의심 종목 수, 확인 후 제거
+    liquidity_eval_count = 0  # 진단: 60일치 데이터를 가져 유동성 평가 대상이 된 종목 수
+    liquidity_pass_count = 0  # 진단: 그중 MIN_AVG_TRADING_VALUE(유동성 기준)를 통과한 종목 수
     for tkr, name in universe.items():
         dates, closes, vols = series_for_ticker(matrix, tkr)
         if len(closes) < 60 or len(vols) < 120:
@@ -483,6 +497,9 @@ def run():
         # --- 생존 게이트 ---
         last_close = closes[-1]
         avg_trading_value = median(vols[-20:]) * last_close
+        liquidity_eval_count += 1
+        if avg_trading_value >= MIN_AVG_TRADING_VALUE:
+            liquidity_pass_count += 1
         fh = fund_hist.get(tkr, [])
         cur_pbr = fh[0]["PBR"] if fh else 0.0
         cur_market_cap = market_cap.get(tkr, 0.0)
@@ -492,6 +509,29 @@ def run():
             continue
         if cur_pbr <= 0:            # 자본잠식 의심/데이터 없음
             continue
+
+        # --- 유동성 보조 지표 (게이트로 걸러내지 않고 표시만) ---
+        recent20_daily_values = [vols[i] * closes[i] for i in range(-20, 0)]
+        unstable_days = sum(
+            1 for v in recent20_daily_values if v < MIN_AVG_TRADING_VALUE * LIQUIDITY_UNSTABLE_RATIO
+        )
+        liquidity_unstable = unstable_days >= LIQUIDITY_UNSTABLE_MIN_DAYS
+        market_impact_pct = (TRADE_SIZE_KRW / avg_trading_value * 100) if avg_trading_value > 0 else None
+        if market_impact_pct is None:
+            market_impact_level = None
+        elif market_impact_pct < MARKET_IMPACT_LOW_PCT:
+            market_impact_level = "low"
+        elif market_impact_pct <= MARKET_IMPACT_MID_PCT:
+            market_impact_level = "mid"
+        else:
+            market_impact_level = "high"
+        liquidity = {
+            "avg_trading_value_krw": round(avg_trading_value),
+            "unstable_days_20d": unstable_days,
+            "unstable": liquidity_unstable,
+            "market_impact_pct": round(market_impact_pct, 2) if market_impact_pct is not None else None,
+            "market_impact_level": market_impact_level,
+        }
 
         # 상대강도·이평선 신호는 60일 구간 내 미조정 분할/증자성 불연속에 취약하므로,
         # collect_ohlcv_matrix의 ±30% 필터를 뚫고 들어온 잔존 이상치를 여기서 한 번 더 확인
@@ -669,10 +709,13 @@ def run():
             "status": status,
             "close": round(last_close),
             "split_suspected": split_suspected,
+            "liquidity": liquidity,
         }
         item["explanation"] = ex.explain_result(item)
         results.append(item)
 
+    print(f"   [진단:유동성] 60일 이상 데이터 보유 {liquidity_eval_count}개 종목 중 "
+          f"20일 평균 거래대금 {MIN_AVG_TRADING_VALUE / 1e8:.0f}억원 이상: {liquidity_pass_count}개")
     print(f"   [진단:이상치] 총 {outlier_count}개 종목이 생존 게이트 통과 종목 중 60일 +100% 이상")
     print(f"   [진단:분할의심] 총 {split_flag_count}개 종목이 ±30% 필터를 뚫은 잔존 분할/증자 의심"
           f"(relative_strength/ma_breakout/short_term_breakout None 처리됨)")
