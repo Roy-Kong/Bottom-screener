@@ -348,6 +348,24 @@ def bollinger_bandwidth_series(closes: list[float], window: int = 20) -> list[fl
     return out
 
 
+def has_unadjusted_split_jump(closes: list[float], window: int = 60,
+                              up_ratio: float = 2.0, down_ratio: float = 0.5) -> bool:
+    """최근 window일 구간에 전일 대비 up_ratio배 이상 급등 또는 down_ratio배
+       이하 급락한 지점이 있으면 True. pykrx의 전종목 스냅샷 함수는 수정주가를
+       제공하지 않고(adjusted 옵션 자체가 없음), collect_ohlcv_matrix의 ±30%
+       상하한가 필터가 대부분의 액면분할·무상증자성 불연속을 이미 걸러내지만,
+       그 필터를 뚫고 들어온 잔존 이상치를 상대강도·이평선 신호 계산 직전에
+       한 번 더 방어한다."""
+    recent = closes[-window:]
+    for i in range(1, len(recent)):
+        if recent[i - 1] <= 0:
+            continue
+        ratio = recent[i] / recent[i - 1]
+        if ratio >= up_ratio or ratio <= down_ratio:
+            return True
+    return False
+
+
 def had_dividend_cut(fund_hist_rows: list[dict]) -> bool:
     """연도별 DPS가 전년比 감소한 적 있으면 True (배당 삭감 이력)."""
     by_year = {}
@@ -426,6 +444,7 @@ def run():
     print("7) 채점(바닥 7개 + 턴어라운드 5개 신호)…")
     results = []
     outlier_count = 0  # 임시 진단: 60일 수익률 +100% 이상 잔존 이상치 확인용, 확인 후 제거
+    split_flag_count = 0  # 임시 진단: ±30% 필터를 뚫은 잔존 분할/증자 의심 종목 수, 확인 후 제거
     for tkr, name in universe.items():
         dates, closes, vols = series_for_ticker(matrix, tkr)
         if len(closes) < 60 or len(vols) < 120:
@@ -441,6 +460,14 @@ def run():
             continue
         if cur_pbr <= 0:            # 자본잠식 의심/데이터 없음
             continue
+
+        # 상대강도·이평선 신호는 60일 구간 내 미조정 분할/증자성 불연속에 취약하므로,
+        # collect_ohlcv_matrix의 ±30% 필터를 뚫고 들어온 잔존 이상치를 여기서 한 번 더 확인
+        split_suspected = has_unadjusted_split_jump(closes)
+        if split_suspected:
+            split_flag_count += 1
+            print(f"   [진단:분할의심] {name}({tkr}) 최근 60일 내 전일 대비 2배↑/0.5배↓ 지점 발견 "
+                  f"— relative_strength/ma_breakout/short_term_breakout None 처리")
 
         # --- 신호 입력값 ---
         # 거래량 고갈(①)은 최근 5일을 일부러 제외한 6~25일 전 구간을 본다 —
@@ -486,7 +513,7 @@ def run():
             "short_covering": sg.score_short_covering(short_cur.get(tkr, 0.0), short_max.get(tkr, 0.0)),
             "pbr_low": sg.score_pbr_low(cur_pbr, pbr_series),
             "dividend_yield": sg.score_dividend_yield(cur_div, div_series, cur_dps, cur_eps, had_dividend_cut(fh)),
-            "relative_strength": sg.score_relative_strength(ret60, idx_ret_t),
+            "relative_strength": None if split_suspected else sg.score_relative_strength(ret60, idx_ret_t),
             "volatility_squeeze": sg.score_volatility_squeeze(bw_series),
         }
 
@@ -546,8 +573,8 @@ def run():
 
             turnaround_scores = {
                 "volume_surge": sg.score_volume_surge(recent5_avg_vol, recent20_avg_vol),
-                "ma_breakout": sg.score_ma_breakout(closes[-1], ma20, ma60),
-                "short_term_breakout": sg.score_short_term_breakout(closes[-1], high60),
+                "ma_breakout": None if split_suspected else sg.score_ma_breakout(closes[-1], ma20, ma60),
+                "short_term_breakout": None if split_suspected else sg.score_short_term_breakout(closes[-1], high60),
                 "relative_strength_accel": sg.score_relative_strength_accel(
                     stock_ret_recent10, index_ret_recent10, stock_ret_prior10, index_ret_prior10),
                 "accumulation_accel": sg.score_accumulation_accel(net_buy_recent5_avg, net_buy_prior15_avg),
@@ -601,11 +628,14 @@ def run():
             "turnaround_raw": turnaround_raw,
             "status": status,
             "close": round(last_close),
+            "split_suspected": split_suspected,
         }
         item["explanation"] = ex.explain_result(item)
         results.append(item)
 
     print(f"   [진단:이상치] 총 {outlier_count}개 종목이 생존 게이트 통과 종목 중 60일 +100% 이상")
+    print(f"   [진단:분할의심] 총 {split_flag_count}개 종목이 ±30% 필터를 뚫은 잔존 분할/증자 의심"
+          f"(relative_strength/ma_breakout/short_term_breakout None 처리됨)")
 
     # confirmed_turnaround를 먼저, 그 다음 watching — 각 그룹 내에서는 바닥 점수 내림차순
     results.sort(key=lambda x: (x["status"] != "confirmed_turnaround", -x["score"]))
