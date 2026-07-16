@@ -624,13 +624,9 @@ def run():
         # 각각 독립적으로 강해야 confirmed_turnaround. 가격 계열끼리는 서로를
         # 대체 증거로 인정하지 않는다(위 상수 정의부 주석 참고).
         ts = turnaround_scores or {}
-        price_confirmed = any(
-            ts.get(k) is not None and ts[k] >= TURNAROUND_STRONG_THRESHOLD for k in PRICE_GROUP
-        )
-        flow_confirmed = any(
-            ts.get(k) is not None and ts[k] >= TURNAROUND_STRONG_THRESHOLD for k in FLOW_GROUP
-        )
-        status = "confirmed_turnaround" if (price_confirmed and flow_confirmed) else "watching"
+        # TEMP: 구 규칙(5개 중 2개 이상)으로 잠시 되돌려 전종목 개수 비교 실행 중 — 확인 후 원복 예정
+        n_strong = sum(1 for v in ts.values() if v is not None and v >= TURNAROUND_STRONG_THRESHOLD)
+        status = "confirmed_turnaround" if n_strong >= 2 else "watching"
 
         item = {
             "ticker": tkr, "name": name,
