@@ -284,6 +284,22 @@ def collect_short_max(dates: list[str]) -> dict[str, float]:
     return mx
 
 
+def collect_market_cap(date: str) -> dict[str, float]:
+    """{티커: 시가총액} 단일 날짜 스냅샷. 생존 게이트의 MIN_MARKET_CAP 필터용
+       (거래대금과 별개로 실제 시총을 봐야 초소형주를 정확히 거른다)."""
+    out: dict[str, float] = {}
+    for mkt in TARGET_MARKETS:
+        try:
+            df = stock.get_market_cap_by_ticker(date, market=mkt)
+        except Exception:
+            df = None
+        if df is None or df.empty:
+            continue
+        for tkr, row in df.iterrows():
+            out[tkr] = float(row.get("시가총액", 0) or 0)
+    return out
+
+
 def collect_short_current(date: str) -> dict[str, float]:
     cur: dict[str, float] = {}
     for mkt in TARGET_MARKETS:
@@ -423,6 +439,9 @@ def run():
     latest_date = sorted(matrix.keys())[-1] if matrix else asof
     short_cur = collect_short_current(latest_date)
 
+    print("4b) 시가총액 수집…")
+    market_cap = collect_market_cap(latest_date)
+
     print("5) 매집 수집(20일 / 최근5일 / 이전15일)…")
     accum_from = ohlcv_dates[-ACCUM_WINDOW_DAYS] if len(ohlcv_dates) >= ACCUM_WINDOW_DAYS else ohlcv_dates[0]
     accum = collect_accumulation(accum_from, latest_date)
@@ -466,8 +485,10 @@ def run():
         avg_trading_value = median(vols[-20:]) * last_close
         fh = fund_hist.get(tkr, [])
         cur_pbr = fh[0]["PBR"] if fh else 0.0
-        # 시총 근사: 최신 펀더멘털이 없으면 스킵. (정확 시총은 별도 호출 가능하나 생략)
+        cur_market_cap = market_cap.get(tkr, 0.0)
         if avg_trading_value < MIN_AVG_TRADING_VALUE:
+            continue
+        if cur_market_cap < MIN_MARKET_CAP:
             continue
         if cur_pbr <= 0:            # 자본잠식 의심/데이터 없음
             continue
@@ -492,8 +513,12 @@ def run():
         # 상대강도는 코스피 전체가 아니라 그 종목의 업종지수 대비로 본다
         # (매핑 없거나 업종지수 데이터가 없으면 코스피 전체로 폴백).
         bench_series, bench_label = resolve_benchmark_series(tkr, sector_map, sector_idx_by_date, idx_by_date)
+        # 종목 고유의 날짜(dates)로 조회한다 — ohlcv_dates(전체 유니버스 캘린더)의
+        # 인덱스를 쓰면, 이 종목만 결측(±30% 필터 등)이 있을 때 종목 수익률(closes
+        # 기준)과 지수 수익률이 서로 다른 기간을 비교하게 된다. turnaround 섹션의
+        # relative_strength_accel과 동일한 방식으로 맞춘다.
         bench_c_latest = bench_series.get(latest_date)
-        bench_c_60ago = bench_series.get(ohlcv_dates[-60])
+        bench_c_60ago = bench_series.get(dates[-60])
         idx_ret_t = (bench_c_latest / bench_c_60ago - 1) if bench_c_latest and bench_c_60ago else idx_ret
 
         if ret60 > 1.0:  # 임시 진단: +100% 이상 잔존 이상치 확인용, 확인 후 제거
