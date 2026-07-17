@@ -4,7 +4,7 @@ screener.py — 전종목 바닥 스크리너 파이프라인 (pykrx → signals
 흐름:
   1) 코스피+코스닥 종목 목록
   2) 효율적 수집: '하루치 전종목 스냅샷'을 여러 날짜에 대해 수집 (종목별 개별호출 최소화)
-  3) 생존 게이트 통과 종목만 채점: 바닥 신호 7개 + 턴어라운드 신호 5개(별도 합성점수).
+  3) 생존 게이트 통과 종목만 채점: 바닥 신호 7개 + 턴어라운드 신호 7개(별도 합성점수).
      둘 다 signals.py의 BOTTOM_WEIGHTS/TURNAROUND_WEIGHTS로 가중평균 —
      이 가중치는 백테스트로 검증된 값이 아니라 신호의 증거 직접성에 따른
      초기 추정값이며, 나중에 조정될 수 있다.
@@ -12,7 +12,9 @@ screener.py — 전종목 바닥 스크리너 파이프라인 (pykrx → signals
      상대강도 가속) 1개 이상 + 수급 계열(거래량 동반 상승·매집 가속) 1개 이상이
      각각 50점 이상이면 confirmed_turnaround, 아니면 watching으로 분류
      (가격 계열 셋은 사실상 "최근에 올랐다"는 같은 사실의 다른 표현이라
-     서로를 대체 증거로 인정하지 않는다)
+     서로를 대체 증거로 인정하지 않는다). RSI 반등·MACD 골든크로스는 종합점수
+     (참고용)에는 들어가지만 이 판정에는 쓰지 않는다 — 원리가 PRICE_GROUP과
+     겹쳐서 게이트에 넣으면 안전장치가 약해진다(PRICE_GROUP 주석 참고).
   5) 상위 N개를 results.json으로 저장 (프론트가 읽음)
 
 주의: KRX 접속이 되는 환경(예: GitHub Actions)에서 실행해야 한다.
@@ -63,12 +65,19 @@ MAX_DAILY_MOVE_RATIO = 1.32
 BOTTOM_SCORE_THRESHOLD = 60            # 바닥 종합점수 이 값 미만이면 결과에서 제외
 TURNAROUND_STRONG_THRESHOLD = 50       # 개별 턴어라운드 신호가 이 값 이상이면 "강함"으로 침
 
-# 턴어라운드 신호 5개 중 이평선 돌파·단기 고점 돌파·상대강도 가속은 전부 "가격이
+# 턴어라운드 신호 중 이평선 돌파·단기 고점 돌파·상대강도 가속은 전부 "가격이
 # 최근에 올랐다"는 하나의 사실을 서로 다른 계산식으로 표현한 것에 가깝다 — 셋이
 # 동시에 켜져도 독립적 증거 3개가 아니라 사실상 1개 사건의 중복 카운트다. 반면
 # 거래량 동반 상승·매집 가속은 가격과 별개로 움직일 수 있는 진짜 다른 정보(거래량·
 # 거래주체)라서 confirmed_turnaround는 "가격 계열에서 1개 이상 + 수급 계열에서
-# 1개 이상"이 각각 독립적으로 확인돼야 인정한다(단순히 5개 중 N개 이상이 아님).
+# 1개 이상"이 각각 독립적으로 확인돼야 인정한다(단순히 N개 중 M개 이상이 아님).
+#
+# RSI 반등·MACD 골든크로스는 일부러 이 두 그룹 어디에도 넣지 않는다. MACD는
+# 이동평균 교차라 ma_breakout과, RSI 반등은 단기 급등 포착이라 short_term_breakout과
+# 원리가 겹쳐서, PRICE_GROUP에 추가하면 "가격 계열 1개 이상"이라는 조건이 사실상
+# 더 쉽게 통과돼 이 안전장치 자체가 약해진다. 그래서 turnaround_composite(참고
+# 점수·화면 표시)에는 넣되, confirmed_turnaround 게이트 판정에서는 뺀다
+# (signals.py TURNAROUND_WEIGHTS 위 주석 참고).
 PRICE_GROUP = ["ma_breakout", "short_term_breakout", "relative_strength_accel"]
 FLOW_GROUP = ["volume_surge", "accumulation_accel"]
 
@@ -502,7 +511,7 @@ def run():
     print(f"   업종지수 {len(sector_codes_needed)}개 중 "
           f"{sum(1 for v in sector_idx_by_date.values() if v)}개 데이터 확보")
 
-    print("7) 채점(바닥 7개 + 턴어라운드 5개 신호)…")
+    print("7) 채점(바닥 7개 + 턴어라운드 7개 신호, 그중 5개만 게이트 판정에 사용)…")
     results = []
     bench_kind_count = {"sector": 0, "market:1001": 0, "market:2001": 0}  # 진단: 벤치마크 종류 분포
     outlier_count = 0  # 임시 진단: 60일 수익률 +100% 이상 잔존 이상치 확인용, 확인 후 제거
@@ -559,7 +568,7 @@ def run():
         if split_suspected:
             split_flag_count += 1
             print(f"   [진단:분할의심] {name}({tkr}) 최근 60일 내 전일 대비 2배↑/0.5배↓ 지점 발견 "
-                  f"— relative_strength/ma_breakout/short_term_breakout None 처리")
+                  f"— relative_strength/ma_breakout/short_term_breakout/rsi_reversal/macd_cross None 처리")
 
         # --- 신호 입력값 ---
         # 거래량 고갈(①)은 최근 5일을 일부러 제외한 6~25일 전 구간을 본다 —
@@ -650,7 +659,8 @@ def run():
         if comp["composite"] is None or comp["composite"] < BOTTOM_SCORE_THRESHOLD:
             continue
 
-        # --- 턴어라운드 신호 5개: "실제로 방향을 틀었는지"만 본다 (바닥 신호와 끝까지 분리) ---
+        # --- 턴어라운드 신호 7개(게이트 판정용 5개 + 참고용 2개): "실제로 방향을
+        # 틀었는지"만 본다 (바닥 신호와 끝까지 분리) ---
         turnaround_scores = None
         turnaround_comp = None
         turnaround_raw = None
@@ -679,6 +689,12 @@ def run():
                 "relative_strength_accel": sg.score_relative_strength_accel(
                     stock_ret_recent10, index_ret_recent10, stock_ret_prior10, index_ret_prior10),
                 "accumulation_accel": sg.score_accumulation_accel(net_buy_recent5_avg, net_buy_prior15_avg),
+                # 참고용(게이트 미사용) — PRICE_GROUP과 개념이 겹쳐서 판정에는 안 씀.
+                # closes만으로 계산돼 별도 수집이 필요 없다. split_suspected면 다른
+                # 가격 패턴 신호들과 동일한 이유로 None 처리(미조정 분할 구간에서
+                # RSI/MACD 자체가 왜곡됨).
+                "rsi_reversal": None if split_suspected else sg.score_rsi_reversal(closes),
+                "macd_cross": None if split_suspected else sg.score_macd_cross(closes),
             }
             turnaround_comp = sg.composite_score(turnaround_scores, sg.TURNAROUND_WEIGHTS)
 
@@ -745,7 +761,7 @@ def run():
           f"20일 평균 거래대금 {MIN_AVG_TRADING_VALUE / 1e8:.0f}억원 이상: {liquidity_pass_count}개")
     print(f"   [진단:이상치] 총 {outlier_count}개 종목이 생존 게이트 통과 종목 중 60일 +100% 이상")
     print(f"   [진단:분할의심] 총 {split_flag_count}개 종목이 ±30% 필터를 뚫은 잔존 분할/증자 의심"
-          f"(relative_strength/ma_breakout/short_term_breakout None 처리됨)")
+          f"(relative_strength/ma_breakout/short_term_breakout/rsi_reversal/macd_cross None 처리됨)")
     n_confirmed = sum(1 for r in results if r["status"] == "confirmed_turnaround")
     print(f"   [진단:턴어라운드] 바닥 60점 이상 {len(results)}개 중 confirmed_turnaround {n_confirmed}개, "
           f"watching {len(results) - n_confirmed}개")

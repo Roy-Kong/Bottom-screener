@@ -26,12 +26,21 @@ BOTTOM_WEIGHTS = {
     "dividend_yield": 5,       # 배당수익률(조건부) — 가장 간접적
 }
 
+# rsi_reversal·macd_cross 추가로 기존 5개 가중치를 0.84배(=84/100) 비례 축소하고
+# 그 자리에 8+8=16을 배정 — 합계 100 유지. 이 둘은 종합점수(참고용)에는 들어가지만
+# confirmed_turnaround 게이트 판정(PRICE_GROUP/FLOW_GROUP)에는 쓰지 않는다: MACD는
+# 이동평균 교차라 ma_breakout과, RSI 반등은 단기 가격 급등 포착이라
+# short_term_breakout과 원리가 겹쳐서, 게이트에 넣으면 "가격 계열 1개 이상"
+# 조건이 실질적으로 더 쉽게 통과돼 지난번 만든 안전장치가 약해진다
+# (screener.py PRICE_GROUP 주석 참고).
 TURNAROUND_WEIGHTS = {
-    "accumulation_accel": 30,          # 매집 가속 — 가장 직접적
-    "relative_strength_accel": 25,     # 상대강도 가속
-    "volume_surge": 20,                # 거래량 동반 상승
-    "ma_breakout": 15,                 # 이평선 돌파
-    "short_term_breakout": 10,         # 최근 단기 고점 돌파
+    "accumulation_accel": 25.2,        # 매집 가속 — 가장 직접적 (30 → 비례 축소)
+    "relative_strength_accel": 21.0,   # 상대강도 가속 (25 → 비례 축소)
+    "volume_surge": 16.8,              # 거래량 동반 상승 (20 → 비례 축소)
+    "ma_breakout": 12.6,               # 이평선 돌파 (15 → 비례 축소)
+    "short_term_breakout": 8.4,        # 최근 단기 고점 돌파 (10 → 비례 축소)
+    "rsi_reversal": 8,                 # RSI 과매도 반등 — 참고용(게이트 미사용)
+    "macd_cross": 8,                   # MACD 골든크로스 — 참고용(게이트 미사용)
 }
 
 
@@ -225,6 +234,97 @@ def score_accumulation_accel(net_buy_recent5_avg: float, net_buy_prior15_avg: fl
     return _lin(ratio, 0.5, 2.0, 0.0, 100.0)
 
 
+# ---------- ⑭⑮ RSI 반등·MACD 골든크로스 (참고용, confirmed_turnaround 게이트 미사용) ----------
+# 둘 다 closes(종가 리스트)만으로 계산되어 screener.py에서 별도 수집 없이 바로 쓸 수 있다.
+# 개념적으로 기존 PRICE_GROUP 신호와 겹친다: MACD는 이동평균 교차라 ma_breakout과,
+# RSI 반등은 단기 급등 포착이라 short_term_breakout과 원리가 같다. 그래서 종합점수
+# (참고용 화면 표시)에는 넣되, confirmed_turnaround 판정 자체에는 넣지 않는다
+# (TURNAROUND_WEIGHTS 위 주석, screener.py PRICE_GROUP 주석 참고).
+
+def _rsi_series(closes: list[float], period: int = 14) -> list[float]:
+    """종가로부터 RSI(period) 시계열 (단순이동평균 기반 근사치, Wilder 평활 아님).
+       gains/losses의 마지막 period개 평균으로 매 시점을 계산한다."""
+    if len(closes) < period + 1:
+        return []
+    gains, losses = [], []
+    for i in range(1, len(closes)):
+        diff = closes[i] - closes[i - 1]
+        gains.append(diff if diff > 0 else 0.0)
+        losses.append(-diff if diff < 0 else 0.0)
+    out = []
+    for i in range(period, len(gains) + 1):
+        avg_gain = sum(gains[i - period:i]) / period
+        avg_loss = sum(losses[i - period:i]) / period
+        if avg_loss == 0:
+            out.append(100.0 if avg_gain > 0 else 50.0)
+        else:
+            rs = avg_gain / avg_loss
+            out.append(100.0 - 100.0 / (1.0 + rs))
+    return out
+
+
+def _ema_series(values: list[float], period: int) -> list[float]:
+    """단순 EMA 시계열. 첫 값을 그대로 시드로 쓰기 때문에 초반 몇 개는 다소
+       부정확하지만, 이 프로젝트가 쓰는 130일치 데이터 규모에선 오차가 충분히 감쇠한다."""
+    if not values:
+        return []
+    k = 2.0 / (period + 1)
+    out = [values[0]]
+    for v in values[1:]:
+        out.append(v * k + out[-1] * (1 - k))
+    return out
+
+
+def _macd_series(closes: list[float]) -> tuple[list[float], list[float]]:
+    """(MACD선, 시그널선) 시계열. MACD선 = EMA12 - EMA26, 시그널선 = MACD선의 EMA9."""
+    if len(closes) < 26:
+        return [], []
+    ema12 = _ema_series(closes, 12)
+    ema26 = _ema_series(closes, 26)
+    macd_line = [a - b for a, b in zip(ema12, ema26)]
+    signal_line = _ema_series(macd_line, 9)
+    return macd_line, signal_line
+
+
+def score_rsi_reversal(closes: list[float], period: int = 14, recent: int = 5) -> float | None:
+    """⑭ RSI 과매도 반등(참고용). RSI(14)가 최근 recent일 이전 구간에서
+       과매도(<=30)를 찍었고, 지금(최신값)은 40 이상으로 반등했으면 고득점.
+       과매도 이력 자체가 없으면(원래 안 눌렸던 것) 저득점 — '반등'과
+       '원래 높았던 것'을 구분하기 위함."""
+    rsi_series = _rsi_series(closes, period)
+    if len(rsi_series) < recent + 1:
+        return None
+    current = rsi_series[-1]
+    prior = rsi_series[:-recent]
+    if not prior:
+        return None
+    was_oversold = min(prior) <= 30.0
+    if not was_oversold:
+        return 0.0
+    return _lin(current, 30.0, 40.0, 0.0, 100.0)
+
+
+def score_macd_cross(closes: list[float], lookback: int = 5) -> float | None:
+    """⑮ MACD 골든크로스(참고용). 최근 lookback일 내 MACD선이 시그널선을 상향
+       돌파했는지 확인하고, 그 돌파 시점의 MACD선이 0선 아래(하락 추세에서 막
+       반전 — 신호 가치 높음)인지 위(이미 상승 중 재차 위로 튐 — 신호 가치 낮음)인지로
+       채점한다. 종가 대비 상대화해서 주가 스케일과 무관하게 만든다."""
+    macd_line, signal_line = _macd_series(closes)
+    n = min(len(macd_line), len(signal_line))
+    if n < lookback + 1:
+        return None
+    macd_line, signal_line = macd_line[-n:], signal_line[-n:]
+    crossed_at = None
+    for i in range(max(1, n - lookback), n):
+        if macd_line[i - 1] <= signal_line[i - 1] and macd_line[i] > signal_line[i]:
+            crossed_at = i
+    if crossed_at is None:
+        return 0.0
+    ref_close = closes[-1] if closes[-1] else 1.0
+    rel = macd_line[crossed_at] / ref_close   # 0선 아래(음수)일수록 고득점
+    return _lin(rel, 0.01, -0.01, 20.0, 100.0)
+
+
 # ---------- 종합 ----------
 SIGNAL_LABELS = {
     "volume_dryness": "거래량 고갈",
@@ -242,6 +342,8 @@ TURNAROUND_SIGNAL_LABELS = {
     "short_term_breakout": "단기 고점 돌파",
     "relative_strength_accel": "상대강도 가속",
     "accumulation_accel": "매집 가속",
+    "rsi_reversal": "RSI 반등",
+    "macd_cross": "MACD 골든크로스",
 }
 
 
@@ -356,6 +458,28 @@ if __name__ == "__main__":
     print(f"I. 가중평균 테스트: 전체 3개(가중) → {i_full['composite']}, "
           f"b 제외 재정규화 → {i_missing['composite']}, weights 생략(동일가중) → {i_equal_vs_weighted['composite']}\n")
 
+    # 시나리오 J: RSI 반등 (20일 하락 후 10일 반등 — 과매도 이력 있고 지금은 반등)
+    closes_j_down = [100 - 1.5 * i for i in range(20)]           # 100 → 71.5
+    closes_j_up = [closes_j_down[-1] + 1.5 * i for i in range(1, 11)]  # 계속 반등
+    closes_j = closes_j_down + closes_j_up
+    rsi_j = score_rsi_reversal(closes_j)
+    # 시나리오 J': 과매도 이력 없이 계속 상승만 한 경우 — "반등"이 아니므로 저점수
+    closes_j2 = [100 + 1.0 * i for i in range(30)]
+    rsi_j2 = score_rsi_reversal(closes_j2)
+    print(f"J. RSI 반등 테스트: 과매도 후 반등 → {rsi_j}, 과매도 이력 없이 계속 상승 → {rsi_j2}\n")
+
+    # 시나리오 K: MACD 골든크로스 (40일 하락 후 15일 반등 — 0선 아래에서 돌파 기대)
+    closes_k_down = [100 - 1.0 * i for i in range(40)]           # 100 → 61
+    closes_k_up = [closes_k_down[-1] + 1.5 * i for i in range(1, 16)]
+    closes_k = closes_k_down + closes_k_up
+    macd_k = score_macd_cross(closes_k, lookback=20)  # 정확한 교차일을 특정하기 어려워 여유있게 탐색
+    # 시나리오 K': 처음부터 끝까지 단조 상승만 한 경우 — 초반(EMA 시드 근처) 외엔
+    # 최근 5일 내 '새로운' 교차가 없어야 하므로 저점수
+    closes_k2 = [100 + 1.0 * i for i in range(50)]
+    macd_k2 = score_macd_cross(closes_k2)  # 기본 lookback=5
+    print(f"K. MACD 골든크로스 테스트: 하락 후 반등(0선 아래 돌파 기대) → {macd_k}, "
+          f"단조 상승만(최근 5일 내 신규 교차 없음) → {macd_k2}\n")
+
     # 검증 단언
     assert ra["composite"] > 75, "바닥 종목은 고득점이어야 함"
     assert rb["composite"] < 30, "고점 종목은 저득점이어야 함"
@@ -371,5 +495,10 @@ if __name__ == "__main__":
     assert i_equal_vs_weighted["composite"] == 33.3, "weights 생략 시 예전 동일가중 방식이어야 함"
     assert abs(sum(BOTTOM_WEIGHTS.values()) - 100) < 1e-9, "BOTTOM_WEIGHTS 합은 100이어야 함"
     assert abs(sum(TURNAROUND_WEIGHTS.values()) - 100) < 1e-9, "TURNAROUND_WEIGHTS 합은 100이어야 함"
+    assert rsi_j is not None and rsi_j > 60, "과매도 후 반등은 고득점이어야 함"
+    assert rsi_j2 == 0.0, "과매도 이력 없는 상승은 '반등'이 아니므로 0점이어야 함"
+    assert macd_k is not None and macd_k > 50, "0선 아래에서의 골든크로스는 고득점이어야 함"
+    assert macd_k2 == 0.0, "최근 5일 내 신규 교차가 없으면 0점이어야 함"
     print("✅ 모든 로직 검증 통과 (바닥 고득점 / 고점 저득점 / 함정 배제 / 무배당 분모조정 / "
-          "밴드 스퀴즈 / 턴어라운드 확인 / 매집 전환 / 가중평균 재정규화 / 가중치 합계)")
+          "밴드 스퀴즈 / 턴어라운드 확인 / 매집 전환 / 가중평균 재정규화 / 가중치 합계 / "
+          "RSI 반등 / MACD 골든크로스)")

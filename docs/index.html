@@ -113,9 +113,12 @@ const ORDER = ["volume_dryness","accumulation","short_covering","pbr_low","divid
 
 const TURNAROUND_LABELS = {
   volume_surge:"거래량 동반 상승", ma_breakout:"이평선 돌파", short_term_breakout:"단기 고점 돌파",
-  relative_strength_accel:"상대강도 가속", accumulation_accel:"매집 가속"
+  relative_strength_accel:"상대강도 가속", accumulation_accel:"매집 가속",
+  rsi_reversal:"RSI 반등(참고)", macd_cross:"MACD 골든크로스(참고)"
 };
-const TURNAROUND_ORDER = ["volume_surge","ma_breakout","short_term_breakout","relative_strength_accel","accumulation_accel"];
+// rsi_reversal/macd_cross는 confirmed_turnaround 판정(PRICE_GROUP/FLOW_GROUP)에는
+// 안 쓰고 종합점수·화면 표시에만 반영되는 참고 신호 — screener.py 주석 참고.
+const TURNAROUND_ORDER = ["volume_surge","ma_breakout","short_term_breakout","relative_strength_accel","accumulation_accel","rsi_reversal","macd_cross"];
 
 // 미리보기용 샘플 (호스팅되면 실제 results.json로 대체됨)
 const SAMPLE = {
@@ -124,7 +127,7 @@ const SAMPLE = {
     {ticker:"000660",name:"예시종목 A",score:91.2,close:207000,status:"confirmed_turnaround",
       breakdown:{volume_dryness:88,accumulation:100,short_covering:95,pbr_low:92,dividend_yield:80,relative_strength:92,volatility_squeeze:70},
       turnaround_score:74.0,
-      turnaround_breakdown:{volume_surge:82,ma_breakout:90,short_term_breakout:65,relative_strength_accel:71,accumulation_accel:62},
+      turnaround_breakdown:{volume_surge:82,ma_breakout:90,short_term_breakout:65,relative_strength_accel:71,accumulation_accel:62,rsi_reversal:78,macd_cross:85},
       liquidity:{avg_trading_value_krw:8500000000,unstable_days_20d:0,unstable:false,market_impact_pct:0.59,market_impact_level:"low"},
       explanation:{
         summary:"바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(이평선 돌파, 거래량 동반 상승)가 동시에 확인됐습니다.",
@@ -134,7 +137,7 @@ const SAMPLE = {
     {ticker:"005930",name:"예시종목 B",score:78.5,close:71000,status:"watching",
       breakdown:{volume_dryness:70,accumulation:85,short_covering:60,pbr_low:88,dividend_yield:null,relative_strength:89,volatility_squeeze:55},
       turnaround_score:22.0,
-      turnaround_breakdown:{volume_surge:10,ma_breakout:20,short_term_breakout:15,relative_strength_accel:30,accumulation_accel:35},
+      turnaround_breakdown:{volume_surge:10,ma_breakout:20,short_term_breakout:15,relative_strength_accel:30,accumulation_accel:35,rsi_reversal:0,macd_cross:12},
       liquidity:{avg_trading_value_krw:3200000000,unstable_days_20d:5,unstable:true,market_impact_pct:1.56,market_impact_level:"low"},
       explanation:{
         summary:null,

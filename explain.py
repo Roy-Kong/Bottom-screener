@@ -26,6 +26,8 @@ TURNAROUND_LABELS = {
     "short_term_breakout": "단기 고점 돌파",
     "relative_strength_accel": "상대강도 가속",
     "accumulation_accel": "매집 가속",
+    "rsi_reversal": "RSI 반등",
+    "macd_cross": "MACD 골든크로스",
 }
 
 
