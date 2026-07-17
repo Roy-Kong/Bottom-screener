@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-17T04:31",
+  "generated_at": "2026-07-17T13:12",
   "as_of_date": "20260716",
   "universe_size": 2765,
   "scored": 52,
@@ -23,7 +23,9 @@
     "ma_breakout": "이평선 돌파",
     "short_term_breakout": "단기 고점 돌파",
     "relative_strength_accel": "상대강도 가속",
-    "accumulation_accel": "매집 가속"
+    "accumulation_accel": "매집 가속",
+    "rsi_reversal": "RSI 반등",
+    "macd_cross": "MACD 골든크로스"
   },
   "results": [
     {
@@ -73,14 +75,16 @@
           "percentile": 0.9803921568627451
         }
       },
-      "turnaround_score": 48.9,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 49.1,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 0.0,
         "short_term_breakout": 13.3,
         "relative_strength_accel": 94.9,
-        "accumulation_accel": 79.6
+        "accumulation_accel": 79.6,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -121,7 +125,7 @@
         "market_impact_level": "low"
       },
       "explanation": {
-        "summary": "바닥 신호(공매도 감소, 변동성 수축)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
+        "summary": "바닥 신호(공매도 감소, 변동성 수축)와 턴어라운드 신호(RSI 반등, 상대강도 가속)가 동시에 확인됐습니다.",
         "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 볼린저밴드폭이 최근 구간 중 하위 1%로 가격이 좁게 눌려 있습니다. 최근 20일간 기관·외국인이 95억원(유통시총의 3.5%)을 순매수했고, 그동안 주가는 -5.8%로 조용했습니다. 최근 60일 업종지수는 -24.0%인데 이 종목은 -11.2%로 업종지수보다 +12.8%p 선방했습니다. PBR이 0.26배로 최근 5년 밴드 하위 25% 구간입니다.",
         "turnaround": "상대강도가 이전 10일 -1.5%p에서 최근 10일 +7.5%p로 +9.0%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 169%로 매집이 강해졌습니다."
       }
@@ -173,14 +177,16 @@
           "percentile": 4.901960784313726
         }
       },
-      "turnaround_score": 56.2,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 63.2,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 1.2,
         "ma_breakout": 0.9,
         "short_term_breakout": 9.5,
         "relative_strength_accel": 99.6,
-        "accumulation_accel": 100.0
+        "accumulation_accel": 100.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 100.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -221,7 +227,7 @@
         "market_impact_level": "low"
       },
       "explanation": {
-        "summary": "바닥 신호(공매도 감소, 기관·외국인 매집)와 턴어라운드 신호(매집 가속, 상대강도 가속)가 동시에 확인됐습니다.",
+        "summary": "바닥 신호(공매도 감소, 기관·외국인 매집)와 턴어라운드 신호(매집 가속, RSI 반등)가 동시에 확인됐습니다.",
         "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 최근 20일간 기관·외국인이 100억원(유통시총의 2.0%)을 순매수했고, 그동안 주가는 -1.2%로 조용했습니다. 볼린저밴드폭이 최근 구간 중 하위 5%로 가격이 좁게 눌려 있습니다. PBR이 0.46배로 최근 5년 밴드 하위 6% 구간입니다.",
         "turnaround": "최근 5일 일평균 순매수가 이전 15일 평균의 464%로 매집이 강해졌습니다. 상대강도가 이전 10일 +8.0%p에서 최근 10일 +17.9%p로 +9.9%p 가속됐습니다."
       }
@@ -273,14 +279,16 @@
           "percentile": 13.72549019607843
         }
       },
-      "turnaround_score": 47.9,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 48.3,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 9.2,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 87.0,
-        "accumulation_accel": 81.1
+        "accumulation_accel": 81.1,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -321,7 +329,7 @@
         "market_impact_level": "low"
       },
       "explanation": {
-        "summary": "바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
+        "summary": "바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(RSI 반등, 상대강도 가속)가 동시에 확인됐습니다.",
         "bottom": "최근 20일간 기관·외국인이 808억원(유통시총의 2.5%)을 순매수했고, 그동안 주가는 -4.9%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 배당수익률이 0.2%로 최근 5년 대비 상위 0% 구간입니다. PBR이 1.35배로 최근 5년 밴드 하위 2% 구간입니다. 볼린저밴드폭이 최근 구간 중 하위 14%로 가격이 좁게 눌려 있습니다.",
         "turnaround": "상대강도가 이전 10일 +0.6%p에서 최근 10일 +8.0%p로 +7.4%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 172%로 매집이 강해졌습니다."
       }
@@ -373,14 +381,16 @@
           "percentile": 34.31372549019608
         }
       },
-      "turnaround_score": 63.7,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 61.5,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 14.6,
         "ma_breakout": 28.0,
         "short_term_breakout": 52.6,
         "relative_strength_accel": 85.2,
-        "accumulation_accel": 100.0
+        "accumulation_accel": 100.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -421,7 +431,7 @@
         "market_impact_level": "low"
       },
       "explanation": {
-        "summary": "바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(매집 가속, 상대강도 가속)가 동시에 확인됐습니다.",
+        "summary": "바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(매집 가속, RSI 반등)가 동시에 확인됐습니다.",
         "bottom": "최근 20일간 기관·외국인이 438억원(유통시총의 3.4%)을 순매수했고, 그동안 주가는 -0.5%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 볼린저밴드폭이 최근 구간 중 하위 34%로 가격이 좁게 눌려 있습니다. 최근 60일 업종지수는 -9.8%인데 이 종목은 -4.5%로 업종지수보다 +5.3%p 선방했습니다.",
         "turnaround": "최근 5일 일평균 순매수가 이전 15일 평균의 1526%로 매집이 강해졌습니다. 상대강도가 이전 10일 -1.0%p에서 최근 10일 +6.0%p로 +7.0%p 가속됐습니다. 현재가가 최근 60일 박스권 고점의 91%까지 올라왔습니다."
       }
@@ -473,14 +483,16 @@
           "percentile": 59.80392156862745
         }
       },
-      "turnaround_score": 63.6,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 64.1,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 8.6,
         "ma_breakout": 84.1,
         "short_term_breakout": 99.5,
         "relative_strength_accel": 37.2,
-        "accumulation_accel": 100.0
+        "accumulation_accel": 100.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 34.2
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -521,7 +533,7 @@
         "market_impact_level": "low"
       },
       "explanation": {
-        "summary": "바닥 신호(공매도 감소, 상대강도)와 턴어라운드 신호(매집 가속, 단기 고점 돌파)가 동시에 확인됐습니다.",
+        "summary": "바닥 신호(공매도 감소, 상대강도)와 턴어라운드 신호(매집 가속, RSI 반등)가 동시에 확인됐습니다.",
         "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 최근 60일 업종지수는 -18.3%인데 이 종목은 +16.4%로 업종지수보다 +34.7%p 선방했습니다. PBR이 1.77배로 최근 5년 밴드 하위 32% 구간입니다. 최근 20일간 기관·외국인이 365억원(유통시총의 3.9%)을 순매수했고, 그동안 주가는 +10.6%로 조용했습니다. 6~25일 전 거래량이 과거 120일 평균의 64%로 크게 줄었습니다.",
         "turnaround": "최근 5일 일평균 순매수가 이전 15일 평균의 688%로 매집이 강해졌습니다. 현재가가 최근 60일 박스권 고점의 100%까지 올라왔습니다. 20일 이평선이 60일 이평선보다 +1.1% 위로 정배열이고, 종가는 60일 이평선을 +7.2% 돌파했습니다."
       }
@@ -573,14 +585,16 @@
           "percentile": 41.1764705882353
         }
       },
-      "turnaround_score": 56.4,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 58.4,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 1.3,
         "ma_breakout": 69.1,
         "short_term_breakout": 47.8,
         "relative_strength_accel": 43.8,
-        "accumulation_accel": 100.0
+        "accumulation_accel": 100.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 37.9
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -621,7 +635,7 @@
         "market_impact_level": "low"
       },
       "explanation": {
-        "summary": "바닥 신호(공매도 감소, 상대강도)와 턴어라운드 신호(매집 가속, 이평선 돌파)가 동시에 확인됐습니다.",
+        "summary": "바닥 신호(공매도 감소, 상대강도)와 턴어라운드 신호(매집 가속, RSI 반등)가 동시에 확인됐습니다.",
         "bottom": "공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 최근 60일 업종지수는 -35.8%인데 이 종목은 -0.3%로 업종지수보다 +35.5%p 선방했습니다. 최근 20일간 기관·외국인이 171억원(유통시총의 8.4%)을 순매수했고, 그동안 주가는 +8.7%로 조용했습니다. PBR이 1.41배로 최근 5년 밴드 하위 32% 구간입니다. 볼린저밴드폭이 최근 구간 중 하위 41%로 가격이 좁게 눌려 있습니다.",
         "turnaround": "최근 5일 일평균 순매수가 이전 15일 평균의 250%로 매집이 강해졌습니다. 20일 이평선이 60일 이평선보다 -0.7% 위로 정배열이고, 종가는 60일 이평선을 +8.1% 돌파했습니다."
       }
@@ -673,14 +687,16 @@
           "percentile": 59.80392156862745
         }
       },
-      "turnaround_score": 60.7,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 59.0,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 16.5,
         "ma_breakout": 27.8,
         "short_term_breakout": 54.5,
         "relative_strength_accel": 71.3,
-        "accumulation_accel": 100.0
+        "accumulation_accel": 100.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -721,7 +737,7 @@
         "market_impact_level": "low"
       },
       "explanation": {
-        "summary": "바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(매집 가속, 상대강도 가속)가 동시에 확인됐습니다.",
+        "summary": "바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(매집 가속, RSI 반등)가 동시에 확인됐습니다.",
         "bottom": "최근 20일간 기관·외국인이 399억원(유통시총의 3.3%)을 순매수했고, 그동안 주가는 +3.8%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 배당수익률이 2.2%로 최근 5년 대비 상위 0% 구간입니다. PBR이 1.48배로 최근 5년 밴드 하위 4% 구간입니다.",
         "turnaround": "최근 5일 일평균 순매수가 이전 15일 평균의 228%로 매집이 강해졌습니다. 상대강도가 이전 10일 +4.9%p에서 최근 10일 +9.1%p로 +4.3%p 가속됐습니다. 현재가가 최근 60일 박스권 고점의 91%까지 올라왔습니다."
       }
@@ -773,14 +789,16 @@
           "percentile": 25.49019607843137
         }
       },
-      "turnaround_score": 49.2,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 49.4,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 100.0,
-        "accumulation_accel": 80.8
+        "accumulation_accel": 80.8,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -821,7 +839,7 @@
         "market_impact_level": "low"
       },
       "explanation": {
-        "summary": "바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
+        "summary": "바닥 신호(기관·외국인 매집, 공매도 감소)와 턴어라운드 신호(상대강도 가속, RSI 반등)가 동시에 확인됐습니다.",
         "bottom": "최근 20일간 기관·외국인이 85억원(유통시총의 2.9%)을 순매수했고, 그동안 주가는 -1.1%로 조용했습니다. 공매도잔고비중이 3개월 최고치 대비 0%까지 줄었습니다. 배당수익률이 1.0%로 최근 5년 대비 상위 0% 구간입니다. PBR이 0.85배로 최근 5년 밴드 하위 23% 구간입니다. 볼린저밴드폭이 최근 구간 중 하위 25%로 가격이 좁게 눌려 있습니다.",
         "turnaround": "상대강도가 이전 10일 -4.1%p에서 최근 10일 +11.7%p로 +15.8%p 가속됐습니다. 최근 5일 일평균 순매수가 이전 15일 평균의 171%로 매집이 강해졌습니다."
       }
@@ -873,14 +891,16 @@
           "percentile": 3.9215686274509802
         }
       },
-      "turnaround_score": 59.2,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 65.8,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 14.8,
         "ma_breakout": 8.6,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 100.0,
-        "accumulation_accel": 100.0
+        "accumulation_accel": 100.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 100.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -973,14 +993,16 @@
           "percentile": 33.333333333333336
         }
       },
-      "turnaround_score": 65.5,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 65.1,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 5.9,
         "ma_breakout": 100.0,
         "short_term_breakout": 64.2,
         "relative_strength_accel": 51.8,
-        "accumulation_accel": 100.0
+        "accumulation_accel": 100.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 25.8
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -1073,14 +1095,16 @@
           "percentile": 3.9215686274509802
         }
       },
-      "turnaround_score": 22.1,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 26.6,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 88.5,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -1173,14 +1197,16 @@
           "percentile": 11.764705882352942
         }
       },
-      "turnaround_score": 0.0,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 8.0,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 0.0,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -1273,14 +1299,16 @@
           "percentile": 15.686274509803921
         }
       },
-      "turnaround_score": 24.5,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 28.6,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 7.8,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 53.9,
-        "accumulation_accel": 31.5
+        "accumulation_accel": 31.5,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -1373,14 +1401,16 @@
           "percentile": 20.58823529411765
         }
       },
-      "turnaround_score": 0.0,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 8.0,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 0.0,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -1473,14 +1503,16 @@
           "percentile": 1.9607843137254901
         }
       },
-      "turnaround_score": 11.7,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 17.8,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 46.6,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -1573,14 +1605,16 @@
           "percentile": 14.705882352941176
         }
       },
-      "turnaround_score": 13.7,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 19.5,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 9.3,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 47.5,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -1673,14 +1707,16 @@
           "percentile": 0.9803921568627451
         }
       },
-      "turnaround_score": 20.2,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 25.0,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 4.5,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 77.4,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -1773,14 +1809,16 @@
           "percentile": 55.88235294117647
         }
       },
-      "turnaround_score": 3.8,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 11.2,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 1.4,
         "short_term_breakout": 9.7,
         "relative_strength_accel": 4.4,
-        "accumulation_accel": 5.0
+        "accumulation_accel": 5.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -1873,14 +1911,16 @@
           "percentile": 33.333333333333336
         }
       },
-      "turnaround_score": 27.5,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 31.1,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 5.4,
         "short_term_breakout": 21.6,
         "relative_strength_accel": 62.1,
-        "accumulation_accel": 30.0
+        "accumulation_accel": 30.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -1973,14 +2013,16 @@
           "percentile": 23.529411764705884
         }
       },
-      "turnaround_score": 0.0,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 8.0,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 0.0,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -2073,14 +2115,16 @@
           "percentile": 13.72549019607843
         }
       },
-      "turnaround_score": 12.9,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 26.8,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 51.6,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 100.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -2173,14 +2217,16 @@
           "percentile": 25.49019607843137
         }
       },
-      "turnaround_score": 20.3,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 25.1,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 81.3,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -2273,14 +2319,16 @@
           "percentile": 47.05882352941177
         }
       },
-      "turnaround_score": 16.6,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 22.0,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 79.1,
         "short_term_breakout": 47.6,
         "relative_strength_accel": 0.0,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -2373,14 +2421,16 @@
           "percentile": 24.50980392156863
         }
       },
-      "turnaround_score": 26.6,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 30.3,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 8.3,
         "ma_breakout": 6.5,
         "short_term_breakout": 3.1,
         "relative_strength_accel": 51.8,
-        "accumulation_accel": 35.6
+        "accumulation_accel": 35.6,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -2473,14 +2523,16 @@
           "percentile": 6.862745098039215
         }
       },
-      "turnaround_score": 29.1,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 32.5,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 10.9,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 61.4,
-        "accumulation_accel": 38.6
+        "accumulation_accel": 38.6,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -2573,14 +2625,16 @@
           "percentile": 4.901960784313726
         }
       },
-      "turnaround_score": 0.0,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 8.0,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 0.0,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -2673,14 +2727,16 @@
           "percentile": 3.9215686274509802
         }
       },
-      "turnaround_score": 0.0,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 8.0,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 0.0,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -2773,14 +2829,16 @@
           "percentile": 24.50980392156863
         }
       },
-      "turnaround_score": 31.4,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 34.4,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 63.2,
         "short_term_breakout": 46.1,
         "relative_strength_accel": 69.4,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -2873,14 +2931,16 @@
           "percentile": 5.882352941176471
         }
       },
-      "turnaround_score": 26.4,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 38.2,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 94.0,
-        "accumulation_accel": 9.8
+        "accumulation_accel": 9.8,
+        "rsi_reversal": 100.0,
+        "macd_cross": 100.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -2973,14 +3033,16 @@
           "percentile": 2.9411764705882355
         }
       },
-      "turnaround_score": 26.5,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 30.2,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 6.5,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 100.0,
-        "accumulation_accel": 0.5
+        "accumulation_accel": 0.5,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -3073,14 +3135,16 @@
           "percentile": 43.13725490196079
         }
       },
-      "turnaround_score": 33.1,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 43.8,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 6.4,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 81.9,
-        "accumulation_accel": 37.7
+        "accumulation_accel": 37.7,
+        "rsi_reversal": 100.0,
+        "macd_cross": 100.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -3173,14 +3237,16 @@
           "percentile": 25.49019607843137
         }
       },
-      "turnaround_score": 33.0,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 35.7,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 33.9,
         "short_term_breakout": 12.9,
         "relative_strength_accel": 8.4,
-        "accumulation_accel": 81.6
+        "accumulation_accel": 81.6,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -3273,14 +3339,16 @@
           "percentile": 44.11764705882353
         }
       },
-      "turnaround_score": 15.0,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 17.3,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 40.2,
         "short_term_breakout": 1.0,
         "relative_strength_accel": 0.0,
-        "accumulation_accel": 29.6
+        "accumulation_accel": 29.6,
+        "rsi_reversal": 58.4,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -3373,14 +3441,16 @@
           "percentile": 35.294117647058826
         }
       },
-      "turnaround_score": 5.5,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 12.6,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 18.9,
         "ma_breakout": 0.0,
         "short_term_breakout": 17.2,
         "relative_strength_accel": 0.0,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -3473,14 +3543,16 @@
           "percentile": 2.9411764705882355
         }
       },
-      "turnaround_score": 14.3,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 28.0,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 3.6,
         "short_term_breakout": 19.2,
         "relative_strength_accel": 47.4,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 100.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -3573,14 +3645,16 @@
           "percentile": 78.43137254901961
         }
       },
-      "turnaround_score": 8.1,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 14.8,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 32.4,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -3673,14 +3747,16 @@
           "percentile": 5.882352941176471
         }
       },
-      "turnaround_score": 17.5,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 22.7,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 5.5,
         "ma_breakout": 0.7,
         "short_term_breakout": 19.9,
         "relative_strength_accel": 57.1,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -3773,14 +3849,16 @@
           "percentile": 62.745098039215684
         }
       },
-      "turnaround_score": 16.9,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 22.2,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 67.4,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -3873,14 +3951,16 @@
           "percentile": 48.03921568627451
         }
       },
-      "turnaround_score": 0.0,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 8.0,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 0.0,
         "short_term_breakout": 0.0,
         "relative_strength_accel": 0.0,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
@@ -3973,14 +4053,16 @@
           "percentile": 54.90196078431372
         }
       },
-      "turnaround_score": 6.2,
-      "n_turnaround_signals": 5,
+      "turnaround_score": 13.2,
+      "n_turnaround_signals": 7,
       "turnaround_breakdown": {
         "volume_surge": 0.0,
         "ma_breakout": 0.0,
         "short_term_breakout": 36.9,
         "relative_strength_accel": 10.0,
-        "accumulation_accel": 0.0
+        "accumulation_accel": 0.0,
+        "rsi_reversal": 100.0,
+        "macd_cross": 0.0
       },
       "turnaround_raw": {
         "volume_surge": {
