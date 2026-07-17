@@ -138,16 +138,20 @@ def weekly_samples(weeks: int, anchor: dt.date | None = None) -> list[str]:
 
 
 # ---------------- 수집 ----------------
-def get_universe(asof: str) -> dict[str, str]:
-    """{티커: 종목명} for 코스피+코스닥."""
-    uni = {}
+def get_universe(asof: str) -> tuple[dict[str, str], dict[str, str]]:
+    """({티커: 종목명}, {티커: 소속시장}) for 코스피+코스닥.
+       소속시장은 업종 매핑이 없는 종목의 상대강도 폴백 지수를 코스피/코스닥
+       중 올바르게 고르는 데 쓰인다."""
+    uni: dict[str, str] = {}
+    ticker_market: dict[str, str] = {}
     for mkt in TARGET_MARKETS:
         for tkr in stock.get_market_ticker_list(asof, market=mkt):
             try:
                 uni[tkr] = stock.get_market_ticker_name(tkr)
             except Exception:
                 uni[tkr] = tkr
-    return uni
+            ticker_market[tkr] = mkt
+    return uni, ticker_market
 
 
 MARKET_NAME_KO = {"KOSPI": "코스피", "KOSDAQ": "코스닥"}
@@ -196,18 +200,26 @@ def collect_sector_index_ohlcv(sector_codes: set[str], fromdate: str, todate: st
     return out
 
 
+MARKET_INDEX_CODE = {"KOSPI": "1001", "KOSDAQ": "2001"}
+
+
 def resolve_benchmark_series(tkr: str, sector_map: dict[str, str],
                              sector_idx_by_date: dict[str, dict[str, float]],
-                             market_idx_by_date: dict[str, float]) -> tuple[dict[str, float], str]:
+                             market_idx_by_date: dict[str, dict[str, float]],
+                             ticker_market: dict[str, str]) -> tuple[dict[str, float], str]:
     """종목의 업종지수 날짜별 종가 시계열을 우선 쓰고, 매핑이 없거나 그 업종지수
-       데이터를 못 받았으면 코스피 전체 지수로 폴백한다. (label, series) 대신
-       (series, label) 순서로 반환 — label은 진단/설명용."""
+       데이터를 못 받았으면 그 종목이 속한 시장의 전체 지수(코스피→1001,
+       코스닥→2001)로 폴백한다. 코스닥 종목을 코스피 지수와 비교하면 섹터
+       상대강도를 도입한 이유(업종 전체가 덜 빠진 것과 종목 고유 강도를 구분)와
+       같은 종류의 왜곡이 시장 레벨에서 재발한다."""
     code = sector_map.get(tkr)
     if code:
         series = sector_idx_by_date.get(code)
         if series:
             return series, f"sector:{code}"
-    return market_idx_by_date, "market:1001"
+    mkt = ticker_market.get(tkr, "KOSPI")
+    mkt_code = MARKET_INDEX_CODE.get(mkt, "1001")
+    return market_idx_by_date.get(mkt, {}), f"market:{mkt_code}"
 
 
 def collect_ohlcv_matrix(dates: list[str]) -> dict[str, dict[str, tuple]]:
@@ -431,7 +443,7 @@ def run():
     print(f"   기준일: {asof}")
 
     print("1) 종목 유니버스 수집…")
-    universe = get_universe(asof)
+    universe, ticker_market = get_universe(asof)
     print(f"   {len(universe)}개 종목")
 
     print("1b) 업종지수 매핑 수집…")
@@ -464,18 +476,25 @@ def run():
     accum_prior15_to = ohlcv_dates[-6] if len(ohlcv_dates) >= 6 else ohlcv_dates[0]
     accum_prior15 = collect_accumulation(accum_prior15_from, accum_prior15_to)
 
-    print("6) 지수 수익률(코스피)…")
-    try:
-        # 상대강도 가속(턴어라운드)의 날짜별 조회를 위해 전체 구간을 받아 두되,
-        # 기존 60일 상대강도(바닥 신호)는 이전과 동일하게 60일 구간만 사용한다.
-        idx = stock.get_index_ohlcv(ohlcv_dates[0], latest_date, "1001")  # 1001 = 코스피
-        idx_by_date = index_close_by_date(idx)
-        idx_c_latest = idx_by_date.get(latest_date)
-        idx_c_60ago = idx_by_date.get(ohlcv_dates[-60])
-        idx_ret = (idx_c_latest / idx_c_60ago - 1) if idx_c_latest and idx_c_60ago else 0.0
-    except Exception:
-        idx_ret = 0.0
-        idx_by_date = {}
+    print("6) 지수 수익률(코스피·코스닥)…")
+    # 업종 매핑 실패 종목의 폴백 벤치마크. 코스닥 종목을 코스피 지수와 비교하면
+    # 안 되므로(위 resolve_benchmark_series 참고) 시장별로 따로 받는다.
+    # 상대강도 가속(턴어라운드)의 날짜별 조회를 위해 전체 구간을 받아 두되,
+    # 기존 60일 상대강도(바닥 신호)는 이전과 동일하게 60일 구간만 사용한다.
+    market_idx_by_date: dict[str, dict[str, float]] = {}
+    idx_ret_by_market: dict[str, float] = {}
+    for mkt, code in MARKET_INDEX_CODE.items():
+        try:
+            idx = stock.get_index_ohlcv(ohlcv_dates[0], latest_date, code)
+            by_date = index_close_by_date(idx)
+        except Exception:
+            by_date = {}
+        market_idx_by_date[mkt] = by_date
+        c_latest = by_date.get(latest_date)
+        c_60ago = by_date.get(ohlcv_dates[-60])
+        idx_ret_by_market[mkt] = (c_latest / c_60ago - 1) if c_latest and c_60ago else 0.0
+        print(f"   {mkt}({code}) 지수: {len(by_date)}개 날짜 확보, "
+              f"60일 수익률={idx_ret_by_market[mkt]*100:.1f}%")
 
     print("6b) 업종지수 OHLCV 수집…")
     sector_codes_needed = set(sector_map.values())
@@ -485,6 +504,7 @@ def run():
 
     print("7) 채점(바닥 7개 + 턴어라운드 5개 신호)…")
     results = []
+    bench_kind_count = {"sector": 0, "market:1001": 0, "market:2001": 0}  # 진단: 벤치마크 종류 분포
     outlier_count = 0  # 임시 진단: 60일 수익률 +100% 이상 잔존 이상치 확인용, 확인 후 제거
     split_flag_count = 0  # 임시 진단: ±30% 필터를 뚫은 잔존 분할/증자 의심 종목 수, 확인 후 제거
     liquidity_eval_count = 0  # 진단: 60일치 데이터를 가져 유동성 평가 대상이 된 종목 수
@@ -550,16 +570,21 @@ def run():
         ret60 = (closes[-1] / closes[-60]) - 1
         ret20_price = (closes[-1] / closes[-20]) - 1
 
-        # 상대강도는 코스피 전체가 아니라 그 종목의 업종지수 대비로 본다
-        # (매핑 없거나 업종지수 데이터가 없으면 코스피 전체로 폴백).
-        bench_series, bench_label = resolve_benchmark_series(tkr, sector_map, sector_idx_by_date, idx_by_date)
+        # 상대강도는 코스피 전체가 아니라 그 종목의 업종지수 대비로 본다 (매핑 없거나
+        # 업종지수 데이터가 없으면 그 종목이 속한 시장의 전체 지수로 폴백 — 코스닥
+        # 종목이 코스피 지수와 비교되지 않도록).
+        bench_series, bench_label = resolve_benchmark_series(
+            tkr, sector_map, sector_idx_by_date, market_idx_by_date, ticker_market)
+        bench_kind = "sector" if bench_label.startswith("sector:") else bench_label
+        bench_kind_count[bench_kind] = bench_kind_count.get(bench_kind, 0) + 1
         # 종목 고유의 날짜(dates)로 조회한다 — ohlcv_dates(전체 유니버스 캘린더)의
         # 인덱스를 쓰면, 이 종목만 결측(±30% 필터 등)이 있을 때 종목 수익률(closes
         # 기준)과 지수 수익률이 서로 다른 기간을 비교하게 된다. turnaround 섹션의
         # relative_strength_accel과 동일한 방식으로 맞춘다.
         bench_c_latest = bench_series.get(latest_date)
         bench_c_60ago = bench_series.get(dates[-60])
-        idx_ret_t = (bench_c_latest / bench_c_60ago - 1) if bench_c_latest and bench_c_60ago else idx_ret
+        idx_ret_fallback = idx_ret_by_market.get(ticker_market.get(tkr, "KOSPI"), 0.0)
+        idx_ret_t = (bench_c_latest / bench_c_60ago - 1) if bench_c_latest and bench_c_60ago else idx_ret_fallback
 
         if ret60 > 1.0:  # 임시 진단: +100% 이상 잔존 이상치 확인용, 확인 후 제거
             outlier_count += 1
@@ -714,6 +739,8 @@ def run():
         item["explanation"] = ex.explain_result(item)
         results.append(item)
 
+    print(f"   [진단:벤치마크] 생존 게이트 통과 종목 중 업종지수 {bench_kind_count.get('sector', 0)}개, "
+          f"코스피 폴백 {bench_kind_count.get('market:1001', 0)}개, 코스닥 폴백 {bench_kind_count.get('market:2001', 0)}개")
     print(f"   [진단:유동성] 60일 이상 데이터 보유 {liquidity_eval_count}개 종목 중 "
           f"20일 평균 거래대금 {MIN_AVG_TRADING_VALUE / 1e8:.0f}억원 이상: {liquidity_pass_count}개")
     print(f"   [진단:이상치] 총 {outlier_count}개 종목이 생존 게이트 통과 종목 중 60일 +100% 이상")

@@ -73,11 +73,20 @@ def _sentence_dividend_yield(raw: dict) -> str | None:
     return f"배당수익률이 {div:.1f}%로 최근 5년 대비 상위 {100 - pct:.0f}% 구간입니다."
 
 
+def _benchmark_label(raw: dict) -> str:
+    benchmark = str(raw.get("benchmark", ""))
+    if benchmark.startswith("sector:"):
+        return "업종지수"
+    if benchmark == "market:2001":
+        return "코스닥"
+    return "코스피"
+
+
 def _sentence_relative_strength(raw: dict) -> str | None:
     stock_ret, idx_ret, excess = raw.get("stock_ret_pct"), raw.get("index_ret_pct"), raw.get("excess_pct")
     if stock_ret is None or idx_ret is None:
         return None
-    bench = "업종지수" if str(raw.get("benchmark", "")).startswith("sector:") else "코스피"
+    bench = _benchmark_label(raw)
     return f"최근 60일 {bench}는 {idx_ret:+.1f}%인데 이 종목은 {stock_ret:+.1f}%로 {bench}보다 {excess:+.1f}%p 선방했습니다."
 
 
