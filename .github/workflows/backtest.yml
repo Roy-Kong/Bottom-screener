@@ -1,0 +1,29 @@
+name: backtest
+
+on:
+  workflow_dispatch:
+    inputs:
+      anchor_date:
+        description: "기준일 (YYYYMMDD)"
+        required: true
+        default: "20221031"
+      top_n:
+        description: "상위 몇 개 종목"
+        required: false
+        default: "10"
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Run backtest
+        env:
+          KRX_ID: ${{ secrets.KRX_ID }}
+          KRX_PW: ${{ secrets.KRX_PW }}
+        run: python backtest.py "${{ inputs.anchor_date }}" "${{ inputs.top_n }}"
