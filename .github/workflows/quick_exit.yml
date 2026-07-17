@@ -1,0 +1,29 @@
+name: quick-exit-backtest
+
+on:
+  workflow_dispatch:
+    inputs:
+      anchor_date:
+        description: "기준일 (YYYYMMDD)"
+        required: true
+        default: "20221031"
+      max_days:
+        description: "관찰 기간(최대 며칠)"
+        required: false
+        default: "90"
+
+jobs:
+  quick-exit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Run quick-exit analysis
+        env:
+          KRX_ID: ${{ secrets.KRX_ID }}
+          KRX_PW: ${{ secrets.KRX_PW }}
+        run: python quick_exit.py "${{ inputs.anchor_date }}" "${{ inputs.max_days }}"
