@@ -65,7 +65,10 @@ def _sentence_pbr_low(raw: dict) -> str | None:
     pbr, pct = raw.get("pbr"), raw.get("percentile")
     if pbr is None or pct is None:
         return None
-    return f"PBR이 {pbr:.2f}배로 최근 5년 밴드 하위 {pct:.0f}% 구간입니다."
+    s = f"PBR이 {pbr:.2f}배로 최근 5년 밴드 하위 {pct:.0f}% 구간입니다."
+    if raw.get("pbr_caution_sector"):
+        s += " 이 업종은 장부가치가 실질 가치를 충분히 반영하지 못할 수 있어 PBR 해석에 주의가 필요합니다."
+    return s
 
 
 def _sentence_dividend_yield(raw: dict) -> str | None:

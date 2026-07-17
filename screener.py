@@ -165,14 +165,27 @@ def get_universe(asof: str) -> tuple[dict[str, str], dict[str, str]]:
 
 MARKET_NAME_KO = {"KOSPI": "코스피", "KOSDAQ": "코스닥"}
 
+# PBR(장부가 대비 주가)은 무형자산·서비스 비중이 큰 업종에서 원천적으로 신뢰도가
+# 떨어진다 — R&D·브랜드·파이프라인 같은 핵심 가치가 재무제표상 자산으로 못 잡히니
+# 장부가가 실질 가치를 과소평가한다. 업종명을 하드코딩된 코드 목록이 아니라 매
+# 실행마다 KRX에서 받아온 실제 업종명 문자열에 키워드로 매칭한다(코드 목록은 KRX
+# 개편 시 stale해질 수 있음 — 업종지수 코드를 하드코딩하지 않는 이 프로젝트의
+# 기존 방침과 동일).
+PBR_LOW_CAUTION_KEYWORDS = [
+    "소프트웨어", "게임", "오락", "인터넷", "디지털", "콘텐츠", "컨텐츠",
+    "제약", "의약품", "바이오", "IT서비스", "통신방송서비스",
+]
 
-def get_sector_index_map(asof: str) -> dict[str, str]:
-    """{티커: 업종지수코드}. 코스피/코스닥 각 시장의 전체 지수 목록에서
-       이름에 시장명("코스피"/"코스닥")이 들어간 것(코스피 200, 코스피 대형주,
-       코스닥 150 소재 등 사이즈·스타일·서브 지수)은 제외하고, 이름에 시장명이
-       없는 것(화학·전기전자·유통 같은 순수 업종지수)만 남긴다.
-       종목 개수만큼이 아니라 지수 개수(수십 개)만큼만 호출하는 벌크 방식."""
+
+def get_sector_index_map(asof: str) -> tuple[dict[str, str], dict[str, str]]:
+    """({티커: 업종지수코드}, {업종지수코드: 업종명}). 코스피/코스닥 각 시장의 전체
+       지수 목록에서 이름에 시장명("코스피"/"코스닥")이 들어간 것(코스피 200, 코스피
+       대형주, 코스닥 150 소재 등 사이즈·스타일·서브 지수)은 제외하고, 이름에 시장명이
+       없는 것(화학·전기전자·유통 같은 순수 업종지수)만 남긴다. 업종명은 무형자산
+       비중이 큰 업종(소프트웨어·게임·바이오 등) 판별에 쓰인다(PBR_LOW_CAUTION_KEYWORDS
+       참고). 종목 개수만큼이 아니라 지수 개수(수십 개)만큼만 호출하는 벌크 방식."""
     ticker_to_sector: dict[str, str] = {}
+    sector_names: dict[str, str] = {}
     for mkt in TARGET_MARKETS:
         market_name = MARKET_NAME_KO[mkt]
         try:
@@ -186,13 +199,14 @@ def get_sector_index_map(asof: str) -> dict[str, str]:
                 continue
             if market_name in name:      # 사이즈/스타일/서브 지수 — 순수 업종 아님
                 continue
+            sector_names[code] = name
             try:
                 members = stock.get_index_portfolio_deposit_file(code)
             except Exception:
                 continue
             for tkr in members:
                 ticker_to_sector[tkr] = code
-    return ticker_to_sector
+    return ticker_to_sector, sector_names
 
 
 def collect_sector_index_ohlcv(sector_codes: set[str], fromdate: str, todate: str) -> dict[str, dict[str, float]]:
@@ -276,7 +290,11 @@ def collect_ohlcv_matrix(dates: list[str]) -> dict[str, dict[str, tuple]]:
 
 
 def collect_fundamental_history(dates: list[str]) -> dict[str, list[dict]]:
-    """월별 표본으로 {ticker: [{date, PBR, DIV, DPS, EPS}, ...]} 수집."""
+    """월별 표본으로 {ticker: [{date, PBR, DIV, DPS, EPS, BPS}, ...]} 수집.
+       dates는 최신→과거 순(month_end_samples)이라 반환 리스트도 그 순서를 유지한다
+       (hist[tkr][0]이 최신 표본) — had_dividend_cut/had_progressive_capital_erosion이
+       이 순서에 의존한다. BPS(주당순자산)는 발행주식수가 비교적 안정적이라는 전제
+       하에 자본총계 추이의 근사치로 쓴다(진행형 자본잠식 탐지용)."""
     hist: dict[str, list[dict]] = {}
     for d in dates:
         for mkt in TARGET_MARKETS:
@@ -293,6 +311,7 @@ def collect_fundamental_history(dates: list[str]) -> dict[str, list[dict]]:
                     "DIV": float(row.get("DIV", 0) or 0),
                     "DPS": float(row.get("DPS", 0) or 0),
                     "EPS": float(row.get("EPS", 0) or 0),
+                    "BPS": float(row.get("BPS", 0) or 0),
                 })
             time.sleep(REQUEST_PAUSE)
     return hist
@@ -443,6 +462,32 @@ def had_dividend_cut(fund_hist_rows: list[dict]) -> bool:
     return False
 
 
+def is_pbr_caution_sector(sector_name: str | None) -> bool:
+    """무형자산·서비스 비중이 커서 장부가(BPS)가 실질 가치를 과소평가하기 쉬운
+       업종인지. 업종 매핑이 없는 종목(sector_name=None)은 판별 불가이므로 False
+       (보수적 기본값 — 걸러야 할 걸 놓칠지언정 근거 없이 깎지는 않는다)."""
+    if not sector_name:
+        return False
+    return any(kw in sector_name for kw in PBR_LOW_CAUTION_KEYWORDS)
+
+
+def had_progressive_capital_erosion(fund_hist_rows: list[dict], quarters: int = 4) -> bool:
+    """최근 quarters개 분기 연속 BPS(자본총계 근사치)가 감소했는지. fund_hist_rows는
+       collect_fundamental_history가 반환하는 순서(최신이 [0])를 따른다고 가정.
+       월별 표본에서 3개월 간격(분기)으로 quarters+1개 지점을 뽑아 전부 순감소인지
+       확인한다 — 완전 자본잠식(PBR<=0)은 이미 생존 게이트에서 걸러지지만, 잠식이
+       '진행 중'인 종목은 PBR이 여전히 양수라 게이트를 통과해버린다. BPS<=0인 지점이
+       하나라도 있으면(이미 완전잠식 구간과 겹침) 판단을 보류하고 False."""
+    idxs = [i * 3 for i in range(quarters + 1)]
+    if len(fund_hist_rows) <= idxs[-1]:
+        return False   # 상장·데이터 이력이 짧으면 판단 보류
+    bps_vals = [fund_hist_rows[i]["BPS"] for i in idxs]
+    if any(v <= 0 for v in bps_vals):
+        return False
+    chrono = list(reversed(bps_vals))   # 과거 → 현재 순으로 뒤집어서 매 분기 감소 확인
+    return all(chrono[i] > chrono[i + 1] for i in range(len(chrono) - 1))
+
+
 # ---------------- 메인 ----------------
 def run():
     t0 = time.time()
@@ -456,7 +501,7 @@ def run():
     print(f"   {len(universe)}개 종목")
 
     print("1b) 업종지수 매핑 수집…")
-    sector_map = get_sector_index_map(asof)
+    sector_map, sector_names = get_sector_index_map(asof)
     print(f"   {len(sector_map)}개 종목이 업종지수에 매핑됨")
 
     print("2) OHLCV 스냅샷 수집…")
@@ -518,6 +563,8 @@ def run():
     split_flag_count = 0  # 임시 진단: ±30% 필터를 뚫은 잔존 분할/증자 의심 종목 수, 확인 후 제거
     liquidity_eval_count = 0  # 진단: 60일치 데이터를 가져 유동성 평가 대상이 된 종목 수
     liquidity_pass_count = 0  # 진단: 그중 MIN_AVG_TRADING_VALUE(유동성 기준)를 통과한 종목 수
+    pbr_caution_count = 0  # 진단: 무형자산 비중 큰 업종이라 pbr_low 가중치를 절반으로 낮춘 종목 수
+    capital_eroding_count = 0  # 진단: 진행형 자본잠식(BPS 4분기 연속 감소)이라 pbr_low를 None 처리한 종목 수
     for tkr, name in universe.items():
         dates, closes, vols = series_for_ticker(matrix, tkr)
         if len(closes) < 60 or len(vols) < 120:
@@ -616,12 +663,26 @@ def run():
         # 유통시총 근사 = 시총 대용(정밀도보다 강도 순위가 목적)
         float_mc = avg_trading_value * 50  # 대략적 스케일; 백테스트 시 실제 시총으로 교체 예정
 
+        # PBR 신뢰도 보정: 무형자산 비중 큰 업종은 가중치를 절반으로, 진행형
+        # 자본잠식(완전잠식은 이미 생존 게이트에서 걸림)은 PBR 자체를 None 처리.
+        sector_name = sector_names.get(sector_map.get(tkr))
+        pbr_caution_sector = is_pbr_caution_sector(sector_name)
+        capital_eroding = had_progressive_capital_erosion(fh)
+        if pbr_caution_sector:
+            pbr_caution_count += 1
+        if capital_eroding:
+            capital_eroding_count += 1
+        bottom_weights = sg.BOTTOM_WEIGHTS
+        if pbr_caution_sector:
+            bottom_weights = dict(sg.BOTTOM_WEIGHTS)
+            bottom_weights["pbr_low"] = bottom_weights["pbr_low"] / 2
+
         # --- 바닥 신호 7개: "매도세 소진·역사적으로 싸다"만 본다 ---
         scores = {
             "volume_dryness": sg.score_volume_dryness(rec6to25, past120),
             "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100),
             "short_covering": sg.score_short_covering(short_cur.get(tkr, 0.0), short_max.get(tkr, 0.0)),
-            "pbr_low": sg.score_pbr_low(cur_pbr, pbr_series),
+            "pbr_low": None if capital_eroding else sg.score_pbr_low(cur_pbr, pbr_series),
             "dividend_yield": sg.score_dividend_yield(cur_div, div_series, cur_dps, cur_eps, had_dividend_cut(fh)),
             "relative_strength": None if split_suspected else sg.score_relative_strength(ret60, idx_ret_t),
             "volatility_squeeze": sg.score_volatility_squeeze(bw_series),
@@ -643,7 +704,11 @@ def run():
                 "current_ratio_pct": cur_short, "max_ratio_3m_pct": max_short,
                 "pct_of_max": (cur_short / max_short * 100) if max_short else None,
             },
-            "pbr_low": {"pbr": cur_pbr, "percentile": sg.percentile_rank(pbr_series, cur_pbr)},
+            "pbr_low": {
+                "pbr": cur_pbr, "percentile": sg.percentile_rank(pbr_series, cur_pbr),
+                "sector_name": sector_name, "pbr_caution_sector": pbr_caution_sector,
+                "capital_eroding": capital_eroding,
+            },
             "dividend_yield": {"div_pct": cur_div, "percentile": sg.percentile_rank(div_series, cur_div)},
             "relative_strength": {
                 "stock_ret_pct": ret60 * 100, "index_ret_pct": idx_ret_t * 100,
@@ -655,7 +720,7 @@ def run():
             },
         }
 
-        comp = sg.composite_score(scores, sg.BOTTOM_WEIGHTS)
+        comp = sg.composite_score(scores, bottom_weights)
         if comp["composite"] is None or comp["composite"] < BOTTOM_SCORE_THRESHOLD:
             continue
 
@@ -757,6 +822,8 @@ def run():
 
     print(f"   [진단:벤치마크] 생존 게이트 통과 종목 중 업종지수 {bench_kind_count.get('sector', 0)}개, "
           f"코스피 폴백 {bench_kind_count.get('market:1001', 0)}개, 코스닥 폴백 {bench_kind_count.get('market:2001', 0)}개")
+    print(f"   [진단:PBR신뢰도] 생존 게이트 통과 종목 중 무형자산 비중 큰 업종(pbr_low 가중치 절반) "
+          f"{pbr_caution_count}개, 진행형 자본잠식(pbr_low None 처리) {capital_eroding_count}개")
     print(f"   [진단:유동성] 60일 이상 데이터 보유 {liquidity_eval_count}개 종목 중 "
           f"20일 평균 거래대금 {MIN_AVG_TRADING_VALUE / 1e8:.0f}억원 이상: {liquidity_pass_count}개")
     print(f"   [진단:이상치] 총 {outlier_count}개 종목이 생존 게이트 통과 종목 중 60일 +100% 이상")
