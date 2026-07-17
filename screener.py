@@ -565,6 +565,7 @@ def run():
     liquidity_pass_count = 0  # 진단: 그중 MIN_AVG_TRADING_VALUE(유동성 기준)를 통과한 종목 수
     pbr_caution_count = 0  # 진단: 무형자산 비중 큰 업종이라 pbr_low 가중치를 절반으로 낮춘 종목 수
     capital_eroding_count = 0  # 진단: 진행형 자본잠식(BPS 4분기 연속 감소)이라 pbr_low를 None 처리한 종목 수
+    bps_nonzero_count = 0  # 진단: BPS 컬럼이 pykrx에서 실제로 값을 채워주는지 확인용(0개면 컬럼명 문제 의심)
     for tkr, name in universe.items():
         dates, closes, vols = series_for_ticker(matrix, tkr)
         if len(closes) < 60 or len(vols) < 120:
@@ -672,6 +673,8 @@ def run():
             pbr_caution_count += 1
         if capital_eroding:
             capital_eroding_count += 1
+        if fh and fh[0].get("BPS", 0) > 0:  # 진단: BPS 컬럼이 실제로 채워지고 있는지 확인용
+            bps_nonzero_count += 1
         bottom_weights = sg.BOTTOM_WEIGHTS
         if pbr_caution_sector:
             bottom_weights = dict(sg.BOTTOM_WEIGHTS)
@@ -823,7 +826,8 @@ def run():
     print(f"   [진단:벤치마크] 생존 게이트 통과 종목 중 업종지수 {bench_kind_count.get('sector', 0)}개, "
           f"코스피 폴백 {bench_kind_count.get('market:1001', 0)}개, 코스닥 폴백 {bench_kind_count.get('market:2001', 0)}개")
     print(f"   [진단:PBR신뢰도] 생존 게이트 통과 종목 중 무형자산 비중 큰 업종(pbr_low 가중치 절반) "
-          f"{pbr_caution_count}개, 진행형 자본잠식(pbr_low None 처리) {capital_eroding_count}개")
+          f"{pbr_caution_count}개, 진행형 자본잠식(pbr_low None 처리) {capital_eroding_count}개, "
+          f"BPS 데이터 확보 {bps_nonzero_count}개")
     print(f"   [진단:유동성] 60일 이상 데이터 보유 {liquidity_eval_count}개 종목 중 "
           f"20일 평균 거래대금 {MIN_AVG_TRADING_VALUE / 1e8:.0f}억원 이상: {liquidity_pass_count}개")
     print(f"   [진단:이상치] 총 {outlier_count}개 종목이 생존 게이트 통과 종목 중 60일 +100% 이상")
