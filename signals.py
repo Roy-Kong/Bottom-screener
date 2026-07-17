@@ -286,12 +286,20 @@ def _macd_series(closes: list[float]) -> tuple[list[float], list[float]]:
     return macd_line, signal_line
 
 
-def score_rsi_reversal(closes: list[float], period: int = 14, recent: int = 5) -> float | None:
+def score_rsi_reversal(closes: list[float], period: int = 14, recent: int = 5,
+                       window: int = 30) -> float | None:
     """⑭ RSI 과매도 반등(참고용). RSI(14)가 최근 recent일 이전 구간에서
        과매도(<=30)를 찍었고, 지금(최신값)은 40 이상으로 반등했으면 고득점.
        과매도 이력 자체가 없으면(원래 안 눌렸던 것) 저득점 — '반등'과
-       '원래 높았던 것'을 구분하기 위함."""
-    rsi_series = _rsi_series(closes, period)
+       '원래 높았던 것'을 구분하기 위함.
+
+       closes를 최근 window일로 먼저 잘라서 RSI를 계산한다 — 안 자르면 130일치
+       전체에서 "언제 한 번이라도 과매도였는지"를 찾게 되는데, 그러면 변동성 있는
+       종목 대부분이 6개월 안에 한 번쯤은 과매도를 찍어서 사실상 모든 종목이
+       was_oversold=True가 되어 신호가 변별력을 잃는다. window로 "최근에" 과매도였는지로
+       좁힌다."""
+    trimmed = closes[-window:] if len(closes) > window else closes
+    rsi_series = _rsi_series(trimmed, period)
     if len(rsi_series) < recent + 1:
         return None
     current = rsi_series[-1]
