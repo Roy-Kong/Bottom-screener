@@ -25,13 +25,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          lfs: true
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - name: Install deps
         run: pip install -r requirements.txt
+      - name: Selectively fetch needed DB files (source=db only)
+        if: inputs.source == 'db'
+        run: |
+          git lfs install --local
+          INCLUDES=$(python list_backtest_dates.py "${{ inputs.anchor_date }}")
+          COUNT=$(echo "$INCLUDES" | tr ',' '\n' | wc -l)
+          echo "필요한 날짜 파일 수: $COUNT"
+          git lfs pull --include="$INCLUDES"
       - name: Run backtest
         env:
           KRX_ID: ${{ secrets.KRX_ID }}

@@ -21,7 +21,6 @@ from statistics import median
 from pykrx import stock
 import screener as scr
 import signals as sg
-import db
 import db_reader as dbr
 
 
@@ -234,17 +233,16 @@ def run_backtest(anchor_str: str, top_n: int = 10):
     return top, stock_rows, kospi_returns
 
 
-def run_backtest_from_db(anchor_str: str, top_n: int = 10, db_path=None):
+def run_backtest_from_db(anchor_str: str, top_n: int = 10):
     """run_backtest와 동일한 채점 로직이지만, OHLCV/펀더멘털/공매도/시가총액/매집
-       데이터를 pykrx 대신 market_data.db에서 읽는다. 종목 유니버스·업종 매핑·
-       지수(코스피/코스닥/업종) 시계열은 db_reader.py 설명대로 여전히 pykrx를
-       쓴다(요청받은 4개 테이블에 해당 안 되는 메타데이터라 캐싱 이득이 적음).
-       순방향 수익률(3/6/12개월) 계산은 DB에 없는 미래 구간이라 이 함수에서는
-       하지 않는다 — 필요하면 run_backtest의 그 부분을 그대로 재사용."""
-    conn = db.get_connection(db_path) if db_path else db.get_connection()
-
+       데이터를 pykrx 대신 data/YYYYMMDD.db(하루 1파일)들에서 읽는다. 종목
+       유니버스·업종 매핑·지수(코스피/코스닥/업종) 시계열은 db_reader.py 설명대로
+       여전히 pykrx를 쓴다(요청받은 4개 테이블에 해당 안 되는 메타데이터라
+       캐싱 이득이 적음). 순방향 수익률(3/6/12개월) 계산은 DB에 없는 미래
+       구간이라 이 함수에서는 하지 않는다 — 필요하면 run_backtest의 그 부분을
+       그대로 재사용."""
     anchor_target = dt.datetime.strptime(anchor_str, "%Y%m%d").date()
-    asof = dbr.find_trading_day_on_or_before_db(conn, anchor_target)
+    asof = dbr.find_trading_day_on_or_before_db(anchor_target)
     if asof is None:
         raise RuntimeError(f"DB에 {anchor_str} 이전 데이터가 전혀 없습니다 — 백필이 필요합니다.")
     anchor_date = dt.datetime.strptime(asof, "%Y%m%d").date()
@@ -260,23 +258,23 @@ def run_backtest_from_db(anchor_str: str, top_n: int = 10, db_path=None):
 
     print("2) OHLCV 스냅샷 로딩… (DB)")
     ohlcv_dates = scr.recent_business_dates(scr.OHLCV_LOOKBACK_DAYS, anchor_date)
-    matrix = dbr.load_ohlcv_matrix_from_db(conn, ohlcv_dates)
+    matrix = dbr.load_ohlcv_matrix_from_db(ohlcv_dates)
     latest_date = sorted(matrix.keys())[-1] if matrix else asof
     print(f"   {len(matrix)}개 영업일 확보, 최신={latest_date}")
 
     print("3) 펀더멘털 히스토리 로딩… (DB)")
     fund_hist = dbr.load_fundamental_history_from_db(
-        conn, scr.month_end_samples(scr.FUND_HISTORY_MONTHS, anchor_date))
+        scr.month_end_samples(scr.FUND_HISTORY_MONTHS, anchor_date))
 
     print("4) 공매도 3개월 최고/현재, 시가총액 로딩… (DB)")
-    short_max = dbr.load_short_max_from_db(conn, scr.weekly_samples(scr.SHORT_SAMPLE_WEEKS, anchor_date))
-    short_cur = dbr.load_short_current_from_db(conn, latest_date)
-    market_cap = dbr.load_market_cap_from_db(conn, latest_date)
+    short_max = dbr.load_short_max_from_db(scr.weekly_samples(scr.SHORT_SAMPLE_WEEKS, anchor_date))
+    short_cur = dbr.load_short_current_from_db(latest_date)
+    market_cap = dbr.load_market_cap_from_db(latest_date)
 
     print("5) 매집(20일) 로딩… (DB)")
     accum_from = ohlcv_dates[-scr.ACCUM_WINDOW_DAYS] if len(ohlcv_dates) >= scr.ACCUM_WINDOW_DAYS else ohlcv_dates[0]
     accum_dates = dbr.date_range_inclusive(sorted(matrix.keys()), accum_from, latest_date)
-    accum = dbr.load_accumulation_from_db(conn, accum_dates)
+    accum = dbr.load_accumulation_from_db(accum_dates)
 
     print("6) 지수 수익률(코스피·코스닥)… (라이브 pykrx)")
     market_idx_by_date: dict[str, dict[str, float]] = {}
@@ -357,7 +355,6 @@ def run_backtest_from_db(anchor_str: str, top_n: int = 10, db_path=None):
             "breakdown": comp["breakdown"], "anchor_close": last_close,
         })
 
-    conn.close()
     print(f"완료: {len(results)}개 채점 (기준일 {asof}, DB 소스)")
     results.sort(key=lambda x: -x["score"])
     top = results[:top_n]

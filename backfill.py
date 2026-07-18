@@ -1,12 +1,12 @@
 """
-backfill.py — START_DATE부터 END_DATE까지 원본 데이터를 market_data.db에 채운다.
+backfill.py — START_DATE부터 END_DATE까지 원본 데이터를 data/YYYYMMDD.db(하루 1파일)
+로 채운다.
 
 KRX 로그인 세션이 로그인 시점부터 1시간 만에 만료되는 것으로 확인됐다(daily.yml
 실행 로그의 "로그인 시간"/"만료 시간" 참고). 전체 백필(2022-01~현재, 영업일
 1000개+)은 한 세션 안에 못 끝날 가능성이 높아서, MAX_RUNTIME_MIN으로 자체 시간
-제한을 두고 그 안에서만 처리한 뒤 깔끔하게 멈춘다. db.date_already_collected로
-이미 처리한 날짜는 건너뛰므로, 워크플로우를 여러 번 다시 실행하면 이어서
-진행된다(같은 방식으로 몇 번이고 재실행 가능).
+제한을 두고 그 안에서만 처리한 뒤 깔끔하게 멈춘다. db.date_file_exists로 이미
+처리한 날짜는 건너뛰므로, 워크플로우를 여러 번 다시 실행하면 이어서 진행된다.
 
 사용법: python backfill.py [START=20220101] [END=오늘] [MAX_RUNTIME_MIN=50]
 """
@@ -30,14 +30,12 @@ def business_days(start: dt.date, end: dt.date):
 def run(start_str: str, end_str: str, max_runtime_min: int) -> None:
     start = dt.datetime.strptime(start_str, "%Y%m%d").date()
     end = dt.datetime.strptime(end_str, "%Y%m%d").date()
-    conn = db.get_connection()
 
     all_days = list(business_days(start, end))
-    todo = [d for d in all_days if not db.date_already_collected(conn, d.strftime("%Y%m%d"))]
+    todo = [d for d in all_days if not db.date_file_exists(d.strftime("%Y%m%d"))]
     print(f"[백필] 기간 {start_str}~{end_str}: 영업일 후보 {len(all_days)}일 중 미수집 {len(todo)}일")
     if not todo:
         print("[백필] 이미 전부 수집됨. 완료.")
-        conn.close()
         return
 
     t0 = time.time()
@@ -55,7 +53,7 @@ def run(start_str: str, end_str: str, max_runtime_min: int) -> None:
             print(f"  {ds}: 수집 오류({e}) — 이번엔 건너뛰고 다음 실행에 재시도")
             errors += 1
             continue
-        db.save_day(conn, ds, day_data)
+        db.save_single_day(ds, day_data)
         if day_data["daily_prices"]:
             done += 1
         else:
@@ -65,12 +63,12 @@ def run(start_str: str, end_str: str, max_runtime_min: int) -> None:
             print(f"  진행: {done + holidays}/{len(todo)}일 처리 ({ds}까지, 실거래일 {done}·휴장추정 {holidays}), "
                   f"경과 {elapsed:.1f}분")
 
-    conn.close()
     remaining = len(todo) - done - holidays
-    counts = db.row_counts(db.get_connection())
+    all_files = db.existing_dates()
     print(f"\n[백필] 이번 실행 요약: 실거래일 {done}일 처리, 휴장 추정 {holidays}일, "
           f"오류(재시도 대기) {errors}일, 남은 미수집 약 {max(remaining, 0)}일")
-    print(f"[백필] DB 현재 상태: {counts}")
+    print(f"[백필] data/ 아래 총 날짜 파일 수: {len(all_files)}"
+          f"{' (' + all_files[0] + '~' + all_files[-1] + ')' if all_files else ''}")
     if remaining > 0 or errors > 0:
         print(f"[백필] 아직 안 끝났습니다 — 워크플로우를 다시 실행해 이어가세요.")
     else:

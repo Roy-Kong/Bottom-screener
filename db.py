@@ -1,19 +1,25 @@
 """
-db.py — SQLite 원본 시세 데이터 저장소.
+db.py — SQLite 원본 시세 데이터 저장소, 하루 1파일(data/YYYYMMDD.db) 구조.
 
 계산된 신호 점수는 절대 저장하지 않는다 — 신호 로직(가중치·신호 종류)이 계속
 바뀌므로, 점수를 저장하면 로직이 바뀔 때마다 무효가 된다. 원본만 있으면 로직이
 바뀌어도 재계산만 하면 된다.
 
-4개 테이블 모두 (date, ticker) 복합 기본키(=암묵적 유니크 인덱스) + 명시적
-인덱스를 둔다. collection_log는 신호 데이터가 아니라 "이 날짜를 이미 시도했는지"
-추적용 운영 메타데이터(백필 재개 판단용)라 위 원칙과 무관하다.
-"""
+하루 1파일인 이유: Git LFS는 버전 간 델타 압축을 안 한다 — 파일 내용이 조금만
+바뀌어도 전체를 새 객체로 저장한다. 모든 날짜를 한 파일에 누적하면 매일 커밋마다
+그 시점까지의 전체가 통째로 다시 쌓여서(등차수열로) 무료 저장·대역폭 한도를
+순식간에 넘긴다. 하루치를 각자의 파일에 담아 한 번 쓰고 다시는 건드리지 않으면,
+버전 중복이 전혀 없어 전체 저장량이 원본 데이터量 그대로에 수렴한다.
+
+각 날짜 파일 안에서도 4개 테이블은 (date, ticker) 복합 기본키(=암묵적 유니크
+인덱스) + 명시적 인덱스를 그대로 둔다(한 파일에 그 날짜 데이터만 있어 사실상
+ticker만으로도 충분하지만, 스키마를 통일해 두면 여러 날짜 파일을 순회하는 쪽
+코드가 단순해진다)."""
 from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent / "market_data.db"
+DATA_DIR = Path(__file__).parent / "data"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS daily_prices (
@@ -53,15 +59,21 @@ CREATE TABLE IF NOT EXISTS daily_fundamental (
     PRIMARY KEY (date, ticker)
 );
 CREATE INDEX IF NOT EXISTS idx_daily_fundamental_date_ticker ON daily_fundamental(date, ticker);
-
-CREATE TABLE IF NOT EXISTS collection_log (
-    date TEXT PRIMARY KEY,
-    prices_count INTEGER
-);
 """
 
 
-def get_connection(db_path: Path | str = DB_PATH) -> sqlite3.Connection:
+def daily_db_path(date: str) -> Path:
+    return DATA_DIR / f"{date}.db"
+
+
+def date_file_exists(date: str) -> bool:
+    """이 날짜가 이미 수집됐는지(파일 존재 여부만 확인 — LFS 실제 내용을 안 받아온
+       상태(포인터 파일)라도 git 트리에 커밋만 돼 있으면 파일 자체는 존재하므로,
+       daily.yml/backfill.py의 재개 판단에는 lfs pull 없이도 충분하다)."""
+    return daily_db_path(date).exists()
+
+
+def get_connection(db_path: Path | str) -> sqlite3.Connection:
     conn = sqlite3.connect(str(db_path))
     conn.executescript(SCHEMA)
     return conn
@@ -95,26 +107,24 @@ def upsert_fundamental(conn: sqlite3.Connection, rows: list[tuple]) -> None:
             rows)
 
 
-def mark_collected(conn: sqlite3.Connection, date: str, count: int) -> None:
-    conn.execute("INSERT OR REPLACE INTO collection_log (date, prices_count) VALUES (?, ?)", (date, count))
-
-
-def date_already_collected(conn: sqlite3.Connection, date: str) -> bool:
-    cur = conn.execute("SELECT 1 FROM collection_log WHERE date = ? LIMIT 1", (date,))
-    return cur.fetchone() is not None
-
-
-def save_day(conn: sqlite3.Connection, date: str, day_data: dict) -> None:
-    """market_data_collector.collect_day()의 반환값을 4개 테이블에 upsert하고
-       collection_log에 기록한다(휴장일처럼 빈 날도 기록 — 재시도 낭비 방지)."""
+def save_single_day(date: str, day_data: dict) -> Path:
+    """하루치 데이터를 그 날짜 전용 파일(data/YYYYMMDD.db)에 저장한다. 이 파일은
+       이후 절대 다시 열어서 쓰지 않는다(휴장일도 빈 스키마만 있는 파일을 만들어서
+       "이미 확인함" 표시로 남긴다 — 매번 재조회하지 않도록)."""
+    DATA_DIR.mkdir(exist_ok=True)
+    path = daily_db_path(date)
+    conn = get_connection(path)
     upsert_prices(conn, day_data["daily_prices"])
     upsert_fundamental(conn, day_data["daily_fundamental"])
     upsert_short(conn, day_data["daily_short"])
     upsert_investor_flow(conn, day_data["daily_investor_flow"])
-    mark_collected(conn, date, len(day_data["daily_prices"]))
     conn.commit()
+    conn.close()
+    return path
 
 
-def row_counts(conn: sqlite3.Connection) -> dict[str, int]:
-    tables = ["daily_prices", "daily_investor_flow", "daily_short", "daily_fundamental", "collection_log"]
-    return {t: conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0] for t in tables}
+def existing_dates() -> list[str]:
+    """data/ 아래 존재하는 모든 날짜 파일의 날짜 목록(오름차순)."""
+    if not DATA_DIR.exists():
+        return []
+    return sorted(p.stem for p in DATA_DIR.glob("*.db"))
