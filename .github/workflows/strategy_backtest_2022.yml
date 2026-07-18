@@ -1,0 +1,72 @@
+name: strategy-backtest-2022
+
+on:
+  workflow_dispatch:
+    inputs:
+      months:
+        description: "콤마구분 YYYY-MM 목록 (예: 2022-01 또는 2022-01,2022-02,...,2022-12)"
+        required: false
+        default: "2022-01"
+      out_csv:
+        description: "결과 CSV 저장 경로"
+        required: false
+        default: "backtests/backtest_2022_test.csv"
+      max_runtime_min:
+        description: "이번 실행 최대 시간(분) — KRX 세션 1시간 만료 감안, 기본 50분"
+        required: false
+        default: "50"
+
+permissions:
+  contents: write
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Pull needed fundamental DB files (LFS)
+        run: |
+          git lfs install --local
+          python - <<'PYEOF'
+          import datetime as dt
+          import screener as scr
+
+          months = "${{ inputs.months }}".split(",")
+          dates = set()
+          for ym in months:
+              ym = ym.strip()
+              if not ym:
+                  continue
+              year, month = int(ym[:4]), int(ym[5:7])
+              anchor = dt.date(year, month, 1)
+              dates.update(scr.month_end_samples(scr.FUND_HISTORY_MONTHS, anchor))
+          paths = ",".join(f"data/{d}.db" for d in sorted(dates))
+          with open("_lfs_includes.txt", "w") as f:
+              f.write(paths)
+          PYEOF
+          INCLUDES=$(cat _lfs_includes.txt)
+          rm -f _lfs_includes.txt
+          if [ -n "$INCLUDES" ]; then
+            git lfs pull --include="$INCLUDES" || true
+            git lfs pull --include="$INCLUDES"
+          fi
+      - name: Run strategy backtest
+        env:
+          KRX_ID: ${{ secrets.KRX_ID }}
+          KRX_PW: ${{ secrets.KRX_PW }}
+        run: |
+          python strategy_backtest_2022.py --months "${{ inputs.months }}" \
+            --out "${{ inputs.out_csv }}" --max-runtime-min "${{ inputs.max_runtime_min }}"
+      - name: Commit backtest result
+        run: |
+          git config user.name "screener-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git lfs install --local
+          git add backtests/
+          git commit -m "chore: strategy backtest 2022 result (${{ inputs.months }})" || echo "no changes"
+          git push
