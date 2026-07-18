@@ -11,6 +11,14 @@ on:
         description: "상위 몇 개 종목"
         required: false
         default: "10"
+      source:
+        description: "데이터 소스"
+        required: false
+        default: "live"
+        type: choice
+        options:
+          - live
+          - db
 
 jobs:
   backtest:
@@ -26,4 +34,4 @@ jobs:
         env:
           KRX_ID: ${{ secrets.KRX_ID }}
           KRX_PW: ${{ secrets.KRX_PW }}
-        run: python backtest.py "${{ inputs.anchor_date }}" "${{ inputs.top_n }}"
+        run: python backtest.py "${{ inputs.anchor_date }}" "${{ inputs.top_n }}" "${{ inputs.source }}"

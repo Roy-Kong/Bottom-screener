@@ -21,6 +21,8 @@ from statistics import median
 from pykrx import stock
 import screener as scr
 import signals as sg
+import db
+import db_reader as dbr
 
 
 def find_trading_day_on_or_before(target: dt.date, max_lookback: int = 14) -> str:
@@ -232,7 +234,148 @@ def run_backtest(anchor_str: str, top_n: int = 10):
     return top, stock_rows, kospi_returns
 
 
+def run_backtest_from_db(anchor_str: str, top_n: int = 10, db_path=None):
+    """run_backtest와 동일한 채점 로직이지만, OHLCV/펀더멘털/공매도/시가총액/매집
+       데이터를 pykrx 대신 market_data.db에서 읽는다. 종목 유니버스·업종 매핑·
+       지수(코스피/코스닥/업종) 시계열은 db_reader.py 설명대로 여전히 pykrx를
+       쓴다(요청받은 4개 테이블에 해당 안 되는 메타데이터라 캐싱 이득이 적음).
+       순방향 수익률(3/6/12개월) 계산은 DB에 없는 미래 구간이라 이 함수에서는
+       하지 않는다 — 필요하면 run_backtest의 그 부분을 그대로 재사용."""
+    conn = db.get_connection(db_path) if db_path else db.get_connection()
+
+    anchor_target = dt.datetime.strptime(anchor_str, "%Y%m%d").date()
+    asof = dbr.find_trading_day_on_or_before_db(conn, anchor_target)
+    if asof is None:
+        raise RuntimeError(f"DB에 {anchor_str} 이전 데이터가 전혀 없습니다 — 백필이 필요합니다.")
+    anchor_date = dt.datetime.strptime(asof, "%Y%m%d").date()
+    print(f"[백테스트-DB] 요청 기준일 {anchor_str} → 실제 사용 영업일 {asof} (DB 기준)")
+
+    print("1) 종목 유니버스 수집… (라이브 pykrx)")
+    universe, ticker_market = scr.get_universe(asof)
+    print(f"   {len(universe)}개 종목")
+
+    print("1b) 업종지수 매핑 수집… (라이브 pykrx)")
+    sector_map, sector_names = scr.get_sector_index_map(asof)
+    print(f"   {len(sector_map)}개 종목이 업종지수에 매핑됨")
+
+    print("2) OHLCV 스냅샷 로딩… (DB)")
+    ohlcv_dates = scr.recent_business_dates(scr.OHLCV_LOOKBACK_DAYS, anchor_date)
+    matrix = dbr.load_ohlcv_matrix_from_db(conn, ohlcv_dates)
+    latest_date = sorted(matrix.keys())[-1] if matrix else asof
+    print(f"   {len(matrix)}개 영업일 확보, 최신={latest_date}")
+
+    print("3) 펀더멘털 히스토리 로딩… (DB)")
+    fund_hist = dbr.load_fundamental_history_from_db(
+        conn, scr.month_end_samples(scr.FUND_HISTORY_MONTHS, anchor_date))
+
+    print("4) 공매도 3개월 최고/현재, 시가총액 로딩… (DB)")
+    short_max = dbr.load_short_max_from_db(conn, scr.weekly_samples(scr.SHORT_SAMPLE_WEEKS, anchor_date))
+    short_cur = dbr.load_short_current_from_db(conn, latest_date)
+    market_cap = dbr.load_market_cap_from_db(conn, latest_date)
+
+    print("5) 매집(20일) 로딩… (DB)")
+    accum_from = ohlcv_dates[-scr.ACCUM_WINDOW_DAYS] if len(ohlcv_dates) >= scr.ACCUM_WINDOW_DAYS else ohlcv_dates[0]
+    accum_dates = dbr.date_range_inclusive(sorted(matrix.keys()), accum_from, latest_date)
+    accum = dbr.load_accumulation_from_db(conn, accum_dates)
+
+    print("6) 지수 수익률(코스피·코스닥)… (라이브 pykrx)")
+    market_idx_by_date: dict[str, dict[str, float]] = {}
+    for mkt, code in scr.MARKET_INDEX_CODE.items():
+        try:
+            idx = stock.get_index_ohlcv(ohlcv_dates[0], latest_date, code)
+            market_idx_by_date[mkt] = scr.index_close_by_date(idx)
+        except Exception:
+            market_idx_by_date[mkt] = {}
+
+    print("6b) 업종지수 OHLCV 수집… (라이브 pykrx)")
+    sector_codes_needed = set(sector_map.values())
+    sector_idx_by_date = scr.collect_sector_index_ohlcv(sector_codes_needed, ohlcv_dates[0], latest_date)
+
+    print("7) 채점(바닥 7개 신호만, 생존 게이트 포함)…")
+    results = []
+    for tkr, name in universe.items():
+        dates, closes, vols = scr.series_for_ticker(matrix, tkr)
+        if len(closes) < 60 or len(vols) < 120:
+            continue
+
+        last_close = closes[-1]
+        avg_trading_value = median(vols[-20:]) * last_close
+        if avg_trading_value < scr.MIN_AVG_TRADING_VALUE:
+            continue
+        cur_market_cap = market_cap.get(tkr, 0.0)
+        if cur_market_cap < scr.MIN_MARKET_CAP:
+            continue
+        fh = fund_hist.get(tkr, [])
+        cur_pbr = fh[0]["PBR"] if fh else 0.0
+        if cur_pbr <= 0:
+            continue
+
+        split_suspected = scr.has_unadjusted_split_jump(closes)
+
+        rec6to25 = median(vols[-25:-5])
+        past120 = median(vols[-120:])
+        ret60 = (closes[-1] / closes[-60]) - 1
+        ret20_price = (closes[-1] / closes[-20]) - 1
+
+        bench_series, bench_label = scr.resolve_benchmark_series(
+            tkr, sector_map, sector_idx_by_date, market_idx_by_date, ticker_market)
+        bench_c_latest = bench_series.get(latest_date)
+        bench_c_60ago = bench_series.get(dates[-60])
+        idx_ret_t = (bench_c_latest / bench_c_60ago - 1) if bench_c_latest and bench_c_60ago else 0.0
+
+        pbr_series = [r["PBR"] for r in fh if r["PBR"] > 0]
+        div_series = [r["DIV"] for r in fh if r["DIV"] > 0]
+        cur_div = fh[0]["DIV"] if fh else 0.0
+        cur_dps = fh[0]["DPS"] if fh else 0.0
+        cur_eps = fh[0]["EPS"] if fh else 0.0
+        bw_series = scr.bollinger_bandwidth_series(closes)
+        float_mc = avg_trading_value * 50
+
+        sector_name = sector_names.get(sector_map.get(tkr))
+        pbr_caution_sector = scr.is_pbr_caution_sector(sector_name)
+        capital_eroding = scr.had_progressive_capital_erosion(fh)
+        bottom_weights = sg.BOTTOM_WEIGHTS
+        if pbr_caution_sector:
+            bottom_weights = dict(sg.BOTTOM_WEIGHTS)
+            bottom_weights["pbr_low"] = bottom_weights["pbr_low"] / 2
+
+        scores = {
+            "volume_dryness": sg.score_volume_dryness(rec6to25, past120),
+            "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100),
+            "short_covering": sg.score_short_covering(short_cur.get(tkr, 0.0), short_max.get(tkr, 0.0)),
+            "pbr_low": None if capital_eroding else sg.score_pbr_low(cur_pbr, pbr_series),
+            "dividend_yield": sg.score_dividend_yield(cur_div, div_series, cur_dps, cur_eps, scr.had_dividend_cut(fh)),
+            "relative_strength": None if split_suspected else sg.score_relative_strength(ret60, idx_ret_t),
+            "volatility_squeeze": sg.score_volatility_squeeze(bw_series),
+        }
+        comp = sg.composite_score(scores, bottom_weights)
+        if comp["composite"] is None or comp["composite"] < scr.BOTTOM_SCORE_THRESHOLD:
+            continue
+
+        results.append({
+            "ticker": tkr, "name": name, "score": comp["composite"],
+            "breakdown": comp["breakdown"], "anchor_close": last_close,
+        })
+
+    conn.close()
+    print(f"완료: {len(results)}개 채점 (기준일 {asof}, DB 소스)")
+    results.sort(key=lambda x: -x["score"])
+    top = results[:top_n]
+
+    print(f"\n[백테스트-DB] 상위 {len(top)}개 종목 (기준일 {asof}):")
+    for i, r in enumerate(top, 1):
+        bd = ", ".join(f"{k}={v}" for k, v in r["breakdown"].items())
+        print(f"  {i}. {r['name']}({r['ticker']}) 종합점수={r['score']} 종가={r['anchor_close']:.0f}")
+        print(f"     breakdown: {bd}")
+
+    return top, asof
+
+
 if __name__ == "__main__":
     anchor_arg = sys.argv[1] if len(sys.argv) > 1 else "20221031"
     top_n_arg = int(sys.argv[2]) if len(sys.argv) > 2 else 10
-    run_backtest(anchor_arg, top_n_arg)
+    source_arg = sys.argv[3] if len(sys.argv) > 3 else "live"
+    if source_arg == "db":
+        run_backtest_from_db(anchor_arg, top_n_arg)
+    else:
+        run_backtest(anchor_arg, top_n_arg)
