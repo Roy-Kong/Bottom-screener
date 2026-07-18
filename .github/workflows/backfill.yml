@@ -33,6 +33,17 @@ jobs:
           python-version: "3.11"
       - name: Install deps
         run: pip install -r requirements.txt
+      - name: Pull existing DB files in target range (LFS, skipped for full 4-table default)
+        run: |
+          END="${{ inputs.end_date }}"
+          if [ -z "$END" ]; then END=$(date +%Y-%m-%d); fi
+          git lfs install --local
+          INCLUDES=$(python list_backfill_dates.py "${{ inputs.start_date }}" "$END" "${{ inputs.tables }}")
+          if [ -n "$INCLUDES" ]; then
+            git lfs pull --include="$INCLUDES"
+          else
+            echo "표준 4개 테이블 전체 요청 — 존재 여부만 확인하는 기존 방식이라 pull 생략"
+          fi
       - name: Run backfill
         env:
           KRX_ID: ${{ secrets.KRX_ID }}

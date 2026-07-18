@@ -106,6 +106,13 @@ def table_collected(date: str, table: str) -> bool:
             "SELECT 1 FROM collected_marker WHERE date=? AND table_name=? LIMIT 1",
             (date, table)).fetchone()
         return row is not None
+    except sqlite3.DatabaseError:
+        # 커밋은 됐지만 아직 실제 LFS 내용을 받아오지 않은 포인터 스텁 상태(git lfs
+        # pull 없이 checkout만 한 경우). 내용을 열어볼 수 없으니 "미수집"으로 보고
+        # 다시 수집한다 — INSERT OR REPLACE라 데이터가 덮어써질 뿐 손상되진 않는다.
+        # backfill.yml은 Run backfill 전에 대상 구간 파일을 미리 git lfs pull 하므로
+        # 정상 실행에서는 이 경로를 안 타는 게 정상이다.
+        return False
     finally:
         conn.close()
 

@@ -4,8 +4,12 @@ backfill.py — START~END 기간의 원본 데이터를 data/YYYYMMDD.db(하루 
 daily_short, daily_fundamental) 중 원하는 것만 골라 채울 수 있다 — 예를 들어
 가벼운 daily_fundamental만 먼저 과거 구간을 채우고, 무거운 나머지는 나중에
 같은 스크립트를 다른 --tables로 다시 돌리는 식. 이미 수집된 (date, table)
-조합은 db.table_collected로 건너뛰므로 여러 번 나눠 실행해도 이어서 진행되고,
-서로 다른 --tables 실행끼리도 같은 날짜 파일을 공유하며 충돌하지 않는다.
+조합은 건너뛰므로 여러 번 나눠 실행해도 이어서 진행되고, 서로 다른 --tables
+실행끼리도 같은 날짜 파일을 공유하며 충돌하지 않는다. --tables가 표준 4개
+전부(기본값)면 기존처럼 db.date_file_exists(존재 여부만)로 판단하고, 일부만
+지정하면 db.table_collected로 파일을 열어 테이블별로 정확히 판단한다 — 후자는
+대상 구간의 기존 파일을 미리 git lfs pull 받아둬야 하므로 backfill.yml이
+list_backfill_dates.py로 그 목록을 계산해 전달한다.
 
 KRX 로그인 세션이 로그인 시점부터 1시간 만에 만료되는 것으로 확인됐다(daily.yml
 실행 로그의 "로그인 시간"/"만료 시간" 참고). 큰 백필은 한 세션 안에 못 끝날
@@ -49,11 +53,22 @@ def run(start_str: str, end_str: str, max_runtime_min: int, tables: list[str]) -
     start = dt.datetime.strptime(start_str, "%Y-%m-%d").date()
     end = dt.datetime.strptime(end_str, "%Y-%m-%d").date()
 
+    # 표준 4개 테이블을 전부 요청한 경우(기본값 — 기존 2022~현재 전체 백필과 동일한
+    # 용도)는 date_file_exists만으로 판단한다(파일을 열지 않음 — CI의 checkout은
+    # LFS 콘텐츠를 안 받아오므로 포인터 스텁 상태인데, 존재 여부만 보면 스텁이어도
+    # 문제없다). 테이블을 일부만 요청한 경우(--tables daily_fundamental처럼 이
+    # 프레임의 새 용도)만 db.table_collected로 파일을 열어 테이블별로 정확히
+    # 판단한다 — 이 경로만 대상 구간의 기존 파일을 미리 git lfs pull 받아둬야
+    # 한다(backfill.yml 참고).
+    full_set = set(tables) == set(db.ALL_TABLES)
     all_days = list(business_days(start, end))
     todo: list[tuple[dt.date, list[str]]] = []
     for d in all_days:
         ds = d.strftime("%Y%m%d")
-        missing = [t for t in tables if not db.table_collected(ds, t)]
+        if full_set:
+            missing = [] if db.date_file_exists(ds) else list(tables)
+        else:
+            missing = [t for t in tables if not db.table_collected(ds, t)]
         if missing:
             todo.append((d, missing))
 
