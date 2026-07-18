@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -34,6 +36,7 @@ jobs:
         run: |
           git config user.name "screener-bot"
           git config user.email "bot@users.noreply.github.com"
+          git lfs install --local
           git add results.json docs/results.json market_data.db
           git commit -m "chore: update results" || echo "no changes"
           git push
