@@ -89,11 +89,11 @@ def run(start_str: str, end_str: str, max_runtime_min: int, tables: list[str]) -
         ds = d.strftime("%Y%m%d")
         try:
             day_data = collector.collect_day(ds, tables=missing)
+            db.save_single_day(ds, day_data, tables=missing)
         except Exception as e:
-            print(f"  {ds}: 수집 오류({e}) — 이번엔 건너뛰고 다음 실행에 재시도")
+            print(f"  {ds}: 수집/저장 오류({e}) — 이번엔 건너뛰고 다음 실행에 재시도")
             errors += 1
             continue
-        db.save_single_day(ds, day_data, tables=missing)
         if any(day_data.get(t) for t in missing):
             done += 1
         else:
