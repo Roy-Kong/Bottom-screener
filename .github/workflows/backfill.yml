@@ -3,12 +3,16 @@ name: backfill-db
 on:
   workflow_dispatch:
     inputs:
-      start_date:
-        description: "시작일 (YYYYMMDD)"
+      tables:
+        description: "채울 테이블 (콤마 구분, 예: daily_fundamental 또는 daily_prices,daily_short)"
         required: false
-        default: "20220101"
+        default: "daily_prices,daily_investor_flow,daily_short,daily_fundamental"
+      start_date:
+        description: "시작일 (YYYY-MM-DD)"
+        required: false
+        default: "2022-01-01"
       end_date:
-        description: "종료일 (YYYYMMDD, 비우면 오늘)"
+        description: "종료일 (YYYY-MM-DD, 비우면 오늘)"
         required: false
         default: ""
       max_runtime_min:
@@ -35,8 +39,9 @@ jobs:
           KRX_PW: ${{ secrets.KRX_PW }}
         run: |
           END="${{ inputs.end_date }}"
-          if [ -z "$END" ]; then END=$(date +%Y%m%d); fi
-          python backfill.py "${{ inputs.start_date }}" "$END" "${{ inputs.max_runtime_min }}"
+          if [ -z "$END" ]; then END=$(date +%Y-%m-%d); fi
+          python backfill.py --tables "${{ inputs.tables }}" --start "${{ inputs.start_date }}" \
+            --end "$END" --max-runtime-min "${{ inputs.max_runtime_min }}"
       - name: Commit DB progress
         run: |
           git config user.name "screener-bot"

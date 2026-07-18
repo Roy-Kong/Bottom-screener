@@ -59,7 +59,16 @@ CREATE TABLE IF NOT EXISTS daily_fundamental (
     PRIMARY KEY (date, ticker)
 );
 CREATE INDEX IF NOT EXISTS idx_daily_fundamental_date_ticker ON daily_fundamental(date, ticker);
+
+CREATE TABLE IF NOT EXISTS collected_marker (
+    date TEXT NOT NULL,
+    table_name TEXT NOT NULL,
+    PRIMARY KEY (date, table_name)
+);
 """
+
+# 테이블 선택형 백필(backfill.py --tables)이 다루는 4개 표준 원본 테이블.
+ALL_TABLES = ["daily_prices", "daily_investor_flow", "daily_short", "daily_fundamental"]
 
 
 def daily_db_path(date: str) -> Path:
@@ -71,6 +80,34 @@ def date_file_exists(date: str) -> bool:
        상태(포인터 파일)라도 git 트리에 커밋만 돼 있으면 파일 자체는 존재하므로,
        daily.yml/backfill.py의 재개 판단에는 lfs pull 없이도 충분하다)."""
     return daily_db_path(date).exists()
+
+
+def table_collected(date: str, table: str) -> bool:
+    """이 (date, table) 조합이 이미 수집 시도됐는지(휴장일이라 0건이어도 '시도함'
+       으로 간주 — 재시도 방지). collected_marker가 있는 파일(테이블 선택형
+       백필로 만들어진 파일)은 그 마커로 정확히 판단한다. collected_marker가
+       이 날짜에 대해 전혀 없는 파일(2022~ 전체 4테이블 백필처럼, 이 기능이
+       생기기 전에 항상 4개를 한 번에 통째로 수집하던 구버전 결과물)은 존재
+       자체를 '표준 4개 테이블 전부 수집 완료'로 간주한다 — 안 그러면 기존
+       완료 구간을 이 프레임으로 다시 돌릴 때 전부 재수집하게 된다."""
+    path = daily_db_path(date)
+    if not path.exists():
+        return False
+    conn = sqlite3.connect(str(path))
+    try:
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS collected_marker "
+            "(date TEXT NOT NULL, table_name TEXT NOT NULL, PRIMARY KEY (date, table_name))")
+        marker_count = conn.execute(
+            "SELECT COUNT(*) FROM collected_marker WHERE date=?", (date,)).fetchone()[0]
+        if marker_count == 0:
+            return table in ALL_TABLES
+        row = conn.execute(
+            "SELECT 1 FROM collected_marker WHERE date=? AND table_name=? LIMIT 1",
+            (date, table)).fetchone()
+        return row is not None
+    finally:
+        conn.close()
 
 
 def get_connection(db_path: Path | str) -> sqlite3.Connection:
@@ -107,17 +144,32 @@ def upsert_fundamental(conn: sqlite3.Connection, rows: list[tuple]) -> None:
             rows)
 
 
-def save_single_day(date: str, day_data: dict) -> Path:
+TABLE_UPSERT = {
+    "daily_prices": upsert_prices,
+    "daily_investor_flow": upsert_investor_flow,
+    "daily_short": upsert_short,
+    "daily_fundamental": upsert_fundamental,
+}
+
+
+def save_single_day(date: str, day_data: dict, tables: list[str] | None = None) -> Path:
     """하루치 데이터를 그 날짜 전용 파일(data/YYYYMMDD.db)에 저장한다. 이 파일은
        이후 절대 다시 열어서 쓰지 않는다(휴장일도 빈 스키마만 있는 파일을 만들어서
-       "이미 확인함" 표시로 남긴다 — 매번 재조회하지 않도록)."""
+       "이미 확인함" 표시로 남긴다 — 매번 재조회하지 않도록). tables를 생략하면
+       day_data에 들어있는 테이블만 저장한다(기본: 전체 4개, update_db_daily.py처럼
+       항상 4개를 같이 수집하는 호출부는 그대로 동작). 저장한 각 테이블마다
+       collected_marker에 '수집 시도함' 표시를 남겨 이후 --tables 백필의 재개
+       판단에 쓴다."""
+    if tables is None:
+        tables = list(day_data.keys())
     DATA_DIR.mkdir(exist_ok=True)
     path = daily_db_path(date)
     conn = get_connection(path)
-    upsert_prices(conn, day_data["daily_prices"])
-    upsert_fundamental(conn, day_data["daily_fundamental"])
-    upsert_short(conn, day_data["daily_short"])
-    upsert_investor_flow(conn, day_data["daily_investor_flow"])
+    for table in tables:
+        TABLE_UPSERT[table](conn, day_data.get(table, []))
+    conn.executemany(
+        "INSERT OR REPLACE INTO collected_marker (date, table_name) VALUES (?,?)",
+        [(date, t) for t in tables])
     conn.commit()
     conn.close()
     return path
