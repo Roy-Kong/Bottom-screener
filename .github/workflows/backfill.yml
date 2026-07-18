@@ -40,6 +40,7 @@ jobs:
           git lfs install --local
           INCLUDES=$(python list_backfill_dates.py "${{ inputs.start_date }}" "$END" "${{ inputs.tables }}")
           if [ -n "$INCLUDES" ]; then
+            git lfs pull --include="$INCLUDES" || true
             git lfs pull --include="$INCLUDES"
           else
             echo "표준 4개 테이블 전체 요청 — 존재 여부만 확인하는 기존 방식이라 pull 생략"
