@@ -72,4 +72,5 @@ jobs:
           git lfs install --local
           git add backtests/ cache/
           git commit -m "chore: strategy backtest 2022 result (${{ inputs.months }})" || echo "no changes"
+          git pull --rebase origin main
           git push

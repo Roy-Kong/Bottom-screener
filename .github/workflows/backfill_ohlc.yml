@@ -55,4 +55,5 @@ jobs:
           git lfs install --local
           git add data/
           git commit -m "chore: OHLC backfill progress" || echo "no changes"
+          git pull --rebase origin main
           git push
