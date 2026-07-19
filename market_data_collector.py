@@ -29,7 +29,7 @@ def collect_day(date: str, tables=DEFAULT_TABLES) -> dict[str, list[tuple]]:
     tables = set(tables)
     result: dict[str, list[tuple]] = {t: [] for t in tables}
 
-    close_vol: dict[str, tuple[float, float]] = {}
+    ohlcv: dict[str, tuple[float, float, float, float, float]] = {}  # {ticker: (open,high,low,close,vol)}
     checked_holiday = False
     if "daily_prices" in tables:
         for mkt in scr.TARGET_MARKETS:
@@ -40,15 +40,23 @@ def collect_day(date: str, tables=DEFAULT_TABLES) -> dict[str, list[tuple]]:
             if df is not None and not df.empty:
                 for tkr, row in df.iterrows():
                     close = row.get("종가")
-                    vol = row.get("거래량")
                     if close is None or float(close) <= 0:
                         continue
-                    close_vol[tkr] = (float(close), float(vol or 0))
+                    open_ = row.get("시가")
+                    high = row.get("고가")
+                    low = row.get("저가")
+                    vol = row.get("거래량")
+                    ohlcv[tkr] = (
+                        float(open_) if open_ is not None else 0.0,
+                        float(high) if high is not None else 0.0,
+                        float(low) if low is not None else 0.0,
+                        float(close), float(vol or 0),
+                    )
             time.sleep(scr.REQUEST_PAUSE)
         checked_holiday = True
 
         mc_map: dict[str, float] = {}
-        if close_vol:  # 휴장일이면 시총 호출도 생략
+        if ohlcv:  # 휴장일이면 시총 호출도 생략
             for mkt in scr.TARGET_MARKETS:
                 try:
                     df = stock.get_market_cap_by_ticker(date, market=mkt)
@@ -59,10 +67,12 @@ def collect_day(date: str, tables=DEFAULT_TABLES) -> dict[str, list[tuple]]:
                         mc_map[tkr] = float(row.get("시가총액", 0) or 0)
                 time.sleep(scr.REQUEST_PAUSE)
 
-        result["daily_prices"] = [(date, tkr, close, vol, mc_map.get(tkr))
-                                   for tkr, (close, vol) in close_vol.items()]
+        result["daily_prices"] = [
+            (date, tkr, o, h, l, c, v, mc_map.get(tkr))
+            for tkr, (o, h, l, c, v) in ohlcv.items()
+        ]
 
-    skip_rest = checked_holiday and not close_vol  # daily_prices도 요청했는데 휴장으로 이미 확인됨
+    skip_rest = checked_holiday and not ohlcv  # daily_prices도 요청했는데 휴장으로 이미 확인됨
 
     if "daily_fundamental" in tables and not skip_rest:
         fundamentals: list[tuple] = []

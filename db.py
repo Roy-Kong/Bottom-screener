@@ -25,6 +25,9 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS daily_prices (
     date TEXT NOT NULL,
     ticker TEXT NOT NULL,
+    open REAL,
+    high REAL,
+    low REAL,
     close REAL,
     volume REAL,
     market_cap REAL,
@@ -117,16 +120,43 @@ def table_collected(date: str, table: str) -> bool:
         conn.close()
 
 
+def _ensure_ohlc_columns(conn: sqlite3.Connection) -> None:
+    """2026-07 이전에 만들어진 파일은 daily_prices에 open/high/low 컬럼이 없다
+       (close/volume만 저장하던 구버전 스키마) — CREATE TABLE IF NOT EXISTS는
+       기존 테이블에 컬럼을 추가해주지 않으므로, 파일을 열 때마다 컬럼 존재를
+       확인해서 없으면 ALTER TABLE로 채워 넣는다(기존 close/volume/market_cap
+       값은 그대로 유지, 새 컬럼만 NULL로 추가됨)."""
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(daily_prices)").fetchall()}
+    for col in ("open", "high", "low"):
+        if col not in cols:
+            conn.execute(f"ALTER TABLE daily_prices ADD COLUMN {col} REAL")
+
+
 def get_connection(db_path: Path | str) -> sqlite3.Connection:
     conn = sqlite3.connect(str(db_path))
     conn.executescript(SCHEMA)
+    _ensure_ohlc_columns(conn)
     return conn
 
 
 def upsert_prices(conn: sqlite3.Connection, rows: list[tuple]) -> None:
+    """rows: (date,ticker,open,high,low,close,volume,market_cap) 8-tuple.
+       새로 수집하는 날(백필의 신규 구간, daily.yml)에 쓴다 — 그 날짜의 행을
+       통째로 새로 쓰는 것이므로 OHLCV 6개 값을 한 번에 다 받는다."""
     if rows:
         conn.executemany(
-            "INSERT OR REPLACE INTO daily_prices (date,ticker,close,volume,market_cap) VALUES (?,?,?,?,?)",
+            "INSERT OR REPLACE INTO daily_prices "
+            "(date,ticker,open,high,low,close,volume,market_cap) VALUES (?,?,?,?,?,?,?,?)",
+            rows)
+
+
+def upsert_ohlc_only(conn: sqlite3.Connection, rows: list[tuple]) -> None:
+    """rows: (open,high,low,date,ticker) 5-tuple(UPDATE 파라미터 순서). 이미
+       close/volume/market_cap이 있는 기존 행에 open/high/low만 채워 넣는다
+       (backfill_ohlc.py 전용) — 기존 값은 절대 안 건드리고 이 3개 컬럼만 갱신."""
+    if rows:
+        conn.executemany(
+            "UPDATE daily_prices SET open=?, high=?, low=? WHERE date=? AND ticker=?",
             rows)
 
 

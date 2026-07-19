@@ -1,0 +1,58 @@
+name: backfill-ohlc
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: "시작일 (YYYY-MM-DD)"
+        required: false
+        default: "2022-01-01"
+      end_date:
+        description: "종료일 (YYYY-MM-DD, 비우면 오늘)"
+        required: false
+        default: ""
+      max_runtime_min:
+        description: "이번 실행 최대 시간(분) — KRX 세션 1시간 만료 감안, 기본 50분"
+        required: false
+        default: "50"
+
+permissions:
+  contents: write
+
+jobs:
+  backfill-ohlc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Pull existing DB files in target range (LFS)
+        run: |
+          END="${{ inputs.end_date }}"
+          if [ -z "$END" ]; then END=$(date +%Y-%m-%d); fi
+          git lfs install --local
+          INCLUDES=$(python list_backfill_dates.py "${{ inputs.start_date }}" "$END" "daily_prices")
+          if [ -n "$INCLUDES" ]; then
+            git lfs pull --include="$INCLUDES" || true
+            git lfs pull --include="$INCLUDES"
+          fi
+      - name: Run OHLC backfill
+        env:
+          KRX_ID: ${{ secrets.KRX_ID }}
+          KRX_PW: ${{ secrets.KRX_PW }}
+        run: |
+          END="${{ inputs.end_date }}"
+          if [ -z "$END" ]; then END=$(date +%Y-%m-%d); fi
+          python backfill_ohlc.py --start "${{ inputs.start_date }}" \
+            --end "$END" --max-runtime-min "${{ inputs.max_runtime_min }}"
+      - name: Commit DB progress
+        run: |
+          git config user.name "screener-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git lfs install --local
+          git add data/
+          git commit -m "chore: OHLC backfill progress" || echo "no changes"
+          git push
