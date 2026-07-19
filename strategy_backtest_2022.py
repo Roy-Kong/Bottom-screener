@@ -286,6 +286,24 @@ def screen_and_score(anchor_date: dt.date, asof: str, use_cache: bool = True) ->
             for k in scr.FLOW_GROUP)
         status = "confirmed_turnaround" if (price_confirmed and flow_confirmed) else "watching"
 
+        # db.py의 daily_prices엔 시가/고가/저가 컬럼 자체가 없어(close/volume/
+        # market_cap뿐) DB 경로로 읽은 종목은 series_for_ticker가 open=high=low=
+        # close로 채워서 is_trading_halted가 이미 위에서 항상 False로 통과시켰다
+        # — 전체 유니버스(약 2600종목) O/H/L을 다 백필하는 대신, 이 게이트까지
+        # 통과한 소수(월 10~20개)만 최근 며칠 실데이터를 가볍게 확인해서 메리츠
+        # 증권류(포괄적 주식교환 상장폐지로 OHLC=0) 케이스를 여기서도 잡는다.
+        if db_covers_window:
+            try:
+                recheck_from = scr.yyyymmdd(anchor_date - dt.timedelta(days=14))
+                recheck_df = stock.get_market_ohlcv_by_date(recheck_from, latest_date, tkr)
+            except Exception:
+                recheck_df = None
+            if recheck_df is not None and not recheck_df.empty:
+                last_row = recheck_df.iloc[-1]
+                if scr.is_halted_snapshot(float(last_row["시가"]), float(last_row["고가"]),
+                                           float(last_row["저가"]), float(last_row["종가"])):
+                    continue
+
         out.append({
             "ticker": tkr, "name": name, "score": bottom_comp["composite"], "status": status,
             "breakdown": {**bottom_comp["breakdown"],
