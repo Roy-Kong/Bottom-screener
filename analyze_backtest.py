@@ -12,6 +12,12 @@ import csv
 import sys
 from pathlib import Path
 
+# Windows 콘솔 기본 cp949는 em-dash(—) 등 일부 문자를 못 그려서 출력 도중
+# UnicodeEncodeError로 죽는다 — 저장은 이미 끝난 뒤라 결과 파일은 멀쩡한데
+# 요약 출력만 못 봄. stdout을 UTF-8로 강제해서 이 문제를 근본적으로 없앤다.
+if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+    sys.stdout.reconfigure(encoding="utf-8")
+
 
 def load_rows(paths: list[str]) -> list[dict]:
     rows: list[dict] = []
