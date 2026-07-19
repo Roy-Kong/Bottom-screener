@@ -29,7 +29,8 @@ import time
 import datetime as dt
 from statistics import median
 
-from pykrx import stock
+from pykrx_import import import_pykrx_stock
+stock = import_pykrx_stock()
 import signals as sg
 import explain as ex
 

@@ -60,7 +60,8 @@ import datetime as dt
 from statistics import median
 from pathlib import Path
 
-from pykrx import stock
+from pykrx_import import import_pykrx_stock
+stock = import_pykrx_stock()
 import screener as scr
 import signals as sg
 import db_reader as dbr

@@ -13,7 +13,8 @@ from __future__ import annotations
 import sys
 import datetime as dt
 
-from pykrx import stock
+from pykrx_import import import_pykrx_stock
+stock = import_pykrx_stock()
 import screener as scr
 
 # backtest.py run_backtest("20221031", 10) 결과 (2026-07-18 실행) — 재사용

@@ -16,7 +16,8 @@ OHLCV 호출 없이는 미리 알 수 없으므로, 그 경우 나머지 각 테
 from __future__ import annotations
 import time
 
-from pykrx import stock
+from pykrx_import import import_pykrx_stock
+stock = import_pykrx_stock()
 import screener as scr
 import db
 

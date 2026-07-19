@@ -25,7 +25,8 @@ import sys
 import time
 import datetime as dt
 
-from pykrx import stock
+from pykrx_import import import_pykrx_stock
+stock = import_pykrx_stock()
 import screener as scr
 import db
 
