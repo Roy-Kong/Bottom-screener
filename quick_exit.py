@@ -57,10 +57,11 @@ def quick_exit_analysis(ticker: str, anchor_close: float, asof: str,
         if d <= start:
             continue
         elapsed = (d - start).days
+        open_ = float(row.get("시가", 0) or 0)
         high = float(row.get("고가", 0) or 0)
         low = float(row.get("저가", 0) or 0)
         close = float(row.get("종가", 0) or 0)
-        if high <= 0 or low <= 0 or close <= 0:
+        if scr.is_halted_snapshot(open_, high, low, close):
             continue
         high_ret = (high / anchor_close - 1) * 100
         low_ret = (low / anchor_close - 1) * 100

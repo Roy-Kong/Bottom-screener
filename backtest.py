@@ -117,10 +117,12 @@ def run_backtest(anchor_str: str, top_n: int = 10):
     print("7) 채점(바닥 7개 신호만, 생존 게이트 포함)…")
     results = []
     for tkr, name in universe.items():
-        dates, closes, vols = scr.series_for_ticker(matrix, tkr)
+        dates, opens, highs, lows, closes, vols = scr.series_for_ticker(matrix, tkr)
         if len(closes) < 60 or len(vols) < 120:
             continue
 
+        if scr.is_trading_halted(opens, highs, lows, closes, vols):
+            continue
         last_close = closes[-1]
         avg_trading_value = median(vols[-20:]) * last_close
         if avg_trading_value < scr.MIN_AVG_TRADING_VALUE:
@@ -292,10 +294,12 @@ def run_backtest_from_db(anchor_str: str, top_n: int = 10):
     print("7) 채점(바닥 7개 신호만, 생존 게이트 포함)…")
     results = []
     for tkr, name in universe.items():
-        dates, closes, vols = scr.series_for_ticker(matrix, tkr)
+        dates, opens, highs, lows, closes, vols = scr.series_for_ticker(matrix, tkr)
         if len(closes) < 60 or len(vols) < 120:
             continue
 
+        if scr.is_trading_halted(opens, highs, lows, closes, vols):
+            continue
         last_close = closes[-1]
         avg_trading_value = median(vols[-20:]) * last_close
         if avg_trading_value < scr.MIN_AVG_TRADING_VALUE:

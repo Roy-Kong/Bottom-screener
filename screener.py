@@ -246,15 +246,19 @@ def resolve_benchmark_series(tkr: str, sector_map: dict[str, str],
 
 
 def collect_ohlcv_matrix(dates: list[str]) -> dict[str, dict[str, tuple]]:
-    """날짜별 전종목 스냅샷 수집 → {date: {ticker: (close, volume)}}.
-       하루 1~2호출로 전종목을 받아 개별호출을 피한다.
+    """날짜별 전종목 스냅샷 수집 → {date: {ticker: (open, high, low, close, volume)}}.
+       하루 1~2호출로 전종목을 받아 개별호출을 피한다. 시가/고가/저가는 pykrx
+       응답에 이미 들어있는 컬럼이라 추가 호출 없이 같이 담는다 — is_trading_halted()
+       (거래정지/상장폐지 의심 판정)가 이 값들을 쓴다.
 
        종가<=0(결측/장애 데이터)이거나 전일 대비 ±30%(KRX 상하한가)를 넘는
        하루 등락은 물리적으로 불가능한 정상 거래이므로, 그 종목의 그 날짜만
        스냅샷에서 제외한다. (액면분할·병합처럼 실제 기업행동으로 인한 가격
        불연속도 같은 방식으로 걸러진다 — 소급 조정은 하지 않고 그냥 배제.
        그 이후 데이터가 계속 이상하면 해당 종목은 자연히 60일 데이터 기준을
-       못 채워 채점 대상에서 빠진다.)"""
+       못 채워 채점 대상에서 빠진다.) 시가/고가/저가가 0인 행(거래정지 의심)은
+       여기서 걸러내지 않고 그대로 담는다 — 생존 게이트에서 is_trading_halted()로
+       명시적으로 판정하기 위함(암묵적으로 사라지면 이유를 알 수 없다)."""
     matrix = {}
     last_close: dict[str, float] = {}
     for d in dates:
@@ -267,11 +271,17 @@ def collect_ohlcv_matrix(dates: list[str]) -> dict[str, dict[str, tuple]]:
             if df is None or df.empty:
                 continue
             for tkr, row in df.iterrows():
-                # 컬럼명은 pykrx 버전에 따라 '종가'/'거래량'
+                # 컬럼명은 pykrx 버전에 따라 '시가'/'고가'/'저가'/'종가'/'거래량'
+                open_ = row.get("시가")
+                high = row.get("고가")
+                low = row.get("저가")
                 close = row.get("종가")
                 vol = row.get("거래량")
                 if close is None or vol is None:
                     continue
+                open_ = float(open_) if open_ is not None else 0.0
+                high = float(high) if high is not None else 0.0
+                low = float(low) if low is not None else 0.0
                 close = float(close)
                 vol = float(vol)
                 if close <= 0:
@@ -281,7 +291,7 @@ def collect_ohlcv_matrix(dates: list[str]) -> dict[str, dict[str, tuple]]:
                     ratio = close / prev
                     if ratio > MAX_DAILY_MOVE_RATIO or ratio < 1 / MAX_DAILY_MOVE_RATIO:
                         continue   # 데이터 이상으로 판단, 이 종목의 이 날짜만 제외
-                day[tkr] = (close, vol)
+                day[tkr] = (open_, high, low, close, vol)
                 last_close[tkr] = close
             time.sleep(REQUEST_PAUSE)
         if day:
@@ -387,16 +397,31 @@ def collect_accumulation(fromdate: str, todate: str) -> dict[str, float]:
 
 # ---------------- 파생 계산 ----------------
 def series_for_ticker(matrix, tkr):
-    """시간순 (date, close, volume) 병렬 리스트. date는 상대강도 가속 계산 시
-       지수 종가와 같은 날짜끼리 짝짓기 위해 필요하다."""
-    dates, closes, vols = [], [], []
+    """시간순 (date, open, high, low, close, volume) 병렬 리스트. date는 상대강도
+       가속 계산 시 지수 종가와 같은 날짜끼리 짝짓기 위해 필요하다.
+
+       matrix 값이 (open,high,low,close,vol) 5-tuple(collect_ohlcv_matrix, 라이브)
+       이든 (close,vol) 2-tuple(db_reader.load_ohlcv_matrix_from_db, DB — 시가/고가/
+       저가 컬럼 자체가 없음)이든 다 받는다. 2-tuple인 경우 open=high=low=close로
+       채운다 — is_trading_halted()가 그 경우 항상 False로 판정하게 만드는 안전한
+       기본값(0 이하가 아니고, 실제 종가와 같으니 '거래정지 스냅샷'으로 오판하지
+       않음). 즉 DB 경로는 이 판정을 못 받을 뿐 회귀는 없다."""
+    dates, opens, highs, lows, closes, vols = [], [], [], [], [], []
     for d in sorted(matrix.keys()):
         if tkr in matrix[d]:
-            c, v = matrix[d][tkr]
+            row = matrix[d][tkr]
+            if len(row) == 5:
+                o, h, l, c, v = row
+            else:
+                c, v = row
+                o = h = l = c
             dates.append(d)
+            opens.append(o)
+            highs.append(h)
+            lows.append(l)
             closes.append(c)
             vols.append(v)
-    return dates, closes, vols
+    return dates, opens, highs, lows, closes, vols
 
 
 def index_close_by_date(idx_df) -> dict[str, float]:
@@ -441,6 +466,47 @@ def has_unadjusted_split_jump(closes: list[float], window: int = 60,
             continue
         ratio = recent[i] / recent[i - 1]
         if ratio >= up_ratio or ratio <= down_ratio:
+            return True
+    return False
+
+
+def is_halted_snapshot(open_: float, high: float, low: float, close: float) -> bool:
+    """단일 시점(하루) 스냅샷이 거래정지/상장폐지 절차 등으로 정상 시세가
+       끊긴 상태로 보이는지. 시가·고가·저가·종가 중 하나라도 0 이하면 True.
+
+       실데이터로 검증한 사례 둘:
+       - 메리츠증권(008560, 2023-04-03~): 포괄적 주식교환에 따른 상장폐지
+         절차로 시가/고가/저가가 0, 종가만 직전값에 고정, 거래량 0으로 찍힘
+         → 여기 걸림(정상 판정).
+       - 다우데이타(032190, 2023-04-24~25, SG증권 CFD 사태 하한가): 시가/고가/
+         저가/종가 전부 정상적으로 0이 아닌 값이고 거래량도 하루 100만주+
+         체결됨(실제 거래) → 여기 안 걸림(정상 판정, 실제 급락과 데이터
+         단절을 혼동하지 않음)."""
+    return open_ <= 0 or high <= 0 or low <= 0 or close <= 0
+
+
+def is_trading_halted(opens: list[float], highs: list[float], lows: list[float],
+                       closes: list[float], vols: list[float], recent_n: int = 5) -> bool:
+    """생존 게이트용 종합 판정 — 실시간 스크리너(screener.py run())와 백테스트
+       스크리닝(strategy_backtest_2022.py screen_and_score(), backtest.py) 양쪽에서
+       공유해서 쓴다. 다음 중 하나라도 해당하면 거래정지/상장폐지 의심으로 True:
+
+       1) 가장 최근 시점의 스냅샷이 is_halted_snapshot으로 걸림(위 메리츠증권 사례)
+       2) 최근 recent_n일간 종가가 완전히 동일(고정)하고 그 기간 거래량이 전부 0
+          (스냅샷 자체는 0이 아니어도 며칠째 실거래 없이 마지막 체결가만 반복
+          찍히는 경우 — 위 1)이 아직 안 걸린 초기 구간을 보조로 잡는다)
+
+       실제 시장 급락(하한가 연속 등)은 시가/고가/저가/종가가 전부 정상적으로
+       0이 아니고 거래량도 실제로 체결되므로(다우데이타 사례) 이 조건에 걸리지
+       않는다 — '데이터가 끊김' vs '가격이 실제로 폭락함'을 구분하는 게 핵심."""
+    if not closes:
+        return False
+    if is_halted_snapshot(opens[-1], highs[-1], lows[-1], closes[-1]):
+        return True
+    if len(closes) >= recent_n:
+        recent_closes = closes[-recent_n:]
+        recent_vols = vols[-recent_n:]
+        if len(set(recent_closes)) == 1 and all(v == 0 for v in recent_vols):
             return True
     return False
 
@@ -566,12 +632,16 @@ def run():
     pbr_caution_count = 0  # 진단: 무형자산 비중 큰 업종이라 pbr_low 가중치를 절반으로 낮춘 종목 수
     capital_eroding_count = 0  # 진단: 진행형 자본잠식(BPS 4분기 연속 감소)이라 pbr_low를 None 처리한 종목 수
     bps_nonzero_count = 0  # 진단: BPS 컬럼이 pykrx에서 실제로 값을 채워주는지 확인용(0개면 컬럼명 문제 의심)
+    halted_count = 0  # 진단: 거래정지/상장폐지 의심(is_trading_halted)으로 생존 게이트 탈락한 종목 수
     for tkr, name in universe.items():
-        dates, closes, vols = series_for_ticker(matrix, tkr)
+        dates, opens, highs, lows, closes, vols = series_for_ticker(matrix, tkr)
         if len(closes) < 60 or len(vols) < 120:
             continue
 
         # --- 생존 게이트 ---
+        if is_trading_halted(opens, highs, lows, closes, vols):
+            halted_count += 1
+            continue
         last_close = closes[-1]
         avg_trading_value = median(vols[-20:]) * last_close
         liquidity_eval_count += 1
@@ -830,6 +900,7 @@ def run():
           f"BPS 데이터 확보 {bps_nonzero_count}개")
     print(f"   [진단:유동성] 60일 이상 데이터 보유 {liquidity_eval_count}개 종목 중 "
           f"20일 평균 거래대금 {MIN_AVG_TRADING_VALUE / 1e8:.0f}억원 이상: {liquidity_pass_count}개")
+    print(f"   [진단:거래정지의심] is_trading_halted로 생존 게이트 탈락: {halted_count}개")
     print(f"   [진단:이상치] 총 {outlier_count}개 종목이 생존 게이트 통과 종목 중 60일 +100% 이상")
     print(f"   [진단:분할의심] 총 {split_flag_count}개 종목이 ±30% 필터를 뚫은 잔존 분할/증자 의심"
           f"(relative_strength/ma_breakout/short_term_breakout/rsi_reversal/macd_cross None 처리됨)")

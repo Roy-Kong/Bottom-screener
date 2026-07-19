@@ -137,10 +137,12 @@ def screen_and_score(anchor_date: dt.date, asof: str) -> list[dict]:
 
     out = []
     for tkr, name in universe.items():
-        dates, closes, vols = scr.series_for_ticker(matrix, tkr)
+        dates, opens, highs, lows, closes, vols = scr.series_for_ticker(matrix, tkr)
         if len(closes) < 60 or len(vols) < 120:
             continue
 
+        if scr.is_trading_halted(opens, highs, lows, closes, vols):
+            continue
         last_close = closes[-1]
         avg_trading_value = median(vols[-20:]) * last_close
         if avg_trading_value < scr.MIN_AVG_TRADING_VALUE:
@@ -252,22 +254,33 @@ def simulate_trade(ticker: str, anchor_close: float, buy_search_from: dt.date) -
         return {"excluded": True,
                 "exclude_reason": f"상한가 갭 추정(전일종가 대비 시가 {pct:+.1f}%) — 실제 매수 어려웠을 가능성"}
 
-    track = df.iloc[:MAX_TRACK_DAYS]
+    track_raw = df.iloc[:MAX_TRACK_DAYS]
+    # 거래정지/상장폐지로 시가·고가·저가·종가가 0으로 찍히는 구간(메리츠증권 2023-04
+    # 사례 — 포괄적 주식교환에 따른 상장폐지 절차로 데이터가 끊김, 실제 -100% 손실이
+    # 아님)은 여기서 걸러낸다. 다우데이타(2023-04 SG증권 CFD 사태) 같은 실제 급락은
+    # 시가/고가/저가/종가가 전부 정상 값이라 이 필터에 걸리지 않는다 —
+    # scr.is_halted_snapshot 참고.
+    valid_rows = [row for _, row in track_raw.iterrows()
+                  if not scr.is_halted_snapshot(float(row["시가"]), float(row["고가"]),
+                                                 float(row["저가"]), float(row["종가"]))]
+    if not valid_rows:
+        return {"excluded": True, "exclude_reason": "매수 이후 거래정지 추정(추적 데이터 없음)"}
+
     result: dict = {"excluded": False, "buy_date": buy_date_str, "buy_price": open_price,
-                     "n_trading_days_tracked": len(track)}
+                     "n_trading_days_tracked": len(valid_rows)}
     for target in TARGETS:
         target_price = open_price * (1 + target / 100)
         days_to = None
-        for i in range(len(track)):
-            if float(track.iloc[i]["고가"]) >= target_price:
+        for i, row in enumerate(valid_rows):
+            if float(row["고가"]) >= target_price:
                 days_to = i
                 break
         result[f"reached_{int(target)}pct"] = days_to is not None
         result[f"days_to_{int(target)}pct"] = days_to
 
     lowest_pct = None
-    for i in range(len(track)):
-        low_pct = (float(track.iloc[i]["저가"]) / open_price - 1) * 100
+    for row in valid_rows:
+        low_pct = (float(row["저가"]) / open_price - 1) * 100
         if lowest_pct is None or low_pct < lowest_pct:
             lowest_pct = low_pct
     result["max_drawdown_pct"] = round(lowest_pct, 2) if lowest_pct is not None else None
