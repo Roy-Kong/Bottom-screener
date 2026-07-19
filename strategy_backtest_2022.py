@@ -436,8 +436,26 @@ def print_summary(rows: list[dict], monthly_summaries: list[dict]) -> None:
     print("=" * 60)
 
 
+def _warmup_krx_login(max_attempts: int = 3) -> None:
+    """pykrx의 login_krx()가 resp.json()을 try/except 없이 호출해서, KRX가
+       첫 로그인 응답으로 가끔 비정상(빈 값/HTML) 응답을 주면 JSONDecodeError로
+       그 즉시 전체 스크립트가 죽는다(이 저장소 자체 코드가 아니라 pykrx 라이브러리
+       버그) — 이전에 git lfs pull의 '첫 요청 flakiness'를 재시도로 우회했던 것과
+       같은 이유로, 본 작업 시작 전에 가벼운 호출로 로그인을 미리 안정화시킨다."""
+    for attempt in range(1, max_attempts + 1):
+        try:
+            stock.get_market_ticker_list("20240102", market="KOSPI")
+            return
+        except Exception as e:
+            print(f"[전략백테스트] 초기 KRX 연결 시도 {attempt}/{max_attempts} 실패: {e}")
+            if attempt < max_attempts:
+                time.sleep(5)
+    print("[전략백테스트] 초기 KRX 연결 재시도 소진 — 계속 진행(이후 개별 호출에서 재시도됨)")
+
+
 def run(months: list[str], out_csv: str, max_runtime_min: int, use_cache: bool = True) -> None:
     t0 = time.time()
+    _warmup_krx_login()
     deadline = t0 + max_runtime_min * 60
     rows: list[dict] = []
     monthly_summaries: list[dict] = []
