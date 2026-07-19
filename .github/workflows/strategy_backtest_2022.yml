@@ -70,6 +70,6 @@ jobs:
           git config user.name "screener-bot"
           git config user.email "bot@users.noreply.github.com"
           git lfs install --local
-          git add backtests/
+          git add backtests/ cache/
           git commit -m "chore: strategy backtest 2022 result (${{ inputs.months }})" || echo "no changes"
           git push
