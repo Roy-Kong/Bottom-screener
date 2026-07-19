@@ -804,7 +804,9 @@ def run():
         turnaround_raw = None
         if len(closes) >= 21 and len(dates) >= 21:
             recent5_avg_vol = sum(vols[-5:]) / 5
-            recent20_avg_vol = sum(vols[-20:]) / 20
+            # 최근5일과 안 겹치는 '직전 15일'(6~20일 전) — accumulation_accel과 동일
+            # 규칙(자기참조 방지, 아래 signals.score_volume_surge 참고).
+            prior15_avg_vol = sum(vols[-20:-5]) / 15
             ma20 = sum(closes[-20:]) / 20
             ma60 = sum(closes[-60:]) / 60
             high60 = max(closes[-60:])
@@ -821,7 +823,7 @@ def run():
             net_buy_prior15_avg = accum_prior15.get(tkr, 0.0) / 15
 
             turnaround_scores = {
-                "volume_surge": sg.score_volume_surge(recent5_avg_vol, recent20_avg_vol),
+                "volume_surge": sg.score_volume_surge(recent5_avg_vol, prior15_avg_vol),
                 "ma_breakout": None if split_suspected else sg.score_ma_breakout(closes[-1], ma20, ma60),
                 "short_term_breakout": None if split_suspected else sg.score_short_term_breakout(closes[-1], high60),
                 "relative_strength_accel": sg.score_relative_strength_accel(
@@ -839,7 +841,7 @@ def run():
             rs_recent10 = (stock_ret_recent10 - index_ret_recent10) if index_ret_recent10 is not None else None
             rs_prior10 = (stock_ret_prior10 - index_ret_prior10) if index_ret_prior10 is not None else None
             turnaround_raw = {
-                "volume_surge": {"ratio": (recent5_avg_vol / recent20_avg_vol) if recent20_avg_vol else None},
+                "volume_surge": {"ratio": (recent5_avg_vol / prior15_avg_vol) if prior15_avg_vol else None},
                 "ma_breakout": {
                     "close": closes[-1], "ma20": ma20, "ma60": ma60,
                     "close_vs_ma60_pct": ((closes[-1] - ma60) / ma60 * 100) if ma60 else None,

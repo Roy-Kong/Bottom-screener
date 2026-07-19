@@ -174,13 +174,19 @@ def score_volatility_squeeze(bandwidth_history: list[float]) -> float | None:
 # 증거일 뿐 실제로 오르기 시작했다는 증거는 아니다. 아래 5개는 "방향을 실제로
 # 틀었는지"만 본다. 두 그룹은 절대 섞지 않고 끝까지 별도 합성점수로 유지한다.
 
-def score_volume_surge(recent5_avg_vol: float, recent20_avg_vol: float) -> float | None:
-    """⑨ 거래량 동반 상승. 최근 5일 평균거래량 ÷ 20일 평균거래량. 높을수록 고점.
-       주의: 바닥 신호의 '거래량 고갈'(①)과 정반대 방향이다 — 거래량 고갈은
-       낮을수록 좋고(매도 소진 확인), 이건 높을수록 좋다(매수 유입 확인). 헷갈리지 말 것."""
-    if not _valid(recent5_avg_vol, recent20_avg_vol) or recent20_avg_vol <= 0:
+def score_volume_surge(recent5_avg_vol: float, prior15_avg_vol: float) -> float | None:
+    """⑨ 거래량 동반 상승. 최근 5일 평균거래량 ÷ 그 직전 15일(6~20일 전) 평균거래량.
+       높을수록 고점. 주의: 바닥 신호의 '거래량 고갈'(①)과 정반대 방향이다 —
+       거래량 고갈은 낮을수록 좋고(매도 소진 확인), 이건 높을수록 좋다(매수 유입
+       확인). 헷갈리지 말 것.
+
+       이전 버전은 분모가 '최근 20일'(최근 5일을 포함)이라 급증이 그 자신의
+       비교 기준을 같이 끌어올려 비율이 과소평가됐다(자기참조). accumulation_accel
+       (매집 가속)이 이미 recent5 vs prior15(6~20일 전, 겹치지 않음)로 계산하는
+       것과 같은 방식으로 맞췄다 — 두 '가속' 계열 신호가 같은 규칙을 쓰게 됨."""
+    if not _valid(recent5_avg_vol, prior15_avg_vol) or prior15_avg_vol <= 0:
         return None
-    ratio = recent5_avg_vol / recent20_avg_vol
+    ratio = recent5_avg_vol / prior15_avg_vol
     return _lin(ratio, 1.0, 2.5, 0.0, 100.0)
 
 
@@ -428,7 +434,7 @@ if __name__ == "__main__":
 
     # 시나리오 F: 턴어라운드 확인 (바닥권에서 실제로 방향을 튼 케이스)
     f = {
-        "volume_surge": score_volume_surge(220, 100),                  # 5일 평균이 20일 평균의 2.2배
+        "volume_surge": score_volume_surge(220, 100),                  # 최근5일 평균이 직전15일 평균의 2.2배
         "ma_breakout": score_ma_breakout(105, 103, 100),                # 종가>20일선>60일선, 정배열
         "short_term_breakout": score_short_term_breakout(98, 100),      # 60일 박스권 고점의 98%
         "relative_strength_accel": score_relative_strength_accel(0.08, 0.01, -0.02, 0.00),
