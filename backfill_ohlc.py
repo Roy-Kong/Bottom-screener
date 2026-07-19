@@ -81,6 +81,21 @@ def backfill_one_day(ds: str) -> int:
     return len(rows)
 
 
+def _warmup_krx_login(max_attempts: int = 3) -> None:
+    """pykrx login_krx()가 resp.json()을 try/except 없이 호출해서 KRX 첫 응답이
+       가끔 비정상이면 전체 스크립트가 즉사한다(strategy_backtest_2022.py의
+       같은 함수와 동일한 이유) — 본 작업 전에 미리 재시도해 안정화."""
+    for attempt in range(1, max_attempts + 1):
+        try:
+            stock.get_market_ticker_list("20240102", market="KOSPI")
+            return
+        except Exception as e:
+            print(f"[OHLC백필] 초기 KRX 연결 시도 {attempt}/{max_attempts} 실패: {e}")
+            if attempt < max_attempts:
+                time.sleep(5)
+    print("[OHLC백필] 초기 KRX 연결 재시도 소진 — 계속 진행(이후 개별 호출에서 재시도됨)")
+
+
 def run(start_str: str, end_str: str, max_runtime_min: int) -> None:
     start = dt.datetime.strptime(start_str, "%Y-%m-%d").date()
     end = dt.datetime.strptime(end_str, "%Y-%m-%d").date()
@@ -93,6 +108,7 @@ def run(start_str: str, end_str: str, max_runtime_min: int) -> None:
         print("[OHLC백필] 이미 전부 완료됨.")
         return
 
+    _warmup_krx_login()
     t0 = time.time()
     deadline = t0 + max_runtime_min * 60
     done = holidays = errors = 0
