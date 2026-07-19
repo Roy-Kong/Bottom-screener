@@ -41,6 +41,12 @@ def _read_day(date: str, table: str, columns: str) -> list[tuple]:
         return conn.execute(f"SELECT {columns} FROM {table}").fetchall()
     except sqlite3.OperationalError:
         return []
+    except sqlite3.DatabaseError:
+        # "file is not a database" — 커밋은 됐지만 git lfs pull 없이 체크아웃만 돼
+        # 실제 LFS 내용이 아니라 포인터 스텁 텍스트만 있는 상태(db.py의
+        # table_collected()가 같은 상황을 같은 이유로 잡는 것과 동일한 케이스).
+        # 호출부가 이 날짜를 "DB에 없음"으로 보고 라이브 폴백하게 빈 리스트 반환.
+        return []
     finally:
         conn.close()
 

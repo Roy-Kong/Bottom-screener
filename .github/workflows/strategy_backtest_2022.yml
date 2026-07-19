@@ -29,12 +29,12 @@ jobs:
           python-version: "3.11"
       - name: Install deps
         run: pip install -r requirements.txt
-      - name: Pull needed fundamental DB files (LFS)
+      - name: Pull needed DB files (LFS)
         run: |
           git lfs install --local
           python - <<'PYEOF'
           import datetime as dt
-          import screener as scr
+          import db_reader as dbr
 
           months = "${{ inputs.months }}".split(",")
           dates = set()
@@ -44,7 +44,10 @@ jobs:
                   continue
               year, month = int(ym[:4]), int(ym[5:7])
               anchor = dt.date(year, month, 1)
-              dates.update(scr.month_end_samples(scr.FUND_HISTORY_MONTHS, anchor))
+              # OHLCV 130일 + 펀더멘털 60개월 + 공매도 13주 전부 포함(strategy_backtest_2022.py가
+              # DB_COVERAGE_START 이후 anchor는 OHLCV/공매도/매집도 DB 우선으로 읽으므로,
+              # 펀더멘털 월말 표본만 받던 예전 범위로는 부족하다).
+              dates.update(dbr.needed_dates_for_backtest(anchor))
           paths = ",".join(f"data/{d}.db" for d in sorted(dates))
           with open("_lfs_includes.txt", "w") as f:
               f.write(paths)
