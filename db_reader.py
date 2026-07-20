@@ -22,6 +22,7 @@ import datetime as dt
 
 import screener as scr
 import db
+import index_db
 
 
 def find_trading_day_on_or_before_db(target: dt.date) -> str | None:
@@ -126,6 +127,19 @@ def load_accumulation_from_db(dates: list[str]) -> dict[str, float]:
                 continue
             total[tkr] = total.get(tkr, 0.0) + val
     return total
+
+
+INDEX_COVERAGE_START = "20220103"  # daily_index(data/index_history.sqlite) 백필 시작일
+
+
+def load_market_index_from_db(fromdate: str, todate: str) -> dict[str, dict[str, float]]:
+    """{market: {date: close}} — screener.py MARKET_INDEX_CODE(코스피/코스닥)
+       기준으로 index_db.load_close_series를 감싼다. resolve_benchmark_series의
+       market_idx_by_date 인자와 동일한 모양이라 그대로 대체 가능."""
+    out: dict[str, dict[str, float]] = {}
+    for mkt, code in scr.MARKET_INDEX_CODE.items():
+        out[mkt] = index_db.load_close_series(code, fromdate, todate)
+    return out
 
 
 def date_range_inclusive(all_dates_sorted: list[str], fromdate: str, todate: str) -> list[str]:

@@ -1,0 +1,41 @@
+name: backfill-index
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: "시작일 (YYYY-MM-DD)"
+        required: false
+        default: "2022-01-01"
+      end_date:
+        description: "종료일 (YYYY-MM-DD, 비우면 오늘)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  backfill-index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Run index backfill
+        env:
+          KRX_ID: ${{ secrets.KRX_ID }}
+          KRX_PW: ${{ secrets.KRX_PW }}
+        run: |
+          python backfill_index.py --start "${{ inputs.start_date }}" --end "${{ inputs.end_date }}"
+      - name: Commit index DB
+        run: |
+          git config user.name "screener-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add data/index_history.sqlite
+          git commit -m "chore: index OHLC backfill" || echo "no changes"
+          git pull --rebase origin main
+          git push

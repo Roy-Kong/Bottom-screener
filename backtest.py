@@ -279,14 +279,18 @@ def run_backtest_from_db(anchor_str: str, top_n: int = 10):
     accum_dates = dbr.date_range_inclusive(sorted(matrix.keys()), accum_from, latest_date)
     accum = dbr.load_accumulation_from_db(accum_dates)
 
-    print("6) 지수 수익률(코스피·코스닥)… (라이브 pykrx)")
-    market_idx_by_date: dict[str, dict[str, float]] = {}
-    for mkt, code in scr.MARKET_INDEX_CODE.items():
-        try:
-            idx = stock.get_index_ohlcv(ohlcv_dates[0], latest_date, code)
-            market_idx_by_date[mkt] = scr.index_close_by_date(idx)
-        except Exception:
-            market_idx_by_date[mkt] = {}
+    if ohlcv_dates[0] >= dbr.INDEX_COVERAGE_START:
+        print("6) 지수 수익률(코스피·코스닥)… (DB: data/index_history.sqlite)")
+        market_idx_by_date = dbr.load_market_index_from_db(ohlcv_dates[0], latest_date)
+    else:
+        print("6) 지수 수익률(코스피·코스닥)… (라이브 pykrx, DB 커버리지 밖)")
+        market_idx_by_date: dict[str, dict[str, float]] = {}
+        for mkt, code in scr.MARKET_INDEX_CODE.items():
+            try:
+                idx = stock.get_index_ohlcv(ohlcv_dates[0], latest_date, code)
+                market_idx_by_date[mkt] = scr.index_close_by_date(idx)
+            except Exception:
+                market_idx_by_date[mkt] = {}
 
     print("6b) 업종지수 OHLCV 수집… (라이브 pykrx)")
     sector_codes_needed = set(sector_map.values())
