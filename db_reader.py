@@ -77,6 +77,36 @@ def load_ohlcv_matrix_from_db(dates: list[str]) -> dict[str, dict[str, tuple]]:
     return matrix
 
 
+def load_ohlcv_matrix_from_db_full(dates: list[str]) -> dict[str, dict[str, tuple]]:
+    """{date: {ticker: (open, high, low, close, volume)}} — load_ohlcv_matrix_from_db와
+       같은 ±30% 상하한가 필터를 쓰지만, 2022-2026 OHLC 백필(open/high/low 컬럼)
+       완료 이후로 5-tuple 전체를 반환한다. screener.series_for_ticker는 5-tuple을
+       받으면 그대로 쓰고 2-tuple을 받으면 open=high=low=close로 패딩하므로, 이
+       함수를 쓰면 is_trading_halted가 (라이브 recheck 없이도) 정상 동작한다 —
+       strategy_backtest_2022.py는 기존 2-tuple 버전을 그대로 쓰고 있어(그 스크립트를
+       건드리지 않기로 한 결정) 이건 별도 추가 함수다."""
+    matrix: dict[str, dict[str, tuple]] = {}
+    last_close: dict[str, float] = {}
+    for d in sorted(dates):
+        rows = _read_day(d, "daily_prices", "ticker, open, high, low, close, volume")
+        if not rows:
+            continue
+        day: dict[str, tuple] = {}
+        for tkr, o, h, l, close, vol in rows:
+            if close is None or close <= 0:
+                continue
+            prev = last_close.get(tkr)
+            if prev is not None and prev > 0:
+                ratio = close / prev
+                if ratio > scr.MAX_DAILY_MOVE_RATIO or ratio < 1 / scr.MAX_DAILY_MOVE_RATIO:
+                    continue
+            day[tkr] = (o or 0.0, h or 0.0, l or 0.0, close, vol or 0.0)
+            last_close[tkr] = close
+        if day:
+            matrix[d] = day
+    return matrix
+
+
 def load_fundamental_history_from_db(dates: list[str]) -> dict[str, list[dict]]:
     """{ticker: [{date,PBR,DIV,DPS,EPS,BPS}, ...]} — dates가 주어진 순서(보통
        month_end_samples의 최신→과거 순)를 그대로 유지해서 반환한다."""
