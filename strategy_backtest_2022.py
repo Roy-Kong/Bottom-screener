@@ -175,12 +175,16 @@ def screen_and_score(anchor_date: dt.date, asof: str, use_cache: bool = True) ->
         accum_prior15 = scr.collect_accumulation(accum_prior15_from, accum_prior15_to)
 
     if snapshot is None:
-        # 코스피/코스닥 지수는 db_covers_window면 라이브 호출 없이 data/index_history.sqlite
-        # (index_db.py, backfill_index.py로 채움)에서 읽는다 — 상대강도·상대강도가속
-        # 신호가 이 값을 쓴다(resolve_benchmark_series). 업종지수는 아직 이 방식으로
-        # 옮기지 않았다(요청 범위가 코스피/코스닥 2개뿐이라 sector_idx_by_date는 그대로 라이브).
+        # 코스피/코스닥/업종 지수는 db_covers_window면 라이브 호출 없이
+        # data/index_history.sqlite(index_db.py, backfill_index.py로 채움)에서
+        # 읽는다 — 상대강도·상대강도가속 신호가 이 값을 쓴다
+        # (resolve_benchmark_series). 업종지수는 backfill_index.py
+        # --sector-codes로 실제로 채운 코드만 값이 있고, 안 채운 코드는 빈
+        # dict가 반환돼 그 종목은 자동으로 시장지수 폴백으로 넘어간다.
+        sector_codes_needed = set(sector_map.values())
         if db_covers_window:
             market_idx_by_date = dbr.load_market_index_from_db(ohlcv_dates[0], latest_date)
+            sector_idx_by_date = dbr.load_sector_index_from_db(sector_codes_needed, ohlcv_dates[0], latest_date)
         else:
             market_idx_by_date = {}
             for mkt, code in scr.MARKET_INDEX_CODE.items():
@@ -189,8 +193,7 @@ def screen_and_score(anchor_date: dt.date, asof: str, use_cache: bool = True) ->
                     market_idx_by_date[mkt] = scr.index_close_by_date(idx)
                 except Exception:
                     market_idx_by_date[mkt] = {}
-        sector_codes_needed = set(sector_map.values())
-        sector_idx_by_date = scr.collect_sector_index_ohlcv(sector_codes_needed, ohlcv_dates[0], latest_date)
+            sector_idx_by_date = scr.collect_sector_index_ohlcv(sector_codes_needed, ohlcv_dates[0], latest_date)
         if use_cache:
             snapshot_cache.save_anchor_snapshot(
                 asof, universe, ticker_market, sector_map, sector_names,

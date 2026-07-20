@@ -142,6 +142,17 @@ def load_market_index_from_db(fromdate: str, todate: str) -> dict[str, dict[str,
     return out
 
 
+def load_sector_index_from_db(sector_codes: set[str], fromdate: str, todate: str) -> dict[str, dict[str, float]]:
+    """{sector_code: {date: close}} — resolve_benchmark_series의 sector_idx_by_date
+       인자와 동일한 모양. backfill_index.py --sector-codes로 채운 업종지수 코드만
+       실제 값이 있고, 안 채워진 코드는 빈 dict(그 종목은 자동으로 시장지수
+       폴백으로 넘어감 — resolve_benchmark_series 참고)."""
+    out: dict[str, dict[str, float]] = {}
+    for code in sector_codes:
+        out[code] = index_db.load_close_series(code, fromdate, todate)
+    return out
+
+
 def date_range_inclusive(all_dates_sorted: list[str], fromdate: str, todate: str) -> list[str]:
     """screener.py의 collect_accumulation(fromdate, todate) 호출(날짜 범위)과
        동등하게 동작하도록, 실제 존재하는 날짜 목록에서 [fromdate, todate] 구간만 자른다."""

@@ -11,6 +11,10 @@ on:
         description: "종료일 (YYYY-MM-DD, 비우면 오늘)"
         required: false
         default: ""
+      sector_codes:
+        description: "콤마구분 업종지수코드 (비우면 코스피/코스닥만)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -30,7 +34,8 @@ jobs:
           KRX_ID: ${{ secrets.KRX_ID }}
           KRX_PW: ${{ secrets.KRX_PW }}
         run: |
-          python backfill_index.py --start "${{ inputs.start_date }}" --end "${{ inputs.end_date }}"
+          python backfill_index.py --start "${{ inputs.start_date }}" --end "${{ inputs.end_date }}" \
+            --sector-codes "${{ inputs.sector_codes }}"
       - name: Commit index DB
         run: |
           git config user.name "screener-bot"

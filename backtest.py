@@ -292,9 +292,13 @@ def run_backtest_from_db(anchor_str: str, top_n: int = 10):
             except Exception:
                 market_idx_by_date[mkt] = {}
 
-    print("6b) 업종지수 OHLCV 수집… (라이브 pykrx)")
     sector_codes_needed = set(sector_map.values())
-    sector_idx_by_date = scr.collect_sector_index_ohlcv(sector_codes_needed, ohlcv_dates[0], latest_date)
+    if ohlcv_dates[0] >= dbr.INDEX_COVERAGE_START:
+        print("6b) 업종지수 OHLCV 로딩… (DB: data/index_history.sqlite)")
+        sector_idx_by_date = dbr.load_sector_index_from_db(sector_codes_needed, ohlcv_dates[0], latest_date)
+    else:
+        print("6b) 업종지수 OHLCV 수집… (라이브 pykrx, DB 커버리지 밖)")
+        sector_idx_by_date = scr.collect_sector_index_ohlcv(sector_codes_needed, ohlcv_dates[0], latest_date)
 
     print("7) 채점(바닥 7개 신호만, 생존 게이트 포함)…")
     results = []
