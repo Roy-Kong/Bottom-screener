@@ -1,1 +1,2 @@
 *.db filter=lfs diff=lfs merge=lfs -text
+cache/daily_signal_scores/*.json filter=lfs diff=lfs merge=lfs -text

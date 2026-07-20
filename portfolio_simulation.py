@@ -48,6 +48,7 @@ import screener as scr
 import signals as sg
 import db_reader as dbr
 import snapshot_cache
+import signal_score_cache
 
 SIM_START_DEFAULT = "20220701"
 SIM_END_DEFAULT = "20221229"   # 2022-12-30은 원본 daily_prices 자체가 결측(휴일 아님, 실측 확인) — 스킵
@@ -88,10 +89,22 @@ def build_trading_calendar(matrix: dict[str, dict], start: str, end: str) -> lis
 
 
 # ---------------- 하루치 스코어링 (screen_and_score 로직 재사용, 로컬 DB만) ----------------
+#
+# score_day()는 두 단계로 나뉜다:
+#   1) _compute_raw_scores_for_day: 무거운 부분(DB 읽기 + 신호별 raw 0~100점 계산).
+#      가중치·컷라인과 무관하게 항상 같은 결과라, 한 번 계산되면
+#      signal_score_cache.py에 저장해서 이후 재실행(가중치·매매조건 실험)에서는
+#      건너뛴다.
+#   2) combine_scores: 캐시됐거나 방금 계산한 raw 점수를 현재 가중치
+#      (signals.BOTTOM_WEIGHTS)·컷라인(SCORE_THRESHOLD)으로 조합 — 여기서부터는
+#      DB 접근이 전혀 없는 순수 계산이라, 가중치나 컷라인만 바꿔 재실험할 때는
+#      이 함수만 다른 값으로 다시 부르면 몇 초 안에 끝난다.
 
-def score_day(day: str, universe: dict, sector_map: dict, sector_names: dict, ticker_market: dict,
-              matrix: dict, fund_hist: dict, market_idx_by_date: dict, sector_idx_by_date: dict) -> list[dict]:
-    """그날(day) 기준 바닥점수 65점 이상 종목 리스트(점수 내림차순). 로직은
+def _compute_raw_scores_for_day(day: str, universe: dict, sector_map: dict, sector_names: dict,
+                                ticker_market: dict, matrix: dict, fund_hist: dict,
+                                market_idx_by_date: dict, sector_idx_by_date: dict) -> list[dict]:
+    """그날 기본 게이트(생존게이트·거래대금·시총·PBR>0)를 통과한 전 종목의 신호별
+       raw 점수(가중치 적용 전, 최종 컷라인 미적용)를 반환한다. 로직은
        strategy_backtest_2022.screen_and_score의 종목별 채점 부분과 동일하다
        (그 파일을 import해서 재사용하지 않는 이유: 그 함수는 앵커별 캐시 로딩/
        라이브 폴백까지 같이 하는 구조라 매일 호출하기엔 안 맞음 — 여기서는
@@ -101,6 +114,14 @@ def score_day(day: str, universe: dict, sector_map: dict, sector_names: dict, ti
     if not db_dates_sorted:
         return []
     latest_date = db_dates_sorted[-1]
+    # 성능을 위해 matrix에는 전체 시뮬레이션 기간이 다 preload돼 있지만(run()의
+    # 사전 로딩 참고), screener.series_for_ticker는 넘겨받은 matrix의 날짜를
+    # 전부 다 쓰지 그날짜(day) 이후를 걸러주지 않는다 — 원래(strategy_backtest_2022.py)는
+    # 앵커마다 그 앵커까지의 130일치만 담긴 matrix를 새로 만들어 넘겨서 문제가
+    # 없었는데, 여기서는 반드시 day까지만 자른 서브셋을 넘겨야 미래 데이터가
+    # 안 섞인다(그냥 matrix를 넘기면 예: 7월 1일 채점에 12월 데이터가 섞여
+    # closes[-1]이 7월 1일 종가가 아니게 되는 심각한 시점 누설 버그가 생김).
+    windowed_matrix = {d: matrix[d] for d in db_dates_sorted}
 
     short_max = dbr.load_short_max_from_db(scr.weekly_samples(scr.SHORT_SAMPLE_WEEKS,
                                                                 dt.datetime.strptime(day, "%Y%m%d").date()))
@@ -117,7 +138,7 @@ def score_day(day: str, universe: dict, sector_map: dict, sector_names: dict, ti
 
     out = []
     for tkr, name in universe.items():
-        dates, opens, highs, lows, closes, vols = scr.series_for_ticker(matrix, tkr)
+        dates, opens, highs, lows, closes, vols = scr.series_for_ticker(windowed_matrix, tkr)
         if len(closes) < 60 or len(vols) < 120:
             continue
         if scr.is_trading_halted(opens, highs, lows, closes, vols):
@@ -157,10 +178,6 @@ def score_day(day: str, universe: dict, sector_map: dict, sector_names: dict, ti
         pbr_caution_sector = scr.is_pbr_caution_sector(sector_name)
         capital_eroding = scr.had_progressive_capital_erosion(fh)
 
-        bottom_weights = dict(sg.BOTTOM_WEIGHTS)
-        if pbr_caution_sector:
-            bottom_weights["pbr_low"] = bottom_weights["pbr_low"] / 2
-
         bottom_scores = {
             "volume_dryness": sg.score_volume_dryness(rec6to25, past120),
             "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100),
@@ -170,9 +187,6 @@ def score_day(day: str, universe: dict, sector_map: dict, sector_names: dict, ti
             "relative_strength": None if split_suspected else sg.score_relative_strength(ret60, idx_ret_t),
             "volatility_squeeze": sg.score_volatility_squeeze(bw_series),
         }
-        bottom_comp = sg.composite_score(bottom_scores, bottom_weights)
-        if bottom_comp["composite"] is None or bottom_comp["composite"] < SCORE_THRESHOLD:
-            continue
 
         turnaround_scores = {k: None for k in GATE_TURNAROUND_KEYS}
         if len(closes) >= 21 and len(dates) >= 21:
@@ -198,16 +212,51 @@ def score_day(day: str, universe: dict, sector_map: dict, sector_names: dict, ti
                     stock_ret_recent10, index_ret_recent10, stock_ret_prior10, index_ret_prior10),
                 "accumulation_accel": sg.score_accumulation_accel(net_buy_recent5_avg, net_buy_prior15_avg),
             }
+
+        out.append({"ticker": tkr, "name": name, "bottom_scores": bottom_scores,
+                    "turnaround_scores": turnaround_scores, "pbr_caution_sector": pbr_caution_sector})
+
+    return out
+
+
+def combine_scores(raw_entries: list[dict], score_threshold: float = SCORE_THRESHOLD) -> list[dict]:
+    """캐시됐거나 방금 계산한 raw 점수 리스트를 현재 가중치(signals.BOTTOM_WEIGHTS)로
+       조합해 컷라인 통과 종목만 점수 내림차순으로 반환한다. DB 접근이 전혀
+       없는 순수 계산이라, 가중치·컷라인만 바꿔 재실험할 때는 이 함수만 다시
+       부르면 된다(score_day 전체를 다시 안 돌려도 됨)."""
+    out = []
+    for e in raw_entries:
+        bottom_weights = dict(sg.BOTTOM_WEIGHTS)
+        if e["pbr_caution_sector"]:
+            bottom_weights["pbr_low"] = bottom_weights["pbr_low"] / 2
+        bottom_comp = sg.composite_score(e["bottom_scores"], bottom_weights)
+        if bottom_comp["composite"] is None or bottom_comp["composite"] < score_threshold:
+            continue
+
+        turnaround_scores = e["turnaround_scores"]
         price_confirmed = any(turnaround_scores.get(k) is not None and turnaround_scores[k] >= scr.TURNAROUND_STRONG_THRESHOLD
                               for k in scr.PRICE_GROUP)
         flow_confirmed = any(turnaround_scores.get(k) is not None and turnaround_scores[k] >= scr.TURNAROUND_STRONG_THRESHOLD
                              for k in scr.FLOW_GROUP)
         status = "confirmed_turnaround" if (price_confirmed and flow_confirmed) else "watching"
 
-        out.append({"ticker": tkr, "name": name, "score": bottom_comp["composite"], "status": status})
+        out.append({"ticker": e["ticker"], "name": e["name"], "score": bottom_comp["composite"], "status": status})
 
     out.sort(key=lambda c: -c["score"])
     return out
+
+
+def score_day(day: str, universe: dict, sector_map: dict, sector_names: dict, ticker_market: dict,
+              matrix: dict, fund_hist: dict, market_idx_by_date: dict, sector_idx_by_date: dict) -> list[dict]:
+    """그날(day) 기준 바닥점수 65점 이상 종목 리스트(점수 내림차순). raw 점수가
+       cache/daily_signal_scores/{day}.json에 이미 있으면 DB를 전혀 안 읽고
+       그것만 다른 가중치로 재조합한다 — 없으면 계산 후 캐시에 저장한다."""
+    raw_entries = signal_score_cache.load_day_scores(day)
+    if raw_entries is None:
+        raw_entries = _compute_raw_scores_for_day(day, universe, sector_map, sector_names, ticker_market,
+                                                   matrix, fund_hist, market_idx_by_date, sector_idx_by_date)
+        signal_score_cache.save_day_scores(day, raw_entries)
+    return combine_scores(raw_entries, SCORE_THRESHOLD)
 
 
 # ---------------- 시뮬레이션 본체 ----------------
