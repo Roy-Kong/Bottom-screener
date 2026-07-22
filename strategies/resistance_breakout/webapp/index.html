@@ -122,10 +122,8 @@
     <form id="form">
       <div class="field-group">
         <h4>기간</h4>
-        <label>훈련 시작일<input type="date" id="train_start" value="2022-02-01"></label>
-        <label>훈련 종료일<input type="date" id="train_end" value="2023-12-29"></label>
-        <label>검증 시작일<input type="date" id="val_start" value="2024-01-02"></label>
-        <label>검증 종료일<input type="date" id="val_end" value="2026-06-30"></label>
+        <label>시작일<input type="date" id="start" value="2022-02-01"></label>
+        <label>종료일<input type="date" id="end" value="2023-12-29"></label>
       </div>
 
       <div class="field-group">
@@ -188,7 +186,6 @@
 <script>
 const API_BASE = "";
 let lastResult = null;
-let activeTab = "train";
 
 fetch(API_BASE + "/api/coverage").then(r => r.json()).then(c => {
   const el = document.getElementById("coverage");
@@ -215,8 +212,7 @@ document.getElementById("form").addEventListener("submit", async (e) => {
   document.getElementById("main").innerHTML = '<div class="empty"><h2>계산 중…</h2><p>OHLCV 로딩 + 매물대 스캔 + 매매 시뮬레이션을 실행하고 있습니다.</p></div>';
 
   const body = {
-    train_start: toYYYYMMDD(val("train_start")), train_end: toYYYYMMDD(val("train_end")),
-    val_start: toYYYYMMDD(val("val_start")), val_end: toYYYYMMDD(val("val_end")),
+    start: toYYYYMMDD(val("start")), end: toYYYYMMDD(val("end")),
     resistance_lookback_days: num("resistance_lookback_days"),
     resistance_band_pct: num("resistance_band_pct"),
     resistance_min_touches: num("resistance_min_touches"),
@@ -254,28 +250,17 @@ function num(id) { return parseFloat(document.getElementById(id).value); }
 function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
 function render(json) {
-  activeTab = "train";
   const main = document.getElementById("main");
   main.innerHTML = `
-    <div class="tabs">
-      <div class="tab active" data-tab="train">훈련 (${fmtDate(toYYYYMMDD(val("train_start")))}~${fmtDate(toYYYYMMDD(val("train_end")))})</div>
-      <div class="tab" data-tab="val">검증 (${fmtDate(toYYYYMMDD(val("val_start")))}~${fmtDate(toYYYYMMDD(val("val_end")))})</div>
-    </div>
-    <div id="tab-content"></div>
-    <div class="hint" style="margin-top:-8px;">전체 소요시간 ${json.elapsed_sec}초</div>
+    <div class="hint" style="margin:-4px 0 4px;">${fmtDate(toYYYYMMDD(val("start")))} ~ ${fmtDate(toYYYYMMDD(val("end")))} · 소요시간 ${json.elapsed_sec}초</div>
+    <div id="result-content"></div>
   `;
-  main.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
-    main.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
-    t.classList.add("active");
-    activeTab = t.dataset.tab;
-    renderTab(json[activeTab]);
-  }));
-  renderTab(json.train);
+  renderResult(json);
 }
 
-function renderTab(period) {
+function renderResult(period) {
   const s = period.stats;
-  const content = document.getElementById("tab-content");
+  const content = document.getElementById("result-content");
   content.innerHTML = `
     <section class="stat-grid" style="margin-bottom:20px;">
       <div class="card ${pctClass(s.total_return_pct) === 'neg' ? 'card-neg' : (pctClass(s.total_return_pct)==='pos' ? 'card-pos' : '')}">

@@ -98,37 +98,33 @@ def params_from_request(body: dict) -> rb.Params:
 
 def run_simulation(body: dict) -> dict:
     t0 = time.time()
-    train_start = body.get("train_start", "20220201").replace("-", "")
-    train_end = body.get("train_end", "20231229").replace("-", "")
-    val_start = body.get("val_start", "20240102").replace("-", "")
-    val_end = body.get("val_end", "20260630").replace("-", "")
+    start = body.get("start", "20220201").replace("-", "")
+    end = body.get("end", "20231229").replace("-", "")
     params = params_from_request(body)
 
-    print(f"[시뮬레이션 요청] 훈련 {train_start}~{train_end}, 검증 {val_start}~{val_end}, {params}")
-    pre = get_preload(train_start, val_end, params)
+    print(f"[시뮬레이션 요청] {start}~{end}, {params}")
+    pre = get_preload(start, end, params)
     all_days = sorted(pre["matrix"].keys())
-    scan_days = [d for d in all_days if train_start <= d <= val_end]
-    signals = rb.scan_signals(scan_days, pre, params)
+    period_days = [d for d in all_days if start <= d <= end]
+    signals = rb.scan_signals(period_days, pre, params)
 
-    result = {"params_used": {**body}, "elapsed_sec": None}
-    for label, (s, e) in (("train", (train_start, train_end)), ("val", (val_start, val_end))):
-        period_days = [d for d in all_days if s <= d <= e]
-        period_signals = {d: v for d, v in signals.items() if s <= d <= e}
-        trade_log, equity_curve = rb.simulate(period_signals, period_days, pre, params)
-        stats = rb.compute_stats(trade_log, equity_curve, params)
-        kospi = kospi_curve_for([d for d, _ in equity_curve], params.start_capital)
-        kospi_final = kospi[-1]["value"] if kospi else None
-        kospi_return_pct = round((kospi_final / params.start_capital - 1) * 100, 2) if kospi_final else None
-        stats["kospi_return_pct"] = kospi_return_pct
-        stats["excess_return_pct"] = (round(stats["total_return_pct"] - kospi_return_pct, 2)
-                                      if kospi_return_pct is not None else None)
-        result[label] = {
-            "stats": stats,
-            "trade_log": trade_log,
-            "equity_curve": [{"date": d, "value": v} for d, v in equity_curve],
-            "kospi_curve": kospi,
-        }
-    result["elapsed_sec"] = round(time.time() - t0, 1)
+    trade_log, equity_curve = rb.simulate(signals, period_days, pre, params)
+    stats = rb.compute_stats(trade_log, equity_curve, params)
+    kospi = kospi_curve_for([d for d, _ in equity_curve], params.start_capital)
+    kospi_final = kospi[-1]["value"] if kospi else None
+    kospi_return_pct = round((kospi_final / params.start_capital - 1) * 100, 2) if kospi_final else None
+    stats["kospi_return_pct"] = kospi_return_pct
+    stats["excess_return_pct"] = (round(stats["total_return_pct"] - kospi_return_pct, 2)
+                                  if kospi_return_pct is not None else None)
+
+    result = {
+        "params_used": {**body},
+        "elapsed_sec": round(time.time() - t0, 1),
+        "stats": stats,
+        "trade_log": trade_log,
+        "equity_curve": [{"date": d, "value": v} for d, v in equity_curve],
+        "kospi_curve": kospi,
+    }
     print(f"[시뮬레이션 완료] {result['elapsed_sec']}초")
     return result
 
