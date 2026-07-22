@@ -93,6 +93,7 @@ def params_from_request(body: dict) -> rb.Params:
         take_profit_pct=float(body.get("take_profit_pct", d.take_profit_pct * 100)) / 100,
         stop_loss_pct=float(body.get("stop_loss_pct", d.stop_loss_pct * 100)) / 100,
         max_hold_trading_days=int(body.get("max_hold_trading_days", d.max_hold_trading_days)),
+        top_n_market_cap=int(body.get("top_n_market_cap", d.top_n_market_cap) or 0),
     )
 
 

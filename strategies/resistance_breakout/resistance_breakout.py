@@ -104,6 +104,7 @@ class Params:
     take_profit_pct: float = TAKE_PROFIT_PCT
     stop_loss_pct: float = STOP_LOSS_PCT
     max_hold_trading_days: int = MAX_HOLD_TRADING_DAYS
+    top_n_market_cap: int = 0  # 0=제한 없음(전체 유니버스). n>0이면 그 달 시총 상위 n개만 스캔(속도용, 결과 성격도 바뀜)
 
 
 DEFAULT_PARAMS = Params()
@@ -119,9 +120,9 @@ def preload(start: str, end: str, params: Params = DEFAULT_PARAMS) -> dict:
     all_calendar_dates = scr.recent_business_dates(2000, dt.datetime.strptime(end, "%Y%m%d").date())
     needed_dates = sorted(d for d in all_calendar_dates if lookback_start <= d <= end)
     print(f"  OHLCV 로딩 ({lookback_start}~{end}, {len(needed_dates)}일 요청)…")
-    matrix, _short, _mc, _accum = _bulk_load_day_files(needed_dates)
+    matrix, _short, market_cap_by_date, _accum = _bulk_load_day_files(needed_dates)
     print(f"    {len(matrix)}개 실제 거래일 확보")
-    return {"matrix": matrix, "month_snaps": month_snaps}
+    return {"matrix": matrix, "month_snaps": month_snaps, "market_cap_by_date": market_cap_by_date}
 
 
 # ==================== 매물대(저항선) 계산 ====================
@@ -163,14 +164,25 @@ def ticker_series_upto(matrix: dict, tkr: str, day: str, lookback_dates: list[st
 
 # ==================== 매수신호 스캔 ====================
 
+def top_n_by_market_cap(universe: dict, market_cap_by_date: dict, anchor_date: str, n: int) -> set[str]:
+    """그 달 앵커일 시가총액 기준 상위 n개 종목 티커 집합. 매일이 아니라 월
+       1회(앵커일)만 랭킹을 매겨서 재사용한다 — 유니버스/업종매핑을 월별
+       스냅샷으로 근사하는 이 코드베이스의 기존 관례와 동일."""
+    mc_day = market_cap_by_date.get(anchor_date, {})
+    ranked = sorted(universe.keys(), key=lambda t: mc_day.get(t, 0.0), reverse=True)
+    return set(ranked[:n])
+
+
 def scan_signals(trading_days: list[str], pre: dict, params: Params = DEFAULT_PARAMS) -> dict[str, list[dict]]:
     """{date: [{"ticker","name","volume_ratio","resistance_price","close"}, ...]}
        1차: 거래량 조건(싼 산술)만 먼저 걸러서, 매물대 계산(조금 더 비쌈)은
        그 후보에만 적용한다."""
     matrix = pre["matrix"]
     month_snaps = pre["month_snaps"]
+    market_cap_by_date = pre.get("market_cap_by_date", {})
     out: dict[str, list[dict]] = {}
     vld, rld = params.volume_lookback_days, params.resistance_lookback_days
+    top_n_cache: dict[str, set[str]] = {}
 
     for day in trading_days:
         ym = governing_month(day)
@@ -178,6 +190,11 @@ def scan_signals(trading_days: list[str], pre: dict, params: Params = DEFAULT_PA
         if snap is None:
             continue
         universe = snap["universe"]
+        if params.top_n_market_cap and params.top_n_market_cap > 0:
+            if ym not in top_n_cache:
+                top_n_cache[ym] = top_n_by_market_cap(universe, market_cap_by_date, snap["anchor_date"],
+                                                      params.top_n_market_cap)
+            universe = {t: universe[t] for t in top_n_cache[ym]}
         day_row = matrix.get(day, {})
 
         vol_hist_dates = scr.recent_business_dates(vld + 1, dt.datetime.strptime(day, "%Y%m%d").date())

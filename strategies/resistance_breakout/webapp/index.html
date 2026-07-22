@@ -127,6 +127,12 @@
       </div>
 
       <div class="field-group">
+        <h4>대상 종목</h4>
+        <label>시총 상위 N개만 (0=전체)<input type="number" id="top_n_market_cap" value="0" step="100" min="0"></label>
+        <div class="hint" style="margin-top:0;">0이면 전체 유니버스 스캔. 숫자를 넣으면 그 달 시총 상위 N개만 대상으로 해서 속도가 빨라지지만, 소형주 위주 극단적 스파이크 신호가 줄어들어 결과 성격 자체가 달라집니다.</div>
+      </div>
+
+      <div class="field-group">
         <h4>매물대(저항선) 정의</h4>
         <label>룩백 기간(영업일)<input type="number" id="resistance_lookback_days" value="60"></label>
         <div class="two-col">
@@ -213,6 +219,7 @@ document.getElementById("form").addEventListener("submit", async (e) => {
 
   const body = {
     start: toYYYYMMDD(val("start")), end: toYYYYMMDD(val("end")),
+    top_n_market_cap: num("top_n_market_cap"),
     resistance_lookback_days: num("resistance_lookback_days"),
     resistance_band_pct: num("resistance_band_pct"),
     resistance_min_touches: num("resistance_min_touches"),
