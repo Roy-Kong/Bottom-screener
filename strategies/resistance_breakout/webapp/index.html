@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>매물대 돌파 백테스트 시뮬레이터</title>
+<style>
+  :root {
+    --bg: #0a0f1c;
+    --panel: #111a2e;
+    --border: #24304b;
+    --text: #e6edf7;
+    --muted: #9fb0d0;
+    --accent: #4dd0e1;
+    --pos: #4ade80;
+    --neg: #f87171;
+    --warn: #fbbf24;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", "Malgun Gothic", system-ui, sans-serif;
+    font-size: 14px;
+  }
+  .mono { font-variant-numeric: tabular-nums; font-family: "SF Mono", "Cascadia Code", Consolas, monospace; }
+
+  .topbar { padding: 20px 28px; border-bottom: 1px solid var(--border); }
+  .topbar h1 { margin: 0 0 4px; font-size: 20px; }
+  .topbar p { margin: 0; color: var(--muted); font-size: 13px; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 20px;
+    padding: 20px 28px 40px;
+    align-items: start;
+  }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .panel h3 { margin: 0 0 14px; font-size: 13px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; }
+  .field-group { margin-bottom: 16px; }
+  .field-group:last-child { margin-bottom: 0; }
+  .field-group h4 { margin: 0 0 8px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+  label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 10px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  input[type="text"], input[type="number"], input[type="date"] {
+    width: 100%; margin-top: 4px; padding: 8px 10px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-size: 13px; font-family: inherit;
+  }
+  input:focus { outline: 1px solid var(--accent); }
+  .run-btn {
+    width: 100%; margin-top: 6px; padding: 13px; border: none; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), #22b8cf);
+    color: #06202a; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .run-btn:hover:not(:disabled) { filter: brightness(1.08); }
+  .run-btn:disabled { opacity: 0.6; cursor: wait; }
+  .hint { color: var(--muted); font-size: 11px; margin-top: 8px; line-height: 1.5; }
+
+  .main { display: flex; flex-direction: column; gap: 20px; }
+  .empty { color: var(--muted); text-align: center; padding: 80px 20px; }
+  .empty h2 { color: var(--text); margin: 0 0 8px; font-size: 18px; }
+  .error { color: #ffb3b8; background: #3a1518; border-radius: 8px; padding: 12px 14px; font-size: 13px; }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: -1px; }
+  .tab {
+    padding: 8px 18px; border: 1px solid var(--border); border-bottom: none;
+    border-radius: 10px 10px 0 0; background: var(--bg); color: var(--muted);
+    font-size: 13px; cursor: pointer; font-weight: 600;
+  }
+  .tab.active { background: var(--panel); color: var(--accent); }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .card-title { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+  .card-value { font-size: 22px; font-weight: 700; }
+  .card-sub { color: var(--muted); font-size: 11px; margin-top: 4px; }
+  .card-pos .card-value { color: var(--pos); }
+  .card-neg .card-value { color: var(--neg); }
+
+  .chart-title { color: var(--muted); font-size: 12px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+  canvas#chart { width: 100%; height: 260px; display: block; }
+  .chart-legend { display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+  .lg-buy { color: var(--pos); }
+  .lg-kospi { color: var(--muted); }
+
+  .tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tbl th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; padding: 8px 10px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--panel); }
+  .tbl td { padding: 9px 10px; border-bottom: 1px solid rgba(36,48,75,0.5); }
+  .tbl .pos { color: var(--pos); }
+  .tbl .neg { color: var(--neg); }
+  .table-wrap { overflow-x: auto; }
+  .table-wrap.scroll { max-height: 420px; overflow-y: auto; }
+  .reason-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .reason-tp { background: rgba(74,222,128,0.15); color: var(--pos); }
+  .reason-sl { background: rgba(248,113,113,0.15); color: var(--neg); }
+  .reason-exp { background: rgba(159,176,208,0.15); color: var(--muted); }
+
+  .note { color: #ffd591; background: #3a2e18; border-radius: 8px; padding: 10px 12px; font-size: 12px; line-height: 1.5; }
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid rgba(6,32,42,0.3); border-top-color: #06202a;
+    border-radius: 50%; display: inline-block; vertical-align: -3px; margin-right: 8px;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>매물대 돌파 백테스트 시뮬레이터</h1>
+  <p id="coverage">데이터 범위 확인 중… · 로컬 전용(바닥스크리너와 별도 독립 앱)</p>
+</div>
+
+<div class="layout">
+  <aside class="panel">
+    <h3>시뮬레이션 설정</h3>
+    <form id="form">
+      <div class="field-group">
+        <h4>기간</h4>
+        <label>훈련 시작일<input type="date" id="train_start" value="2022-02-01"></label>
+        <label>훈련 종료일<input type="date" id="train_end" value="2023-12-29"></label>
+        <label>검증 시작일<input type="date" id="val_start" value="2024-01-02"></label>
+        <label>검증 종료일<input type="date" id="val_end" value="2026-06-30"></label>
+      </div>
+
+      <div class="field-group">
+        <h4>매물대(저항선) 정의</h4>
+        <label>룩백 기간(영업일)<input type="number" id="resistance_lookback_days" value="60"></label>
+        <div class="two-col">
+          <label>가격 밴드 (%)<input type="number" id="resistance_band_pct" value="1.5" step="0.1"></label>
+          <label>최소 터치 횟수<input type="number" id="resistance_min_touches" value="3"></label>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <h4>돌파 조건</h4>
+        <label>돌파 마진 (%)<input type="number" id="breakout_margin_pct" value="1.0" step="0.1"></label>
+        <div class="two-col">
+          <label>거래량 룩백(일)<input type="number" id="volume_lookback_days" value="20"></label>
+          <label>거래량 배율(이상)<input type="number" id="volume_multiple" value="1.5" step="0.1"></label>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <h4>포트폴리오</h4>
+        <label>시작 자본(원)<input type="number" id="start_capital" value="100000000" step="1000000"></label>
+        <div class="two-col">
+          <label>최대 동시보유 비중(%)<input type="number" id="max_position_pct" value="20"></label>
+          <label>하루 최대 매수(종목)<input type="number" id="max_new_buys_per_day" value="5"></label>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <h4>매매 규칙</h4>
+        <div class="two-col">
+          <label>익절(%)<input type="number" id="take_profit_pct" value="5"></label>
+          <label>손절(%)<input type="number" id="stop_loss_pct" value="-3"></label>
+        </div>
+        <label>최대 보유일(만기, 영업일)<input type="number" id="max_hold_trading_days" value="20"></label>
+      </div>
+
+      <div class="field-group">
+        <h4>비용</h4>
+        <div class="two-col">
+          <label>매수 수수료(%)<input type="number" id="buy_fee_pct" value="0.33" step="0.01"></label>
+          <label>슬리피지(%)<input type="number" id="slippage_pct" value="0.2" step="0.01"></label>
+        </div>
+      </div>
+
+      <button type="submit" class="run-btn" id="run-btn">▶ 시뮬레이션 실행</button>
+      <div class="hint" id="hint">첫 실행은 OHLCV 로딩 때문에 수 분 걸릴 수 있습니다. 같은 기간으로 파라미터만 바꿔 재실행하면 그 이후부턴 더 빠릅니다(서버가 메모리에 캐싱).</div>
+    </form>
+  </aside>
+
+  <main class="main" id="main">
+    <div class="empty">
+      <h2>시뮬레이션을 실행하세요</h2>
+      <p>왼쪽에서 기간·조건·파라미터를 설정하고 실행 버튼을 누르면 결과가 여기 표시됩니다.</p>
+    </div>
+  </main>
+</div>
+
+<script>
+const API_BASE = "";
+let lastResult = null;
+let activeTab = "train";
+
+fetch(API_BASE + "/api/coverage").then(r => r.json()).then(c => {
+  const el = document.getElementById("coverage");
+  if (c.first) {
+    el.textContent = `데이터: ${fmtDate(c.first)} ~ ${fmtDate(c.last)} · ${c.n_days}일 · 로컬 전용(바닥스크리너와 별도 독립 앱)`;
+  }
+}).catch(() => {});
+
+function fmtDate(yyyymmdd) {
+  if (!yyyymmdd || yyyymmdd.length !== 8) return yyyymmdd;
+  return `${yyyymmdd.slice(0,4)}-${yyyymmdd.slice(4,6)}-${yyyymmdd.slice(6,8)}`;
+}
+function toYYYYMMDD(dateInputVal) { return dateInputVal.replaceAll("-", ""); }
+function fmtWon(n) { return Math.round(n).toLocaleString("ko-KR") + "원"; }
+function fmtPct(n) { return (n > 0 ? "+" : "") + n.toFixed(2) + "%"; }
+function pctClass(n) { return n > 0 ? "pos" : (n < 0 ? "neg" : ""); }
+
+document.getElementById("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("run-btn");
+  const hint = document.getElementById("hint");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>실행 중… (몇 분 걸릴 수 있음)';
+  document.getElementById("main").innerHTML = '<div class="empty"><h2>계산 중…</h2><p>OHLCV 로딩 + 매물대 스캔 + 매매 시뮬레이션을 실행하고 있습니다.</p></div>';
+
+  const body = {
+    train_start: toYYYYMMDD(val("train_start")), train_end: toYYYYMMDD(val("train_end")),
+    val_start: toYYYYMMDD(val("val_start")), val_end: toYYYYMMDD(val("val_end")),
+    resistance_lookback_days: num("resistance_lookback_days"),
+    resistance_band_pct: num("resistance_band_pct"),
+    resistance_min_touches: num("resistance_min_touches"),
+    breakout_margin_pct: num("breakout_margin_pct"),
+    volume_lookback_days: num("volume_lookback_days"),
+    volume_multiple: num("volume_multiple"),
+    start_capital: num("start_capital"),
+    max_position_pct: num("max_position_pct"),
+    max_new_buys_per_day: num("max_new_buys_per_day"),
+    take_profit_pct: num("take_profit_pct"),
+    stop_loss_pct: num("stop_loss_pct"),
+    max_hold_trading_days: num("max_hold_trading_days"),
+    buy_fee_pct: num("buy_fee_pct"),
+    slippage_pct: num("slippage_pct"),
+  };
+
+  try {
+    const res = await fetch(API_BASE + "/api/simulate", {
+      method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)
+    });
+    const json = await res.json();
+    if (!res.ok || json.error) throw new Error(json.error || ("HTTP " + res.status));
+    lastResult = json;
+    render(json);
+  } catch (err) {
+    document.getElementById("main").innerHTML = `<div class="error">실행 실패: ${escapeHtml(String(err.message || err))}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "▶ 시뮬레이션 실행";
+  }
+});
+
+function val(id) { return document.getElementById(id).value; }
+function num(id) { return parseFloat(document.getElementById(id).value); }
+function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+function render(json) {
+  activeTab = "train";
+  const main = document.getElementById("main");
+  main.innerHTML = `
+    <div class="tabs">
+      <div class="tab active" data-tab="train">훈련 (${fmtDate(toYYYYMMDD(val("train_start")))}~${fmtDate(toYYYYMMDD(val("train_end")))})</div>
+      <div class="tab" data-tab="val">검증 (${fmtDate(toYYYYMMDD(val("val_start")))}~${fmtDate(toYYYYMMDD(val("val_end")))})</div>
+    </div>
+    <div id="tab-content"></div>
+    <div class="hint" style="margin-top:-8px;">전체 소요시간 ${json.elapsed_sec}초</div>
+  `;
+  main.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
+    main.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+    t.classList.add("active");
+    activeTab = t.dataset.tab;
+    renderTab(json[activeTab]);
+  }));
+  renderTab(json.train);
+}
+
+function renderTab(period) {
+  const s = period.stats;
+  const content = document.getElementById("tab-content");
+  content.innerHTML = `
+    <section class="stat-grid" style="margin-bottom:20px;">
+      <div class="card ${pctClass(s.total_return_pct) === 'neg' ? 'card-neg' : (pctClass(s.total_return_pct)==='pos' ? 'card-pos' : '')}">
+        <div class="card-title">최종 평가액</div>
+        <div class="card-value mono">${fmtWon(s.final_value)}</div>
+        <div class="card-sub">시작 ${fmtWon(s.n_trades !== undefined ? Number(document.getElementById('start_capital').value) : 0)}</div>
+      </div>
+      <div class="card ${pctClass(s.total_return_pct)==='neg'?'card-neg':(pctClass(s.total_return_pct)==='pos'?'card-pos':'')}">
+        <div class="card-title">총 수익률</div>
+        <div class="card-value mono ${pctClass(s.total_return_pct)}">${fmtPct(s.total_return_pct)}</div>
+        <div class="card-sub">코스피 ${s.kospi_return_pct != null ? fmtPct(s.kospi_return_pct) : 'N/A'} · 초과 ${s.excess_return_pct != null ? fmtPct(s.excess_return_pct) : 'N/A'}</div>
+      </div>
+      <div class="card">
+        <div class="card-title">최대낙폭(MDD)</div>
+        <div class="card-value mono neg">${s.max_drawdown_pct.toFixed(2)}%</div>
+      </div>
+      <div class="card">
+        <div class="card-title">승률</div>
+        <div class="card-value mono">${s.win_rate_pct != null ? s.win_rate_pct + '%' : 'N/A'}</div>
+        <div class="card-sub">${s.n_closed}건 청산 / ${s.n_trades}건 전체</div>
+      </div>
+      <div class="card">
+        <div class="card-title">평균 보유일</div>
+        <div class="card-value mono">${s.avg_holding_days != null ? s.avg_holding_days + '일' : 'N/A'}</div>
+      </div>
+      <div class="card">
+        <div class="card-title">미청산 보유</div>
+        <div class="card-value mono">${s.n_open}종목</div>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-bottom:20px;">
+      <div class="chart-title">포트폴리오 평가액 추이</div>
+      <canvas id="chart" width="1000" height="260"></canvas>
+      <div class="chart-legend"><span class="lg-buy">● 전략</span><span class="lg-kospi">● 코스피(같은 원금 기준)</span></div>
+    </section>
+
+    <section class="panel" style="margin-bottom:20px;">
+      <div class="chart-title">매도사유별 통계</div>
+      <div class="table-wrap"><table class="tbl" id="reason-tbl"></table></div>
+    </section>
+
+    <section class="panel">
+      <div class="chart-title">상세 매매로그 (${period.trade_log.length}건)</div>
+      <div class="table-wrap scroll"><table class="tbl" id="trade-tbl"></table></div>
+    </section>
+  `;
+  drawChart(period.equity_curve, period.kospi_curve);
+  renderReasonTable(period.trade_log);
+  renderTradeTable(period.trade_log);
+}
+
+function renderReasonTable(trades) {
+  const closed = trades.filter(t => !t.open_position);
+  const groups = {};
+  for (const t of closed) {
+    const r = t.sell_reason || "기타";
+    (groups[r] = groups[r] || []).push(t.return_pct);
+  }
+  let rows = "";
+  for (const [reason, rets] of Object.entries(groups)) {
+    const avg = rets.reduce((a,b)=>a+b,0) / rets.length;
+    const pctOfTotal = (rets.length / closed.length * 100).toFixed(1);
+    const cls = reason.includes("익절") ? "reason-tp" : (reason.includes("손절") ? "reason-sl" : "reason-exp");
+    rows += `<tr><td><span class="reason-pill ${cls}">${escapeHtml(reason)}</span></td><td class="mono">${rets.length}</td><td class="mono">${pctOfTotal}%</td><td class="mono ${pctClass(avg)}">${fmtPct(avg)}</td></tr>`;
+  }
+  document.getElementById("reason-tbl").innerHTML =
+    `<thead><tr><th>사유</th><th>건수</th><th>비율</th><th>평균 순수익률</th></tr></thead><tbody>${rows || '<tr><td colspan="4">청산된 거래 없음</td></tr>'}</tbody>`;
+}
+
+function renderTradeTable(trades) {
+  const rows = trades.slice(0, 300).map(t => {
+    const cls = !t.sell_reason ? "reason-exp" : (t.sell_reason.includes("익절") ? "reason-tp" : (t.sell_reason.includes("손절") ? "reason-sl" : "reason-exp"));
+    return `<tr>
+      <td>${escapeHtml(t.name)}</td>
+      <td class="mono">${fmtDate(t.buy_date)}</td>
+      <td class="mono">${t.buy_price.toLocaleString()}</td>
+      <td class="mono">${t.sell_date ? fmtDate(t.sell_date) : '-'}</td>
+      <td class="mono">${t.sell_price != null ? t.sell_price.toLocaleString() : '-'}</td>
+      <td>${t.open_position ? '<span class="reason-pill reason-exp">보유중</span>' : `<span class="reason-pill ${cls}">${escapeHtml(t.sell_reason)}</span>`}</td>
+      <td class="mono">${t.holding_trading_days}</td>
+      <td class="mono ${pctClass(t.return_pct)}">${fmtPct(t.return_pct)}</td>
+    </tr>`;
+  }).join("");
+  const more = trades.length > 300 ? `<div class="hint">최근 300건만 표시(전체 ${trades.length}건).</div>` : "";
+  document.getElementById("trade-tbl").innerHTML =
+    `<thead><tr><th>종목</th><th>매수일</th><th>매수가</th><th>매도일</th><th>매도가</th><th>사유</th><th>보유일</th><th>순수익률</th></tr></thead><tbody>${rows}</tbody>`;
+  document.getElementById("trade-tbl").insertAdjacentHTML("afterend", more);
+}
+
+function drawChart(equity, kospi) {
+  const canvas = document.getElementById("chart");
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth || 1000, h = 260;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  if (!equity.length) return;
+
+  const allVals = equity.map(p => p.value).concat(kospi.map(p => p.value));
+  const min = Math.min(...allVals), max = Math.max(...allVals);
+  const pad = (max - min) * 0.08 || max * 0.05;
+  const yMin = min - pad, yMax = max + pad;
+  const marginL = 70, marginR = 10, marginT = 10, marginB = 24;
+  const plotW = w - marginL - marginR, plotH = h - marginT - marginB;
+
+  function xAt(i, n) { return marginL + (n <= 1 ? 0 : (i / (n - 1)) * plotW); }
+  function yAt(v) { return marginT + plotH - ((v - yMin) / (yMax - yMin || 1)) * plotH; }
+
+  // 그리드 + y축 라벨
+  ctx.strokeStyle = "#24304b"; ctx.fillStyle = "#9fb0d0"; ctx.font = "11px 'Segoe UI', sans-serif";
+  ctx.lineWidth = 1;
+  const steps = 4;
+  for (let i = 0; i <= steps; i++) {
+    const v = yMin + (yMax - yMin) * (i / steps);
+    const y = yAt(v);
+    ctx.beginPath(); ctx.moveTo(marginL, y); ctx.lineTo(w - marginR, y); ctx.stroke();
+    ctx.fillText((v / 1e8).toFixed(2) + "억", 4, y + 3);
+  }
+
+  function drawLine(points, color) {
+    if (points.length < 2) return;
+    ctx.strokeStyle = color; ctx.lineWidth = 1.8; ctx.beginPath();
+    points.forEach((p, i) => {
+      const x = xAt(i, points.length), y = yAt(p.value);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    // 끝점 강조
+    const last = points[points.length - 1];
+    const lx = xAt(points.length - 1, points.length), ly = yAt(last.value);
+    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(lx, ly, 3, 0, Math.PI * 2); ctx.fill();
+  }
+  drawLine(kospi, "#9fb0d0");
+  drawLine(equity, "#4ade80");
+}
+</script>
+</body>
+</html>
