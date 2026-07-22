@@ -271,7 +271,8 @@ def simulate(signals: dict[str, list[dict]], trading_days: list[str], pre: dict,
             cash -= (invest + fee)
             holdings[tkr] = {"buy_date": day, "buy_price": fill_price, "shares": shares,
                               "name": cand["name"], "volume_ratio": cand["volume_ratio"],
-                              "resistance_price": cand["resistance_price"]}
+                              "resistance_price": cand["resistance_price"],
+                              "signal_date": cand.get("signal_date")}
 
         for tkr in sorted(list(holdings.keys())):
             pos = holdings[tkr]
@@ -302,7 +303,8 @@ def simulate(signals: dict[str, list[dict]], trading_days: list[str], pre: dict,
                 proceeds = pos["shares"] * fill_price
                 cash += proceeds
                 trade_log.append({
-                    "ticker": tkr, "name": pos["name"], "volume_ratio": round(pos["volume_ratio"], 2),
+                    "ticker": tkr, "name": pos["name"], "signal_date": pos.get("signal_date"),
+                    "volume_ratio": round(pos["volume_ratio"], 2),
                     "resistance_price": round(pos["resistance_price"], 2),
                     "buy_date": pos["buy_date"], "buy_price": round(pos["buy_price"], 2),
                     "sell_date": day, "sell_price": round(fill_price, 2), "sell_reason": reason,
@@ -315,7 +317,8 @@ def simulate(signals: dict[str, list[dict]], trading_days: list[str], pre: dict,
         today_signals = signals.get(day)
         if today_signals and i + 1 < len(trading_days):
             next_day = trading_days[i + 1]
-            pending_buys.setdefault(next_day, []).extend(today_signals)
+            tagged = [{**c, "signal_date": day} for c in today_signals]  # 돌파가 실제로 발생한 날짜(매수일 하루 전)
+            pending_buys.setdefault(next_day, []).extend(tagged)
 
         equity_curve.append((day, portfolio_value(day)))
 
@@ -325,7 +328,8 @@ def simulate(signals: dict[str, list[dict]], trading_days: list[str], pre: dict,
         last_close = row[3] if row else pos["buy_price"]
         buy_idx = idx_of[pos["buy_date"]]
         trade_log.append({
-            "ticker": tkr, "name": pos["name"], "volume_ratio": round(pos["volume_ratio"], 2),
+            "ticker": tkr, "name": pos["name"], "signal_date": pos.get("signal_date"),
+            "volume_ratio": round(pos["volume_ratio"], 2),
             "resistance_price": round(pos["resistance_price"], 2),
             "buy_date": pos["buy_date"], "buy_price": round(pos["buy_price"], 2),
             "sell_date": None, "sell_price": None, "sell_reason": None,

@@ -336,6 +336,9 @@ function renderTradeTable(trades) {
     const cls = !t.sell_reason ? "reason-exp" : (t.sell_reason.includes("익절") ? "reason-tp" : (t.sell_reason.includes("손절") ? "reason-sl" : "reason-exp"));
     return `<tr>
       <td>${escapeHtml(t.name)}</td>
+      <td class="mono">${t.signal_date ? fmtDate(t.signal_date) : '-'}</td>
+      <td class="mono">${t.resistance_price != null ? t.resistance_price.toLocaleString() : '-'}</td>
+      <td class="mono">${t.volume_ratio != null ? t.volume_ratio.toFixed(1) + 'x' : '-'}</td>
       <td class="mono">${fmtDate(t.buy_date)}</td>
       <td class="mono">${t.buy_price.toLocaleString()}</td>
       <td class="mono">${t.sell_date ? fmtDate(t.sell_date) : '-'}</td>
@@ -347,7 +350,7 @@ function renderTradeTable(trades) {
   }).join("");
   const more = trades.length > 300 ? `<div class="hint">최근 300건만 표시(전체 ${trades.length}건).</div>` : "";
   document.getElementById("trade-tbl").innerHTML =
-    `<thead><tr><th>종목</th><th>매수일</th><th>매수가</th><th>매도일</th><th>매도가</th><th>사유</th><th>보유일</th><th>순수익률</th></tr></thead><tbody>${rows}</tbody>`;
+    `<thead><tr><th>종목</th><th>돌파일</th><th>매물대가</th><th>거래량배율</th><th>매수일</th><th>매수가</th><th>매도일</th><th>매도가</th><th>사유</th><th>보유일</th><th>순수익률</th></tr></thead><tbody>${rows}</tbody>`;
   document.getElementById("trade-tbl").insertAdjacentHTML("afterend", more);
 }
 
