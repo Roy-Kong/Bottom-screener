@@ -20,7 +20,9 @@ RESISTANCE_MIN_TOUCHES(3)개 이상(자기 자신 포함) 모여있는 가격을
 3) 돌파 확인된 다음 영업일 시가 매수
 4) +TAKE_PROFIT_PCT(5%) 익절 / STOP_LOSS_PCT(-3%) 손절 — 아랫꼬리류 전략과
    달리 비대칭(손절 타이트, 목표 넉넉). 같은 날 둘 다 도달하면 보수적으로
-   손절 우선(이 프로젝트 전반의 기존 관례).
+   손절 우선(이 프로젝트 전반의 기존 관례). 단, 매수 당일만은 예외 —
+   손절은 금지(당일 변동성에 바로 휩쓸리지 않게), +5% 익절은 당일에도
+   가능(사용자 지시).
 5) MAX_HOLD_TRADING_DAYS(20영업일) 안에 둘 다 미도달이면 20일째 시가 매도
 
 [비용] 매수 0.33% 수수료(매도 수수료 없음 — portfolio_simulation.py에서
@@ -302,9 +304,10 @@ def simulate(signals: dict[str, list[dict]], trading_days: list[str], pre: dict,
 
             tp_price = pos["buy_price"] * (1 + params.take_profit_pct)
             sl_price = pos["buy_price"] * (1 + params.stop_loss_pct)
-            hit_tp = today_high >= tp_price
-            hit_sl = today_low <= sl_price
             buy_idx = idx_of[pos["buy_date"]]
+            is_buy_day = (i == buy_idx)
+            hit_tp = today_high >= tp_price
+            hit_sl = (not is_buy_day) and (today_low <= sl_price)  # 매수 당일은 손절 금지(+5% 익절은 당일도 가능, 사용자 지시)
             hit_expiry = (i - buy_idx) >= params.max_hold_trading_days
 
             sell_today, sell_price, reason = False, None, None
