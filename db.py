@@ -189,6 +189,14 @@ TABLE_UPSERT = {
 }
 
 
+def _date_has_rows(conn: sqlite3.Connection, date: str, table: str) -> bool:
+    try:
+        n = conn.execute(f"SELECT COUNT(*) FROM {table} WHERE date=?", (date,)).fetchone()[0]
+        return n > 0
+    except sqlite3.OperationalError:
+        return False
+
+
 def save_single_day(date: str, day_data: dict, tables: list[str] | None = None) -> Path:
     """하루치 데이터를 그 날짜 전용 파일(data/YYYYMMDD.db)에 저장한다. 이 파일은
        이후 절대 다시 열어서 쓰지 않는다(휴장일도 빈 스키마만 있는 파일을 만들어서
@@ -196,7 +204,16 @@ def save_single_day(date: str, day_data: dict, tables: list[str] | None = None) 
        day_data에 들어있는 테이블만 저장한다(기본: 전체 4개, update_db_daily.py처럼
        항상 4개를 같이 수집하는 호출부는 그대로 동작). 저장한 각 테이블마다
        collected_marker에 '수집 시도함' 표시를 남겨 이후 --tables 백필의 재개
-       판단에 쓴다."""
+       판단에 쓴다.
+
+       예외: daily_short는 공매도잔고비중이 T+수일 지연 공시라, 그날 결과가
+       빈 리스트여도 "휴장이라 원래 없음"인지 "아직 미공시"인지 이 시점엔 구분이
+       안 된다. 같은 날짜에 daily_prices가 있으면(이번 호출에 포함됐든, 이전에
+       이미 저장돼 있든) 실거래일이 확실하므로, daily_short가 비어 있으면
+       collected_marker를 남기지 않는다 — 그래야 나중에 --tables daily_short
+       백필이 "미수집"으로 보고 재시도한다. (2026-07-15/16/20~24 daily_short가
+       영구히 빈 채로 남았던 사고의 원인 — 실패를 '수집 완료(0건)'로 잘못 표시한
+       버그.)"""
     if tables is None:
         tables = list(day_data.keys())
     DATA_DIR.mkdir(exist_ok=True)
@@ -204,9 +221,18 @@ def save_single_day(date: str, day_data: dict, tables: list[str] | None = None) 
     conn = get_connection(path)
     for table in tables:
         TABLE_UPSERT[table](conn, day_data.get(table, []))
+
+    marker_rows = []
+    for table in tables:
+        if table == "daily_short" and not day_data.get("daily_short"):
+            has_prices = bool(day_data.get("daily_prices")) or _date_has_rows(conn, date, "daily_prices")
+            if has_prices:
+                continue  # 실거래일인데 공매도만 빔 — 미공시 의심, 마커 생략(재시도 대상으로 남김)
+        marker_rows.append((date, table))
+
     conn.executemany(
         "INSERT OR REPLACE INTO collected_marker (date, table_name) VALUES (?,?)",
-        [(date, t) for t in tables])
+        marker_rows)
     conn.commit()
     conn.close()
     return path
