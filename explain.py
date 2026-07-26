@@ -55,10 +55,11 @@ def _sentence_accumulation(raw: dict) -> str | None:
 
 
 def _sentence_short_covering(raw: dict) -> str | None:
-    pct = raw.get("pct_of_max")
-    if pct is None:
+    cur = raw.get("current_ratio_pct")
+    mx = raw.get("max_ratio_3m_pct")
+    if cur is None or not mx:          # 3개월 최고가 0/None이면 문장 생성 안 함
         return None
-    return f"공매도잔고비중이 3개월 최고치 대비 {pct:.0f}%까지 줄었습니다."
+    return f"공매도잔고비중이 3개월 최고 {mx:.2f}%에서 {cur:.2f}%로 줄었습니다."
 
 
 def _sentence_pbr_low(raw: dict) -> str | None:

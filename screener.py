@@ -363,17 +363,27 @@ def collect_market_cap(date: str) -> dict[str, float]:
     return out
 
 
-def collect_short_current(date: str) -> dict[str, float]:
+def collect_short_current(date: str, max_lookback: int = 7) -> dict[str, float]:
+    """가장 최근 '공시된' 공매도잔고비중. 잔고는 T+2 지연 공시라 as_of 당일은
+       미공시일 수 있어, 데이터가 나오는 가장 최근 영업일까지 거슬러 올라간다."""
     cur: dict[str, float] = {}
-    for mkt in TARGET_MARKETS:
-        try:
-            df = stock.get_shorting_balance_by_ticker(date, market=mkt)
-        except Exception:
-            df = None
-        if df is None or df.empty:
-            continue
-        for tkr, row in df.iterrows():
-            cur[tkr] = float(row.get("비중", 0) or 0)
+    d = dt.datetime.strptime(date, "%Y%m%d").date()
+    for _ in range(max_lookback):
+        ds = yyyymmdd(d)
+        got = False
+        for mkt in TARGET_MARKETS:
+            try:
+                df = stock.get_shorting_balance_by_ticker(ds, market=mkt)
+            except Exception:
+                df = None
+            if df is None or df.empty:
+                continue
+            got = True
+            for tkr, row in df.iterrows():
+                cur.setdefault(tkr, float(row.get("비중", 0) or 0))
+        if got:
+            break
+        d -= dt.timedelta(days=1)
     return cur
 
 
@@ -755,7 +765,7 @@ def run():
         scores = {
             "volume_dryness": sg.score_volume_dryness(rec6to25, past120),
             "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100),
-            "short_covering": sg.score_short_covering(short_cur.get(tkr, 0.0), short_max.get(tkr, 0.0)),
+            "short_covering": sg.score_short_covering(short_cur.get(tkr), short_max.get(tkr)),
             "pbr_low": None if capital_eroding else sg.score_pbr_low(cur_pbr, pbr_series),
             "dividend_yield": sg.score_dividend_yield(cur_div, div_series, cur_dps, cur_eps, had_dividend_cut(fh)),
             "relative_strength": None if split_suspected else sg.score_relative_strength(ret60, idx_ret_t),
@@ -764,8 +774,8 @@ def run():
 
         # --- 정규화 전 원본 수치 (설명 문장 생성용, explain.py가 사용) ---
         net_buy_20d = accum.get(tkr, 0.0)
-        cur_short = short_cur.get(tkr, 0.0)
-        max_short = short_max.get(tkr, 0.0)
+        cur_short = short_cur.get(tkr)
+        max_short = short_max.get(tkr)
         cur_bw = bw_series[-1] if bw_series else None
         raw = {
             "volume_dryness": {"ratio": (rec6to25 / past120) if past120 else None},
@@ -776,7 +786,7 @@ def run():
             },
             "short_covering": {
                 "current_ratio_pct": cur_short, "max_ratio_3m_pct": max_short,
-                "pct_of_max": (cur_short / max_short * 100) if max_short else None,
+                "pct_of_max": (cur_short / max_short * 100) if cur_short is not None and max_short else None,
             },
             "pbr_low": {
                 "pbr": cur_pbr, "percentile": sg.percentile_rank(pbr_series, cur_pbr),
