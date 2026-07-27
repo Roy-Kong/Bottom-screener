@@ -1,0 +1,58 @@
+name: backfill-short-weekly
+
+# daily_short는 KRX 공시 지연(실측 캘린더 기준 약 4~5일)이 있어 update_db_daily.py의
+# "오늘만 수집" 방식으로는 구조적으로 절대 못 채운다(db.py의 마커 수정으로 이제는
+# 최소한 "미수집"으로 정확히 남아 재시도 대상이 되긴 하지만, 실제로 채우려면 누군가
+# 나중에 다시 조회해야 한다). 이 워크플로우가 그 "나중에 다시" 역할을 매주 한 번
+# 자동으로 한다 — backfill.py --tables daily_short가 이미 collected_marker로
+# 뭐가 비어있는지 정확히 알고 그것만 재시도하므로, 넉넉한 창(최근 21일)을 매번
+# 다시 훑어도 이미 채워진 날짜는 건드리지 않는다.
+
+on:
+  schedule:
+    - cron: "0 3 * * 6"  # UTC 03:00 토요일 = KST 12:00 토요일
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  backfill-short:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Compute date window (최근 21일)
+        id: dates
+        run: |
+          echo "start=$(date -d '21 days ago' +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+          echo "end=$(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+      - name: Pull existing DB files in target range (LFS)
+        run: |
+          git lfs install --local
+          INCLUDES=$(python list_backfill_dates.py "${{ steps.dates.outputs.start }}" \
+            "${{ steps.dates.outputs.end }}" "daily_short")
+          if [ -n "$INCLUDES" ]; then
+            git lfs pull --include="$INCLUDES" || true
+            git lfs pull --include="$INCLUDES"
+          fi
+      - name: Run daily_short backfill
+        env:
+          KRX_ID: ${{ secrets.KRX_ID }}
+          KRX_PW: ${{ secrets.KRX_PW }}
+        run: |
+          python backfill.py --tables daily_short --start "${{ steps.dates.outputs.start }}" \
+            --end "${{ steps.dates.outputs.end }}" --max-runtime-min 50
+      - name: Commit DB progress
+        run: |
+          git config user.name "screener-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git lfs install --local
+          git add data/
+          git commit -m "chore: weekly daily_short backfill" || echo "no changes"
+          git pull --rebase origin main
+          git push
