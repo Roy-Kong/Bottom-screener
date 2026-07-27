@@ -197,6 +197,12 @@ def _date_has_rows(conn: sqlite3.Connection, date: str, table: str) -> bool:
         return False
 
 
+def _marker_exists(conn: sqlite3.Connection, date: str, table: str) -> bool:
+    row = conn.execute(
+        "SELECT 1 FROM collected_marker WHERE date=? AND table_name=? LIMIT 1", (date, table)).fetchone()
+    return row is not None
+
+
 def save_single_day(date: str, day_data: dict, tables: list[str] | None = None) -> Path:
     """하루치 데이터를 그 날짜 전용 파일(data/YYYYMMDD.db)에 저장한다. 이 파일은
        이후 절대 다시 열어서 쓰지 않는다(휴장일도 빈 스키마만 있는 파일을 만들어서
@@ -208,12 +214,20 @@ def save_single_day(date: str, day_data: dict, tables: list[str] | None = None) 
 
        예외: daily_short는 공매도잔고비중이 T+수일 지연 공시라, 그날 결과가
        빈 리스트여도 "휴장이라 원래 없음"인지 "아직 미공시"인지 이 시점엔 구분이
-       안 된다. 같은 날짜에 daily_prices가 있으면(이번 호출에 포함됐든, 이전에
-       이미 저장돼 있든) 실거래일이 확실하므로, daily_short가 비어 있으면
-       collected_marker를 남기지 않는다 — 그래야 나중에 --tables daily_short
-       백필이 "미수집"으로 보고 재시도한다. (2026-07-15/16/20~24 daily_short가
-       영구히 빈 채로 남았던 사고의 원인 — 실패를 '수집 완료(0건)'로 잘못 표시한
-       버그.)"""
+       안 된다. daily_prices로 실거래일 여부를 판단하되, 세 가지 경우를 구분한다:
+       1) daily_prices가 이번 호출에 포함되고 값이 있음 → 실거래일 확정, short만
+          빔 → 마커 생략(재시도 대상).
+       2) daily_prices가 이번 호출에 포함되고 비어있음(또는 이전에 이미 daily_prices
+          마커가 있고 0건) → 휴장 확정 → 마커 기록(정상, 재시도 불필요).
+       3) daily_prices에 대한 정보가 이번 호출에도 없고 이전에도 전혀 없음(예:
+          --tables daily_short만 단독으로, daily.yml이 아직 안 돈 아주 최근 날짜를
+          도는 경우) → 실거래일인지조차 모름 → 마커 생략(재시도 대상).
+       '모르면 마커를 남기지 않는다'가 기본 원칙 — 마커를 잘못 남기면 영영 재시도가
+       안 되지만(2026-07-15/16/20~24 사고 원인), 안 남기면 최악의 경우만 한 번 더
+       시도할 뿐이다. (2026-07-27: --tables daily_short 주간 백필이 daily.yml도
+       아직 안 돈 당일 날짜를 처리하다가 daily_prices 참조가 아예 없어 "실거래일
+       확정도 휴장 확정도 아닌" 경우를 놓쳐 마커를 잘못 남긴 재발 케이스로 발견,
+       위 3)을 추가해 수정."""
     if tables is None:
         tables = list(day_data.keys())
     DATA_DIR.mkdir(exist_ok=True)
@@ -225,9 +239,14 @@ def save_single_day(date: str, day_data: dict, tables: list[str] | None = None) 
     marker_rows = []
     for table in tables:
         if table == "daily_short" and not day_data.get("daily_short"):
-            has_prices = bool(day_data.get("daily_prices")) or _date_has_rows(conn, date, "daily_prices")
-            if has_prices:
-                continue  # 실거래일인데 공매도만 빔 — 미공시 의심, 마커 생략(재시도 대상으로 남김)
+            if "daily_prices" in day_data:
+                is_holiday = not day_data.get("daily_prices")
+            elif _marker_exists(conn, date, "daily_prices"):
+                is_holiday = not _date_has_rows(conn, date, "daily_prices")
+            else:
+                is_holiday = None  # 실거래일 여부 자체를 아직 모름
+            if is_holiday is not True:
+                continue  # 실거래일 확정(공매도만 빔) 또는 아직 모름 — 마커 생략(재시도 대상)
         marker_rows.append((date, table))
 
     conn.executemany(

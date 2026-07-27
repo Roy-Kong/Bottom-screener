@@ -68,6 +68,17 @@ def run(start_str: str, end_str: str, max_runtime_min: int, tables: list[str]) -
         if full_set:
             missing = [] if db.date_file_exists(ds) else list(tables)
         else:
+            if not db.date_file_exists(ds):
+                # 테이블 선택형 백필은 이미 있는 파일에 빠진 테이블을 채우는 용도다.
+                # 파일 자체가 없는 날짜(예: daily.yml이 아직 안 돈 당일)에 daily_short
+                # 하나만 새로 만들면, 그 파일엔 daily_prices 참조가 전혀 없어 실거래일인지
+                # 휴장인지조차 판단할 근거가 없다 — 이 경우 db.save_single_day는 마커를
+                # 아예 안 남기고, 그러면 table_collected의 구버전 호환 규칙("이 날짜에
+                # 마커가 하나도 없으면 표준 4개 다 수집완료로 간주")이 거꾸로 "완료"로
+                # 오판한다(2026-07-27 주간 daily_short 백필에서 실제로 발생 확인). 그래서
+                # 파일이 아직 없는 날짜는 통째로 건너뛴다 — daily.yml/전체 백필이 먼저
+                # 그 날짜를 만들고 나면, 다음 번 이 스코프 백필이 정상적으로 채운다.
+                continue
             missing = [t for t in tables if not db.table_collected(ds, t)]
         if missing:
             todo.append((d, missing))
