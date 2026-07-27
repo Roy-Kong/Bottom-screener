@@ -109,13 +109,34 @@ def score_accumulation(net_buy_value_20d: float, float_market_cap: float,
     return _clamp(base * quiet)
 
 
+# score_short_covering 곡선 파라미터 (실측 공매도잔고 분포 리포트 기반, 튜닝 대상):
+SC_SATURATION = 0.2   # 현재/최고 비율이 이 이하로 줄면 감소축 만점 — 정확히 0을 요구하면
+                       # 소수점 미세 잔량이 흔한 데이터 특성상 과도해서, 고점의 20%까지만 빠지면 인정
+SC_MAG_LO = 0.3        # 3개월 최고가 이 이하면 규모축 최저 배수(SC_MAG_FLOOR) — 실측 분포 p22 근방(노이즈 바닥)
+SC_MAG_HI = 2.0        # 3개월 최고가 이 이상이면 규모축 만점(1.0) — 실측 분포 p90 근방
+SC_MAG_FLOOR = 0.3     # 규모가 작아도 커버링 자체는 있었으므로 0으로 죽이지 않고 최소 크레딧 유지
+
+
 def score_short_covering(current_short_ratio: float, max_short_ratio_3m: float) -> float | None:
-    """④ 공매도 잔고 감소. 현재 공매도잔고비중 / 3개월 최고. 낮을수록 고점.
-       3개월 최고의 50% 이하로 줄면 100점."""
+    """④ 공매도 잔고 감소. (현재/3개월최고) 비율만으로는 '8%→0.3%(대형 언와인딩)'와
+       '0.5%→0%(노이즈 소멸)'를 못 가르고, '8%→5%(절반도 안 빠짐)'도 비율만 보면
+       거의 만점 근처로 새기 쉽다. 그래서 두 축을 곱한다:
+       - covering(감소 완결성): 비율이 낮을수록 고점, SC_SATURATION 이하면 만점.
+       - magnitude(규모): 3개월 최고 자체가 클수록(=원래 많이 눌려있던 종목일수록)
+         가중, 작으면 최소 SC_MAG_FLOOR까지만.
+       낮을수록 고점(=커버링이 확실하고 규모도 있었다는 뜻)."""
     if not _valid(current_short_ratio, max_short_ratio_3m) or max_short_ratio_3m <= 0:
         return None
     ratio = current_short_ratio / max_short_ratio_3m
-    return _lin(ratio, 1.0, 0.5, 0.0, 100.0)
+    covering = _lin(ratio, 1.0, SC_SATURATION, 0.0, 100.0)
+    # _lin은 자기 내부에서 _clamp(...)를 lo/hi 인자 없이 호출해 결과를 항상 전역
+    # 기본값인 [0,100]으로 클램프한다(다른 모든 _lin 호출부가 hi_score=100이라
+    # 지금까지 안 드러난 특성) — magnitude의 목표 범위는 [SC_MAG_FLOOR, 1.0]이라
+    # 그대로 넘기면 1.0을 넘는 값이 안 잘린다. 그래서 0~100 스코어 공간에서 계산한
+    # 뒤 100으로 나눠 배수로 되돌린다.
+    magnitude_pct = _lin(max_short_ratio_3m, SC_MAG_LO, SC_MAG_HI, SC_MAG_FLOOR * 100, 100.0)
+    magnitude = magnitude_pct / 100.0
+    return _clamp(covering * magnitude)
 
 
 def score_pbr_low(current_pbr: float, pbr_history_5y: list[float]) -> float | None:
