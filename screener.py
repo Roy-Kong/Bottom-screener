@@ -525,7 +525,11 @@ def is_trading_halted(opens: list[float], highs: list[float], lows: list[float],
 
 
 def had_dividend_cut(fund_hist_rows: list[dict]) -> bool:
-    """연도별 DPS가 전년比 감소한 적 있으면 True (배당 삭감 이력)."""
+    """연도별 DPS가 전년比 10% 넘게 줄거나(진짜 삭감) 배당을 완전히 끊은 적(0으로
+       전환) 있으면 True (배당 삭감 이력). 3~9%대 미세 감소는 노이즈로 보고
+       통과시킨다 — 진단 결과 142건 중 87%가 실제로 최근·대폭(대부분 15%+) 감소였고,
+       12.7%(18건)만 <10% 소폭이라 이 임계값으로 그 노이즈 케이스만 구제된다
+       (2026-07 진단: 제일기획 -3.5%, NAVER -6.2% 등)."""
     by_year = {}
     for r in fund_hist_rows:
         y = r["date"][:4]
@@ -534,8 +538,11 @@ def had_dividend_cut(fund_hist_rows: list[dict]) -> bool:
     prev = None
     for y in years:
         dps = by_year[y]
-        if prev is not None and dps > 0 and prev > 0 and dps < prev * 0.99:
-            return True
+        if prev is not None and prev > 0:
+            if dps <= 0:                 # 배당 중단 = 극단적 컷
+                return True
+            if dps < prev * 0.90:        # 10% 초과 감소 = 컷
+                return True
         if dps > 0:
             prev = dps
     return False
