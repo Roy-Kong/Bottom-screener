@@ -363,11 +363,13 @@ def collect_market_cap(date: str) -> dict[str, float]:
     return out
 
 
-def collect_short_current(date: str, max_lookback: int = 7) -> dict[str, float]:
-    """가장 최근 '공시된' 공매도잔고비중. 잔고는 T+2 지연 공시라 as_of 당일은
-       미공시일 수 있어, 데이터가 나오는 가장 최근 영업일까지 거슬러 올라간다."""
+def collect_short_current(date: str, start_lookback: int = 5, max_lookback: int = 7) -> dict[str, float]:
+    """가장 최근 '공시된' 공매도잔고비중. 실측 공시 지연이 캘린더 기준 약 4~5일로
+       확인돼(2026-07 daily_short 미수집 사고 조사 참고), as_of 당일부터 시도하면
+       최근 며칠은 거의 항상 헛수고라 start_lookback일 전부터 조회를 시작한다.
+       그래도 없으면 하루씩 더 거슬러 올라간다(최대 max_lookback일 추가 시도)."""
     cur: dict[str, float] = {}
-    d = dt.datetime.strptime(date, "%Y%m%d").date()
+    d = dt.datetime.strptime(date, "%Y%m%d").date() - dt.timedelta(days=start_lookback)
     for _ in range(max_lookback):
         ds = yyyymmdd(d)
         got = False
