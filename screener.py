@@ -100,7 +100,8 @@ def find_latest_trading_day(max_lookback: int = 14) -> str:
             ds = yyyymmdd(d)
             try:
                 tickers = stock.get_market_ticker_list(ds, market=TARGET_MARKETS[0])
-            except Exception:
+            except Exception as e:
+                print(f"[find_latest_trading_day] {ds} 조회 실패({type(e).__name__}: {e}) — 하루 전으로 재시도")
                 tickers = []
             if tickers:
                 return ds
