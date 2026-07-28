@@ -208,10 +208,14 @@ def screen_and_score(anchor_date: dt.date, asof: str, use_cache: bool = True) ->
                 market_idx_by_date, sector_idx_by_date)
 
     out = []
+    n_len_ok = 0  # 관찰용(2026-07 Group B 진단): 유니버스 대비 이 비율이 비정상적으로
+                  # 낮으면 원인 불명의 간헐적 I/O 실패 의심 — 재시도/스킵 처리는 하지
+                  # 않는다(원인 미확정, 정상적으로 통과가 적은 날과 구분 불가). 경고만.
     for tkr, name in universe.items():
         dates, opens, highs, lows, closes, vols = scr.series_for_ticker(matrix, tkr)
         if len(closes) < 60 or len(vols) < 120:
             continue
+        n_len_ok += 1
 
         if scr.is_trading_halted(opens, highs, lows, closes, vols):
             continue
@@ -331,6 +335,15 @@ def screen_and_score(anchor_date: dt.date, asof: str, use_cache: bool = True) ->
                           **{k: v for k, v in turnaround_scores.items() if v is not None}},
             "anchor_close": last_close,
         })
+    # 관찰용 경고(2026-07 Group B 진단): 유니버스 대비 60일치 데이터 확보 종목
+    # 비율이 비정상적으로 낮으면(<1%) 로그만 남긴다. 원인이 파일 I/O 간헐적
+    # 실패인지 다른 무언가인지 아직 미확정이라 자동 재시도/스킵은 하지 않는다
+    # — 다음에 재발하면 이 로그로 어느 앵커에서 몇 대 몇이었는지 패턴을 잡는다.
+    if universe and n_len_ok / len(universe) < 0.01:
+        print(f"[screen_and_score] 경고: {asof} 유니버스 {len(universe)}개 중 "
+              f"60일치 데이터 확보 {n_len_ok}개뿐(1% 미만) — 간헐적 I/O 실패 의심"
+              f"(2026-07 Group B 진단 참고, 자동 재시도 없음)")
+
     # 합격선(65점) 통과분 전부 사용 — screener.py의 TOP_N=40 같은 개수 제한은
     # 안 걸고(이유는 위 SCORE_THRESHOLD 주석), confirmed_turnaround 먼저 오도록
     # 정렬만 screener.py와 맞춰서 CSV를 읽기 좋게 만든다(선정 자체엔 영향 없음).
