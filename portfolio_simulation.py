@@ -208,7 +208,9 @@ def _compute_raw_scores_for_day(day: str, universe: dict, sector_map: dict, sect
         cur_dps = fh[0]["DPS"] if fh else 0.0
         cur_eps = fh[0]["EPS"] if fh else 0.0
         bw_series = scr.bollinger_bandwidth_series(closes)
-        float_mc = avg_trading_value * 50
+        # accumulation 분모: 거래대금 근사치 -> 실제 시총(cur_market_cap, 생존게이트에서
+        # 이미 >=MIN_MARKET_CAP 확인됨). screener.py와 동일 교체 — 라이브/백테스트 정합성.
+        float_mc = cur_market_cap
         sector_name = sector_names.get(sector_map.get(tkr))
         pbr_caution_sector = scr.is_pbr_caution_sector(sector_name)
         capital_eroding = scr.had_progressive_capital_erosion(fh)

@@ -94,16 +94,28 @@ def score_volume_dryness(recent6to25_median_vol: float, past120_median_vol: floa
     return _lin(ratio, 1.0, 0.3, 0.0, 100.0)
 
 
+# 만점(100) 인정 intensity 임계값. 2026-07 진단(41개 앵커, 순매수 종목 n=10,650)의
+# 실측 분포 p90=2.64%에서 도출 — 예전 0.02(2%)는 분모가 거래대금×50 근사치였을 때
+# 값이라 분모를 실제 시총으로 바꾸면서 재보정했다(눈대중 아님, 분포 기반).
+ACCUM_FULL_CREDIT_INTENSITY = 0.026
+
+
 def score_accumulation(net_buy_value_20d: float, float_market_cap: float,
                        price_change_pct_20d: float) -> float | None:
-    """③ 기관·외국인 매집. 20일 누적 순매수액 / 유통시가총액 = 강도.
-       주가가 조용할수록(변동 작을수록) 가중. 순매수 음수면 0."""
+    """③ 기관·외국인 매집. 20일 누적 순매수액 / 시가총액 = 강도. 주가가 조용할수록
+       (변동 작을수록) 가중. 순매수 음수면 0.
+
+       float_market_cap은 이름과 달리 현재 '유통'시가총액이 아니라 전체 시가총액이다
+       (daily_prices.market_cap, point-in-time) — 유통비율 데이터가 없어 이번엔
+       전체 시총으로 근사한다. 지주사·재벌계열처럼 유통비율이 낮은 종목은 진짜
+       매집강도가 여기 계산보다 더 셀 수 있다(분모 과대 → intensity 과소평가 방향의
+       한계, 별도 과제)."""
     if not _valid(net_buy_value_20d, float_market_cap, price_change_pct_20d) or float_market_cap <= 0:
         return None
     if net_buy_value_20d <= 0:
         return 0.0
-    intensity = net_buy_value_20d / float_market_cap        # 예: 0.02 = 유통시총의 2% 매집
-    base = _lin(intensity, 0.0, 0.02, 0.0, 100.0)           # 2% 이상이면 만점
+    intensity = net_buy_value_20d / float_market_cap        # 예: 0.026 = 시총의 2.6% 매집
+    base = _lin(intensity, 0.0, ACCUM_FULL_CREDIT_INTENSITY, 0.0, 100.0)
     dp = abs(price_change_pct_20d)
     quiet = 1.0 if dp <= 5 else _clamp(1 - (dp - 5) / 15, 0, 1)  # 5%↑ 움직이면 감쇠, 20%↑면 0
     return _clamp(base * quiet)

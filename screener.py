@@ -751,8 +751,12 @@ def run():
         cur_eps = fh[0]["EPS"] if fh else 0.0
         bw_series = bollinger_bandwidth_series(closes)
 
-        # 유통시총 근사 = 시총 대용(정밀도보다 강도 순위가 목적)
-        float_mc = avg_trading_value * 50  # 대략적 스케일; 백테스트 시 실제 시총으로 교체 예정
+        # accumulation(③) 분모 — 이전엔 avg_trading_value*50(=회전율의 스칼라배) 근사치를
+        # 썼는데, 진단(2026-07) 결과 이 근사치가 회전율과 완전상관(ρ=1.000, 구조적)이라
+        # "매집강도"가 아니라 "거래대비 순매수 쏠림"을 재고 있었다 — 실제 시총으로 교체.
+        # cur_market_cap은 위 생존게이트(line ~675)에서 이미 >=MIN_MARKET_CAP으로 걸러진
+        # 값이라 여기선 항상 양수 — 결측/0 방어는 score_accumulation 자체 가드로 충분.
+        float_mc = cur_market_cap
 
         # PBR 신뢰도 보정: 무형자산 비중 큰 업종은 가중치를 절반으로, 진행형
         # 자본잠식(완전잠식은 이미 생존 게이트에서 걸림)은 PBR 자체를 None 처리.
