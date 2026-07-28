@@ -26,11 +26,22 @@ import index_db
 
 
 def find_trading_day_on_or_before_db(target: dt.date) -> str | None:
-    """data/ 파일 목록만으로 target 이전(포함) 가장 최근 실제 거래일을 찾는다 —
-       pykrx 호출 없이 기준일을 정할 수 있다."""
+    """target 이전(포함) 가장 최근 실제 거래일을 찾는다 — pykrx 호출 없이 기준일을
+       정할 수 있다.
+
+       파일이 '존재'하는 것과 '그 날 실제 거래가 있었던 것'은 다르다 — 휴장일도
+       빈 스키마만 있는 파일을 만들어 "이미 확인함" 표시로 남기므로(db.py 참고),
+       파일 존재만으로 판정하면 최신 후보가 하필 휴장일 스텁일 때 그 날짜를
+       거래일로 오판한다(2026-07 사고: 같은 종류의 판정 오류가 라이브 경로
+       find_first_trading_day_of_month 등에서도 있었음, screener.has_real_trading_data
+       참고). daily_prices에 실제 행이 있는 파일이 나올 때까지 거슬러 올라간다."""
     ds = scr.yyyymmdd(target)
     candidates = [d for d in db.existing_dates() if d <= ds]
-    return candidates[-1] if candidates else None
+    for d in reversed(candidates):
+        rows = _read_day(d, "daily_prices", "COUNT(*)")
+        if rows and rows[0][0] > 0:
+            return d
+    return None
 
 
 def _read_day(date: str, table: str, columns: str) -> list[tuple]:

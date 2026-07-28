@@ -84,22 +84,21 @@ UPPER_LIMIT_GAP_RATIO = 1.289  # 전일종가 대비 시가 이 비율 이상이
 
 def find_first_trading_day_of_month(year: int, month: int, max_lookahead: int = 10) -> str | None:
     """그 달의 실제 첫 거래일(YYYYMMDD). 1일이 휴장이면 다음 거래일로 넘어간다.
-
-       주의(2026-07 진단): get_market_ticker_list는 '그 날짜의 상장 종목 목록'을
-       반환할 뿐 실제 거래가 있었는지는 보장하지 않는다 — 삼일절 등 휴장일에도
-       비어있지 않게 응답해 이 함수가 휴장일을 거래일로 오판한 사례를 실제
-       캐시된 앵커 스냅샷에서 확인했다(20240301/20250303/20260302). 근본 수정은
-       별도 작업— 여기서는 우선 그 오판/예외를 조용히 넘기지 않고 로그만 남긴다."""
+       거래일 판정은 scr.has_real_trading_data(실제 OHLCV 존재)로 한다 — 예전엔
+       get_market_ticker_list 비어있지 않음으로 판정했는데, 그건 '그 날짜 상장
+       종목 목록'일 뿐이라 휴장일에도 차 있어 삼일절 등을 거래일로 오판했다
+       (2026-07 사고: 20240301/20250303/20260302 앵커 스냅샷에 휴장일 기준
+       풀 유니버스가 잘못 저장된 것으로 확인, scr.has_real_trading_data 참고)."""
     d = dt.date(year, month, 1)
     for _ in range(max_lookahead):
         if d.weekday() < 5:
             ds = scr.yyyymmdd(d)
             try:
-                tickers = stock.get_market_ticker_list(ds, market="KOSPI")
+                is_trading = scr.has_real_trading_data(ds, market="KOSPI")
             except Exception as e:
                 print(f"[find_first_trading_day_of_month] {ds} 조회 실패({type(e).__name__}: {e}) — 다음날로 재시도")
-                tickers = []
-            if tickers:
+                is_trading = False
+            if is_trading:
                 return ds
         d += dt.timedelta(days=1)
     return None
@@ -107,17 +106,17 @@ def find_first_trading_day_of_month(year: int, month: int, max_lookahead: int = 
 
 def find_next_trading_day(after: dt.date, max_lookahead: int = 14) -> str | None:
     """after보다 엄격히 나중인 첫 실제 거래일(YYYYMMDD). find_first_trading_day_of_month와
-       같은 한계(휴장일 오판 가능성) 있음 — 위 주석 참고."""
+       동일하게 scr.has_real_trading_data로 판정한다(위 주석 참고)."""
     d = after + dt.timedelta(days=1)
     for _ in range(max_lookahead):
         if d.weekday() < 5:
             ds = scr.yyyymmdd(d)
             try:
-                tickers = stock.get_market_ticker_list(ds, market="KOSPI")
+                is_trading = scr.has_real_trading_data(ds, market="KOSPI")
             except Exception as e:
                 print(f"[find_next_trading_day] {ds} 조회 실패({type(e).__name__}: {e}) — 다음날로 재시도")
-                tickers = []
-            if tickers:
+                is_trading = False
+            if is_trading:
                 return ds
         d += dt.timedelta(days=1)
     return None

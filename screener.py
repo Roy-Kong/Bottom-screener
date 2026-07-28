@@ -90,6 +90,28 @@ def yyyymmdd(d: dt.date) -> str:
     return d.strftime("%Y%m%d")
 
 
+def has_real_trading_data(date: str, market: str = "KOSPI") -> bool:
+    """그 날짜에 실제 체결(시세)이 있었는지 — get_market_ticker_list와 달리 진짜
+       거래 여부를 본다.
+
+       2026-07 사고: 거래일 판정에 get_market_ticker_list(date)의 비어있지 않음을
+       써왔는데, 이 함수는 '그 날짜에 상장돼 있던 종목 목록'을 줄 뿐 그날 거래가
+       있었는지는 보장하지 않는다 — 휴장일(삼일절 등)에도 가득 찬 목록을 반환해
+       find_first_trading_day_of_month가 공휴일을 거래일로 오판했고, 그 결과가
+       anchor_snapshot에 잘못된 기준일로 그대로 저장된 사고가 실제로 있었다
+       (cache/anchor_snapshots/20240301·20250303·20260302.json에 휴장일 기준
+       풀 유니버스가 박혀있던 것으로 확인).
+
+       market_data_collector.py가 이미 쓰고 있는, 검증된 휴장일 판정 방식과
+       동일하게(그 함수는 이 방식으로 daily_prices 0행 휴장일 스텁을 정확히
+       만들어왔다) 실제 OHLCV에 유효한 종가가 하나라도 있는지로 판정한다.
+       예외는 삼키지 않고 그대로 올려보낸다 — 호출부가 로그를 남기고 처리한다."""
+    df = stock.get_market_ohlcv_by_ticker(date, market=market)
+    if df is None or df.empty or "종가" not in df.columns:
+        return False
+    return bool((df["종가"].fillna(0) > 0).any())
+
+
 def find_latest_trading_day(max_lookback: int = 14) -> str:
     """실제로 시세 데이터가 존재하는 가장 최근 영업일을 찾아 반환.
        휴장일(주말·공휴일)에 돌리면 '오늘'에는 데이터가 없으므로,
@@ -99,11 +121,11 @@ def find_latest_trading_day(max_lookback: int = 14) -> str:
         if d.weekday() < 5:      # 0=월 ... 4=금
             ds = yyyymmdd(d)
             try:
-                tickers = stock.get_market_ticker_list(ds, market=TARGET_MARKETS[0])
+                is_trading = has_real_trading_data(ds, market=TARGET_MARKETS[0])
             except Exception as e:
                 print(f"[find_latest_trading_day] {ds} 조회 실패({type(e).__name__}: {e}) — 하루 전으로 재시도")
-                tickers = []
-            if tickers:
+                is_trading = False
+            if is_trading:
                 return ds
         d -= dt.timedelta(days=1)
     # 이 지점까지 왔다면 이상 상황; 마지막으로 시도한 날짜라도 반환해

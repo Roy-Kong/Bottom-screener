@@ -29,16 +29,22 @@ def find_trading_day_on_or_before(target: dt.date, max_lookback: int = 14) -> st
     """target 날짜 자체 또는 그 이전 중 실제 시세가 있는 가장 최근 영업일.
        find_latest_trading_day와 동일한 방식이지만 '오늘'이 아니라 임의의
        과거 날짜에서 시작한다 — 미래 데이터가 섞이지 않도록 반드시 target
-       이전(또는 당일)으로만 거슬러 올라간다."""
+       이전(또는 당일)으로만 거슬러 올라간다.
+
+       거래일 판정은 scr.has_real_trading_data(실제 OHLCV 존재)로 한다 — 예전엔
+       get_market_ticker_list 비어있지 않음으로 판정했는데, 그건 '그 날짜 상장
+       종목 목록'일 뿐이라 휴장일에도 차 있어 삼일절 등을 거래일로 오판했다
+       (2026-07 사고, scr.has_real_trading_data 참고)."""
     d = target
     for _ in range(max_lookback):
         if d.weekday() < 5:
             ds = scr.yyyymmdd(d)
             try:
-                tickers = stock.get_market_ticker_list(ds, market="KOSPI")
-            except Exception:
-                tickers = []
-            if tickers:
+                is_trading = scr.has_real_trading_data(ds, market="KOSPI")
+            except Exception as e:
+                print(f"[find_trading_day_on_or_before] {ds} 조회 실패({type(e).__name__}: {e}) — 하루 전으로 재시도")
+                is_trading = False
+            if is_trading:
                 return ds
         d -= dt.timedelta(days=1)
     return scr.yyyymmdd(d)
