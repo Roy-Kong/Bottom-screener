@@ -99,11 +99,23 @@ def score_volume_dryness(recent6to25_median_vol: float, past120_median_vol: floa
 # 값이라 분모를 실제 시총으로 바꾸면서 재보정했다(눈대중 아님, 분포 기반).
 ACCUM_FULL_CREDIT_INTENSITY = 0.026
 
+# quiet(주가조용 승수, 0~1)의 최종 영향력 하한. 진단 결과 quiet의 원천(|20일
+# 주가변동률|)이 volatility_squeeze와 스피어만 ρ≈0.61로 상당 부분 겹치고
+# (volume_dryness와는 ρ≈0.14로 독립) — 즉 quiet가 주는 정보의 절반 이상은
+# volatility_squeeze(가중치 11)가 이미 반영 중인 중복분이다. 그래서 quiet가
+# base를 0까지 죽이는 곱셈 지배력(구간 [0,1])을 [ACCUM_QUIET_FLOOR,1.0]로 좁혔다
+# — quiet=0(20%+ 급변)이어도 매집강도의 70%는 인정한다. 강한 매집(base>70)이
+# 단기 주가 반응 때문에 통째로 0으로 죽던 문제(진단에서 1,087건 확인)를 없애면서,
+# volatility_squeeze와의 이중계산도 자연히 완화된다.
+ACCUM_QUIET_FLOOR = 0.7
+
 
 def score_accumulation(net_buy_value_20d: float, float_market_cap: float,
                        price_change_pct_20d: float) -> float | None:
     """③ 기관·외국인 매집. 20일 누적 순매수액 / 시가총액 = 강도. 주가가 조용할수록
-       (변동 작을수록) 가중. 순매수 음수면 0.
+       (변동 작을수록) 가중 — 단, 이 가중은 최대 (1-ACCUM_QUIET_FLOOR)만큼의 보너스일
+       뿐 매집강도 자체를 0으로 죽이지 않는다(ACCUM_QUIET_FLOOR 주석 참고). 순매수
+       음수면 0.
 
        float_market_cap은 이름과 달리 현재 '유통'시가총액이 아니라 전체 시가총액이다
        (daily_prices.market_cap, point-in-time) — 유통비율 데이터가 없어 이번엔
@@ -118,7 +130,7 @@ def score_accumulation(net_buy_value_20d: float, float_market_cap: float,
     base = _lin(intensity, 0.0, ACCUM_FULL_CREDIT_INTENSITY, 0.0, 100.0)
     dp = abs(price_change_pct_20d)
     quiet = 1.0 if dp <= 5 else _clamp(1 - (dp - 5) / 15, 0, 1)  # 5%↑ 움직이면 감쇠, 20%↑면 0
-    return _clamp(base * quiet)
+    return _clamp(base * (ACCUM_QUIET_FLOOR + (1 - ACCUM_QUIET_FLOOR) * quiet))
 
 
 # score_short_covering 곡선 파라미터 (실측 공매도잔고 분포 리포트 기반, 튜닝 대상):
