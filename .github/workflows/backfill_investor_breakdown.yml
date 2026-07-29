@@ -48,6 +48,10 @@ jobs:
           git config user.name "screener-bot"
           git config user.email "bot@users.noreply.github.com"
           git lfs install --local
+          # 이 파일이 아직 한 번도 안 생겼으면(이번 청크가 처리할 날짜가 0개인 경우
+          # 포함) 아래 git add가 "did not match any files"로 exit 128 나며 전체가
+          # 죽는다(2026-07 실제 발생 확인) — 미리 만들어서 항상 add 대상이 있게 한다.
+          touch investor_flow_residual_summary.jsonl
 
           python list_month_chunks.py "${{ inputs.start_date }}" "$END" > /tmp/chunks.txt
           while IFS=, read -r CSTART CEND; do
