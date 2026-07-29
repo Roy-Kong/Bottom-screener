@@ -131,8 +131,18 @@ def table_collected(date: str, table: str) -> bool:
         conn.execute(
             "CREATE TABLE IF NOT EXISTS collected_marker "
             "(date TEXT NOT NULL, table_name TEXT NOT NULL, PRIMARY KEY (date, table_name))")
+        # "레거시 완료" 폴백은 표준 4개 테이블(ALL_TABLES) 마커의 존재 여부만 봐야
+        # 한다 — backfill_ohlc.py처럼 표준 4개와 무관한 marker_name(예:
+        # "daily_prices_ohlc")도 이 테이블에 같이 쓰는데, 그런 비표준 마커가
+        # 하나라도 있으면 marker_count>0이 돼서 폴백이 안 걸리고, 정작
+        # daily_investor_flow 같은 표준 테이블은 마커가 없다는 이유로 "미수집"
+        # 오판이 났다(2026-07 실제 발견: 20220104.db가 daily_prices_ohlc 마커만
+        # 있고 daily_investor_flow는 애초에 구버전이라 마커가 없어서 재수집 대상으로
+        # 잘못 판정됨). ALL_TABLES로만 필터링해서 이 오염을 막는다.
+        placeholders = ",".join("?" * len(ALL_TABLES))
         marker_count = conn.execute(
-            "SELECT COUNT(*) FROM collected_marker WHERE date=?", (date,)).fetchone()[0]
+            f"SELECT COUNT(*) FROM collected_marker WHERE date=? AND table_name IN ({placeholders})",
+            (date, *ALL_TABLES)).fetchone()[0]
         if marker_count == 0:
             return table in ALL_TABLES
         row = conn.execute(
