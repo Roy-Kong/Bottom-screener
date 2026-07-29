@@ -1,0 +1,64 @@
+name: backfill-investor-breakdown
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: "시작일 (YYYY-MM-DD)"
+        required: false
+        default: "2022-01-03"
+      end_date:
+        description: "종료일 (YYYY-MM-DD, 비우면 오늘)"
+        required: false
+        default: ""
+      max_runtime_min:
+        description: "이번 실행 최대 시간(분) — KRX 세션 1시간 만료 감안, 기본 50분"
+        required: false
+        default: "50"
+      mismatch_ratio_stop:
+        description: "기존 inst_foreign_net_buy 대조 시 이 비율 넘게 불일치하면 즉시 중단(기본 0.005=0.5%)"
+        required: false
+        default: "0.005"
+
+permissions:
+  contents: write
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Pull existing DB files in target range (기존 파일에 컬럼만 추가하므로 실제 LFS 내용 필요)
+        run: |
+          END="${{ inputs.end_date }}"
+          if [ -z "$END" ]; then END=$(date +%Y-%m-%d); fi
+          git lfs install --local
+          INCLUDES=$(python list_backfill_dates.py "${{ inputs.start_date }}" "$END" "daily_investor_flow")
+          git lfs pull --include="$INCLUDES" || true
+          git lfs pull --include="$INCLUDES"
+      - name: Run investor breakdown backfill
+        env:
+          KRX_ID: ${{ secrets.KRX_ID }}
+          KRX_PW: ${{ secrets.KRX_PW }}
+        run: |
+          END="${{ inputs.end_date }}"
+          if [ -z "$END" ]; then END=$(date +%Y-%m-%d); fi
+          python backfill_investor_breakdown.py --start "${{ inputs.start_date }}" \
+            --end "$END" --max-runtime-min "${{ inputs.max_runtime_min }}" \
+            --mismatch-ratio-stop "${{ inputs.mismatch_ratio_stop }}"
+      - name: Commit DB progress
+        if: always()  # 대조 불일치로 스크립트가 sys.exit(1)해도, 그 직전까지 처리된
+                       # 분(=중단 지점 이전 날짜들)은 손실 없이 커밋해야 다음 조사·재개가 쉽다.
+        run: |
+          git config user.name "screener-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git lfs install --local
+          git add data/
+          git commit -m "chore: investor breakdown backfill progress" || echo "no changes"
+          git pull --rebase origin main
+          git push

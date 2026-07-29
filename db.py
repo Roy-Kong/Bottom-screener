@@ -39,6 +39,9 @@ CREATE TABLE IF NOT EXISTS daily_investor_flow (
     date TEXT NOT NULL,
     ticker TEXT NOT NULL,
     inst_foreign_net_buy REAL,
+    individual_net_buy REAL,
+    inst_net_buy REAL,
+    foreign_net_buy REAL,
     PRIMARY KEY (date, ticker)
 );
 CREATE INDEX IF NOT EXISTS idx_daily_investor_flow_date_ticker ON daily_investor_flow(date, ticker);
@@ -132,10 +135,23 @@ def _ensure_ohlc_columns(conn: sqlite3.Connection) -> None:
             conn.execute(f"ALTER TABLE daily_prices ADD COLUMN {col} REAL")
 
 
+def _ensure_investor_flow_columns(conn: sqlite3.Connection) -> None:
+    """2026-07 이전 파일은 daily_investor_flow에 inst_foreign_net_buy(기관+외국인
+       합계)만 있다 — 위 _ensure_ohlc_columns와 동일한 이유·동일한 방식으로
+       individual_net_buy/inst_net_buy/foreign_net_buy 3개를 추가한다. 기존
+       inst_foreign_net_buy 값은 절대 안 건드린다(재백필 검증 시 원본 대조 기준으로
+       그대로 남겨둬야 함 — 2026-07 "개인 매도 vs 기관·외국인 매수" 진단 결정)."""
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(daily_investor_flow)").fetchall()}
+    for col in ("individual_net_buy", "inst_net_buy", "foreign_net_buy"):
+        if col not in cols:
+            conn.execute(f"ALTER TABLE daily_investor_flow ADD COLUMN {col} REAL")
+
+
 def get_connection(db_path: Path | str) -> sqlite3.Connection:
     conn = sqlite3.connect(str(db_path))
     conn.executescript(SCHEMA)
     _ensure_ohlc_columns(conn)
+    _ensure_investor_flow_columns(conn)
     return conn
 
 
@@ -161,9 +177,36 @@ def upsert_ohlc_only(conn: sqlite3.Connection, rows: list[tuple]) -> None:
 
 
 def upsert_investor_flow(conn: sqlite3.Connection, rows: list[tuple]) -> None:
+    """rows: (date,ticker,inst_foreign_net_buy,individual_net_buy,inst_net_buy,foreign_net_buy)
+       6-tuple. 그 날짜의 첫 기록(라이브 신규 수집)이라 4개 값을 한 번에 다 쓴다.
+       inst_foreign_net_buy는 호출부(market_data_collector.py)가 inst_net_buy+
+       foreign_net_buy로 미리 계산해서 준다 — 컬럼은 하위호환으로 유지하되 값은
+       파생값(2026-07 결정: 기존 accumulation 코드 무수정 + 삭제 실익 없음)."""
     if rows:
         conn.executemany(
-            "INSERT OR REPLACE INTO daily_investor_flow (date,ticker,inst_foreign_net_buy) VALUES (?,?,?)",
+            "INSERT OR REPLACE INTO daily_investor_flow "
+            "(date,ticker,inst_foreign_net_buy,individual_net_buy,inst_net_buy,foreign_net_buy) "
+            "VALUES (?,?,?,?,?,?)",
+            rows)
+
+
+def upsert_investor_flow_breakdown(conn: sqlite3.Connection, rows: list[tuple]) -> None:
+    """rows: (date,ticker,individual_net_buy,inst_net_buy,foreign_net_buy) 5-tuple.
+       과거 재백필 전용 — 이미 inst_foreign_net_buy만 있는 기존 행엔 그 값을 절대
+       안 건드리고 분해값 3개만 채워 넣는다(원 수집분·재수집분 대조 검증 기준으로
+       inst_foreign_net_buy를 그대로 보존해야 함). 원래 그 (date,ticker) 조합
+       자체가 없던 경우(기관+외국인 순매수가 0이라 구버전 수집에 아예 안 걸렸던
+       종목)엔 새 행을 만들고 inst_foreign_net_buy는 NULL로 남는다 — 그 컬럼을
+       읽는 기존 코드(db_reader.load_accumulation_from_db)가 NULL을 건너뛰므로
+       '그 테이블에 없는 종목'과 동일하게 취급돼 회귀 없음."""
+    if rows:
+        conn.executemany(
+            "INSERT INTO daily_investor_flow (date,ticker,individual_net_buy,inst_net_buy,foreign_net_buy) "
+            "VALUES (?,?,?,?,?) "
+            "ON CONFLICT(date,ticker) DO UPDATE SET "
+            "individual_net_buy=excluded.individual_net_buy, "
+            "inst_net_buy=excluded.inst_net_buy, "
+            "foreign_net_buy=excluded.foreign_net_buy",
             rows)
 
 

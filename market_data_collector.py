@@ -107,18 +107,29 @@ def collect_day(date: str, tables=DEFAULT_TABLES) -> dict[str, list[tuple]]:
         result["daily_short"] = short_rows
 
     if "daily_investor_flow" in tables and not skip_rest:
-        flow_map: dict[str, float] = {}
+        # 2026-07: "개인 매도 vs 기관·외국인 매수" 손바뀜 진단을 위해 개인도 함께
+        # 수집한다 — 기관합계/외국인 두 값의 합(inst_foreign_net_buy)은 예전과 똑같이
+        # 계산해서 같은 컬럼에 저장(하위호환, accumulation 신호 무수정).
+        per_investor: dict[str, dict[str, float]] = {"기관합계": {}, "외국인": {}, "개인": {}}
         for mkt in scr.TARGET_MARKETS:
-            for investor in ["기관합계", "외국인"]:
+            for investor in ("기관합계", "외국인", "개인"):
                 try:
                     df = stock.get_market_net_purchases_of_equities_by_ticker(date, date, mkt, investor)
                 except Exception:
                     df = None
                 if df is not None and not df.empty:
                     col = "순매수거래대금" if "순매수거래대금" in df.columns else df.columns[-1]
+                    bucket = per_investor[investor]
                     for tkr, row in df.iterrows():
-                        flow_map[tkr] = flow_map.get(tkr, 0.0) + float(row.get(col, 0) or 0)
+                        bucket[tkr] = bucket.get(tkr, 0.0) + float(row.get(col, 0) or 0)
                 time.sleep(scr.REQUEST_PAUSE)
-        result["daily_investor_flow"] = [(date, tkr, val) for tkr, val in flow_map.items()]
+        inst_map, foreign_map, individual_map = per_investor["기관합계"], per_investor["외국인"], per_investor["개인"]
+        all_tkrs = set(inst_map) | set(foreign_map) | set(individual_map)
+        result["daily_investor_flow"] = [
+            (date, tkr,
+             inst_map.get(tkr, 0.0) + foreign_map.get(tkr, 0.0),
+             individual_map.get(tkr, 0.0), inst_map.get(tkr, 0.0), foreign_map.get(tkr, 0.0))
+            for tkr in all_tkrs
+        ]
 
     return result
