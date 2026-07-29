@@ -40,7 +40,16 @@ import time
 import datetime as dt
 
 from pykrx_import import import_pykrx_stock
-stock = import_pykrx_stock()
+try:
+    stock = import_pykrx_stock()
+except RuntimeError as e:
+    # 2026-07: KRX 로그인 응답이 일시적으로 비정상(빈 응답 등)일 때 pykrx_import
+    # 자체 재시도(3회)도 소진되는 경우가 실제로 있었다 — 이건 데이터 불일치처럼
+    # "사람이 봐야 하는" 상황이 아니라 순전히 일시적 인프라 문제라, exit code를
+    # 대조 불일치 중단(1)과 구분되는 3으로 줘서 워크플로우가 이 경우만 재시도하게
+    # 한다(backfill_investor_breakdown.yml 참고).
+    print(f"[backfill_investor_breakdown] pykrx 임포트 실패(일시적 KRX 접속 문제로 추정): {e}")
+    sys.exit(3)
 import db
 import screener as scr
 from date_utils import business_days
