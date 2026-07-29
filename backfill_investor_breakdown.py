@@ -19,8 +19,11 @@ inst_foreign_net_buy와 일치하는지 날짜마다 확인한다 — pykrx/KRX 
 
 [참고 검증] 개인+기관합계+외국인+기타법인+기타외국인의 합은 이론상 0에
 수렴한다(모든 매수엔 대응하는 매도가 있어 시장 전체 순매수는 0) — 종목별로
-이 항등식이 크게 깨지면 경고만 로그로 남긴다(중단하지 않음, 원인 규명은
-이 스크립트의 범위 밖).
+이 항등식이 크게 깨지면 경고 로그를 남기되(중단하지 않음, 원인 규명은 이
+스크립트의 범위 밖), CI 로그만으로는 실행이 끝나면 사라져 사후 추적이 안
+되므로 날짜별 잔차 통계를 investor_flow_residual_summary.jsonl(레포 루트,
+RESIDUAL_SUMMARY_PATH)에 한 줄씩 append한다(2026-07 결정 — 기타법인/기타외국인
+원본 자체는 여전히 DB에 안 남긴다, 요약 통계만).
 
 사용법:
     python backfill_investor_breakdown.py [--start YYYY-MM-DD] [--end YYYY-MM-DD]
@@ -28,6 +31,8 @@ inst_foreign_net_buy와 일치하는지 날짜마다 확인한다 — pykrx/KRX 
     --start 생략 시 2022-01-03(DB 커버리지 시작일), --end 생략 시 오늘.
 """
 from __future__ import annotations
+import json
+from pathlib import Path
 import argparse
 import sys
 import sqlite3
@@ -43,6 +48,10 @@ from backfill import business_days
 # 기관합계+외국인 재대조 시 종목별 허용오차 — 이 범위 밖이면 "그 종목 불일치"로 센다.
 MISMATCH_TOL_ABS = 1_000.0   # 원 단위, 아주 작은 값 근처 반올림 오차 흡수
 MISMATCH_TOL_PCT = 0.01      # 상대오차 1%
+
+# 항등식(5주체 합≈0) 잔차 사후검증용 요약 파일 — data/*.db(LFS)와 별개, 일반
+# git 텍스트 파일이라 diff로 "어느 날 잔차가 커졌나"를 바로 볼 수 있다.
+RESIDUAL_SUMMARY_PATH = Path(__file__).parent / "investor_flow_residual_summary.jsonl"
 
 
 def fetch_investor_breakdown(date: str) -> dict[str, dict[str, float]]:
@@ -68,12 +77,14 @@ def fetch_investor_breakdown(date: str) -> dict[str, dict[str, float]]:
 
 
 def _existing_inst_foreign(path, date: str) -> dict[str, float]:
+    if not db.is_real_sqlite_file(path):
+        return {}
     conn = sqlite3.connect(str(path))
     try:
         rows = conn.execute(
             "SELECT ticker, inst_foreign_net_buy FROM daily_investor_flow WHERE date=?", (date,)
         ).fetchall()
-    except sqlite3.OperationalError:
+    except sqlite3.DatabaseError:
         rows = []
     finally:
         conn.close()
@@ -82,7 +93,16 @@ def _existing_inst_foreign(path, date: str) -> dict[str, float]:
 
 def _already_has_breakdown(path, date: str) -> bool:
     """이 스크립트를 여러 번 나눠 돌릴 때 재개 판단용 — 이미 분해값이 채워진
-       날짜(0건짜리 휴장일 포함)는 건너뛴다."""
+       날짜(0건짜리 휴장일 포함)는 건너뛴다.
+
+       2026-07 사고: 이 함수의 호출부(run())가 이미 db.table_collected로
+       스텁/0바이트 파일을 걸러내지만, 이 함수 단독으로도 안전하도록 같은
+       매직바이트 검사를 한 번 더 둔다(방어적 이중화) — 또한 원래 여기 있던
+       except sqlite3.OperationalError는 "file is not a database"(포인터
+       스텁) 예외의 실제 타입인 DatabaseError를 못 잡는 버그였다(OperationalError는
+       DatabaseError의 하위클래스라 역방향은 안 잡힘) — DatabaseError로 수정."""
+    if not db.is_real_sqlite_file(path):
+        return False
     conn = sqlite3.connect(str(path))
     try:
         total = conn.execute(
@@ -93,7 +113,7 @@ def _already_has_breakdown(path, date: str) -> bool:
             "SELECT COUNT(*) FROM daily_investor_flow WHERE date=? AND individual_net_buy IS NOT NULL",
             (date,)).fetchone()[0]
         return filled > 0
-    except sqlite3.OperationalError:
+    except sqlite3.DatabaseError:
         return False
     finally:
         conn.close()
@@ -121,22 +141,39 @@ def reconcile(date: str, old_inst_foreign: dict[str, float],
     return True, msg
 
 
-def identity_check(date: str, breakdown: dict[str, dict[str, float]]) -> None:
+def identity_check(date: str, breakdown: dict[str, dict[str, float]]) -> dict:
     """개인+기관합계+외국인+기타법인+기타외국인 합이 종목별로 0에 가까운지
-       참고용으로만 확인(중단하지 않음, 경고 로그만)."""
+       참고용으로만 확인(중단하지 않음, 경고 로그만) — 날짜별 잔차 통계를
+       반환해서 run()이 RESIDUAL_SUMMARY_PATH에 사후검증용으로 남기게 한다."""
     all_tkrs = set()
     for m in breakdown.values():
         all_tkrs |= set(m)
-    bad = 0
+    residuals: list[tuple[str, float]] = []
     for tkr in all_tkrs:
         total = sum(breakdown[inv].get(tkr, 0.0) for inv in breakdown)
-        # 절대값이 큰 종목 기준 상대오차로 판단(작은 값끼리는 절대오차 허용)
-        scale = max(abs(v) for m in breakdown.values() for v in [m.get(tkr, 0.0)]) or 1.0
+        residuals.append((tkr, total))
+    bad = []
+    for tkr, total in residuals:
+        scale = max(abs(breakdown[inv].get(tkr, 0.0)) for inv in breakdown) or 1.0
         if abs(total) > max(MISMATCH_TOL_ABS * 10, scale * 0.02):
-            bad += 1
+            bad.append((tkr, total))
     if bad:
-        print(f"    [참고검증] {date}: 항등식(5주체 합≈0)에서 벗어난 종목 {bad}/{len(all_tkrs)}개"
+        print(f"    [참고검증] {date}: 항등식(5주체 합≈0)에서 벗어난 종목 {len(bad)}/{len(all_tkrs)}개"
               f"(경고만, 중단 안 함)")
+    top_residuals = sorted(residuals, key=lambda x: -abs(x[1]))[:10]
+    return {
+        "date": date,
+        "n_tickers": len(all_tkrs),
+        "n_flagged": len(bad),
+        "flagged_ratio": (len(bad) / len(all_tkrs)) if all_tkrs else 0.0,
+        "total_abs_residual": sum(abs(r) for _, r in residuals),
+        "top_residuals": [[t, r] for t, r in top_residuals],
+    }
+
+
+def append_residual_summary(record: dict) -> None:
+    with open(RESIDUAL_SUMMARY_PATH, "a", encoding="utf-8") as f:
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
 def run(start_str: str, end_str: str, max_runtime_min: int, mismatch_ratio_stop: float) -> None:
@@ -180,7 +217,7 @@ def run(start_str: str, end_str: str, max_runtime_min: int, mismatch_ratio_stop:
                   f"가능성. 사람 확인 필요, 재백필은 여기서 멈춥니다.")
             sys.exit(1)
 
-        identity_check(ds, breakdown)
+        append_residual_summary(identity_check(ds, breakdown))
 
         all_tkrs = set(inst_map) | set(foreign_map) | set(individual_map)
         rows = [

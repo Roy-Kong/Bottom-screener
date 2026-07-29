@@ -88,6 +88,29 @@ def date_file_exists(date: str) -> bool:
     return daily_db_path(date).exists()
 
 
+SQLITE_MAGIC_HEADER = b"SQLite format 3\x00"
+
+
+def is_real_sqlite_file(path: Path) -> bool:
+    """진짜 채워진 SQLite 파일인지(포인터 스텁 텍스트도, git lfs pull이 도중에
+       끊겨 0바이트/일부만 받아진 파일도 아닌지) 헤더 매직바이트로 직접 확인한다.
+
+       2026-07 사고: 0바이트 파일은 sqlite3가 "새로 만드는 빈 DB"로 취급해서
+       CREATE TABLE이 예외 없이 성공해버린다 — table_collected()가 그 성공한
+       빈 DB를 보고 marker_count==0으로 판단해 "레거시 완료(구버전 전체 백필
+       결과물)" 폴백을 잘못 발동시켜, 실제로는 미수집(LFS pull 중단 등으로
+       전송이 끊긴 파일)인데 수집완료로 오판하는 구멍이 있었다(포인터 스텁
+       텍스트는 sqlite3.DatabaseError로 이미 잡혔지만, 0바이트는 그 경로를
+       타지 않았음). 파일을 sqlite3로 열기 전에 매직바이트를 직접 읽으면
+       예외 타입에 기대지 않고 두 경우 다 확실하게 걸러낼 수 있다."""
+    try:
+        with open(path, "rb") as f:
+            header = f.read(len(SQLITE_MAGIC_HEADER))
+    except OSError:
+        return False
+    return header == SQLITE_MAGIC_HEADER
+
+
 def table_collected(date: str, table: str) -> bool:
     """이 (date, table) 조합이 이미 수집 시도됐는지(휴장일이라 0건이어도 '시도함'
        으로 간주 — 재시도 방지). collected_marker가 있는 파일(테이블 선택형
@@ -98,6 +121,10 @@ def table_collected(date: str, table: str) -> bool:
        완료 구간을 이 프레임으로 다시 돌릴 때 전부 재수집하게 된다."""
     path = daily_db_path(date)
     if not path.exists():
+        return False
+    if not is_real_sqlite_file(path):
+        # 포인터 스텁·0바이트·손상 파일 — 아래 except 분기와 별개로, marker_count==0
+        # "레거시 완료" 폴백이 0바이트 파일에서 잘못 발동하는 걸 막는 명시적 1차 방어선.
         return False
     conn = sqlite3.connect(str(path))
     try:
