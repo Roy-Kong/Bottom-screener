@@ -12,7 +12,7 @@ on:
         required: false
         default: ""
       max_runtime_min:
-        description: "청크(월)당 최대 시간(분) — KRX 세션 1시간 만료 감안, 기본 50분"
+        description: "이번 실행 최대 시간(분) — KRX 세션 1시간 만료 감안, 기본 50분"
         required: false
         default: "50"
       mismatch_ratio_stop:
@@ -33,78 +33,80 @@ jobs:
           python-version: "3.11"
       - name: Install deps
         run: pip install -r requirements.txt
-      # 월 단위 청크로 pull+백필 반복 — 청크마다 pull → 실행 → 커밋·푸시까지 끝내야
-      # 중간에 멈춰도 그때까지 진행분이 안전하게 남는다(LFS 용량은 문제 아니었음,
-      # 6.3/10GB로 여유 확인됨).
-      #
-      # 2026-07 진짜 원인이었던 사고: list_backfill_dates.py가 business_days 하나
-      # 쓰자고 backfill.py를 통째로 import해서 market_data_collector -> pykrx까지
-      # 끌려왔고, pykrx는 임포트 시점에 KRX 로그인 메시지를 stdout에 직접 찍는다.
-      # INCLUDES=$(python list_backfill_dates.py ...)로 그 출력을 통째로 캡처하니
-      # 로그인 배너 텍스트가 날짜 목록에 섞여 매 청크가 "대상 0일"로 나왔다(LFS
-      # pull 자체는 문제 없었음, --include에 쓰레기 값이 들어갔을 뿐). business_days를
-      # pykrx 의존성 없는 date_utils.py로 분리해 근본 수정(db.py/date_utils.py 참고).
-      - name: Run investor breakdown backfill (month-chunked)
+      # LFS pull은 월 단위 청크로(청크당 파일 20개 안팎이라 안정적), 실제 백필
+      # 실행은 전체 구간 한 번만 — 2026-07 사고: pull까지 청크마다 새 python
+      # 프로세스를 띄웠더니 청크(=월)마다 KRX 로그인을 새로 해서 55개월이면
+      # 로그인 55번, 이게 "KRX 로그인 응답이 계속 비정상" 실패를 유발한 것으로
+      # 추정됨(반복 로그인으로 인한 일시적 차단/속도제한 의심). 로그인은 세션이
+      # 1시간 가므로 pull 다 끝난 뒤 실행은 한 번만 하면 충분하다.
+      - name: Pull DB files (month-chunked, verified+retried)
+        run: |
+          set -eo pipefail
+          END="${{ inputs.end_date }}"
+          if [ -z "$END" ]; then END=$(date +%Y-%m-%d); fi
+          git lfs install --local
+          python list_month_chunks.py "${{ inputs.start_date }}" "$END" > /tmp/chunks.txt
+          while IFS=, read -r CSTART CEND; do
+            INCLUDES=$(python list_backfill_dates.py "$CSTART" "$CEND" "daily_investor_flow")
+            # git lfs pull --include=이 요청한 파일을 전부 못 받아올 때가 실제로
+            # 있었다(2026-07 확인 — git-lfs 자체는 에러를 안 내고 조용히 일부만
+            # 받아옴). "받았다고 믿기"가 아니라 직접 검증해서 안 된 파일만 재시도.
+            PULL_TARGET="$INCLUDES"
+            for i in 1 2 3; do
+              git lfs pull --include="$PULL_TARGET" || true
+              read -r N_STUB STUB_LIST <<< "$(python count_lfs_stubs.py "$INCLUDES" | tr '\n' ' ')"
+              echo "청크 $CSTART~$CEND: pull 시도 $i/3, 미확보 파일 ${N_STUB}개"
+              if [ "$N_STUB" = "0" ]; then break; fi
+              PULL_TARGET="$STUB_LIST"
+              sleep 5
+            done
+          done < /tmp/chunks.txt
+      - name: Run investor breakdown backfill (전체 구간 1회 — 로그인도 1회)
         env:
           KRX_ID: ${{ secrets.KRX_ID }}
           KRX_PW: ${{ secrets.KRX_PW }}
         run: |
-          set -eo pipefail
           END="${{ inputs.end_date }}"
           if [ -z "$END" ]; then END=$(date +%Y-%m-%d); fi
           git config user.name "screener-bot"
           git config user.email "bot@users.noreply.github.com"
           git lfs install --local
-          # 이 파일이 아직 한 번도 안 생겼으면(이번 청크가 처리할 날짜가 0개인 경우
-          # 포함) 아래 git add가 "did not match any files"로 exit 128 나며 전체가
-          # 죽는다(2026-07 실제 발생 확인) — 미리 만들어서 항상 add 대상이 있게 한다.
+          # 이 파일이 아직 한 번도 안 생겼으면 아래 git add가 "did not match any
+          # files"로 exit 128 나며 전체가 죽는다(2026-07 실제 발생 확인).
           touch investor_flow_residual_summary.jsonl
 
-          python list_month_chunks.py "${{ inputs.start_date }}" "$END" > /tmp/chunks.txt
-          while IFS=, read -r CSTART CEND; do
-            echo "=== 청크 $CSTART ~ $CEND ==="
-            INCLUDES=$(python list_backfill_dates.py "$CSTART" "$CEND" "daily_investor_flow")
-            # git lfs pull --include=이 요청한 파일을 전부 못 받아올 때가 실제로
-            # 있었다(2026-07 확인 — 21개 중 1개만 받아진 채 조용히 "완료"됨, git-lfs
-            # 자체는 에러를 안 냄). "받았다고 믿기"가 아니라 직접 검증해서 안 된
-            # 파일만 다시 요청한다.
-            PULL_TARGET="$INCLUDES"
-            for i in 1 2 3; do
-              git lfs pull --include="$PULL_TARGET" || true
-              read -r N_STUB STUB_LIST <<< "$(python count_lfs_stubs.py "$INCLUDES" | tr '\n' ' ')"
-              echo "  LFS pull 시도 $i/3: 미확보 파일 ${N_STUB}개"
-              if [ "$N_STUB" = "0" ]; then break; fi
-              PULL_TARGET="$STUB_LIST"
-              sleep 5
-            done
-
-            # exit 3 = pykrx 임포트 실패(일시적 KRX 접속 문제로 추정, 데이터 문제
-            # 아님) — 이 경우만 짧게 재시도한다. exit 1(대조 불일치)은 재시도 없이
-            # 바로 아래에서 중단(사람 확인 필요, 원래 설계 그대로).
-            set +e
-            ATTEMPT=1
-            while true; do
-              python backfill_investor_breakdown.py --start "$CSTART" --end "$CEND" \
-                --max-runtime-min "${{ inputs.max_runtime_min }}" \
-                --mismatch-ratio-stop "${{ inputs.mismatch_ratio_stop }}"
-              STATUS=$?
-              if [ $STATUS -eq 3 ] && [ $ATTEMPT -lt 3 ]; then
-                echo "일시적 KRX 접속 실패(exit 3) — ${ATTEMPT}/3차 시도, 20초 후 재시도"
-                sleep 20
-                ATTEMPT=$((ATTEMPT+1))
-                continue
-              fi
-              break
-            done
-            set -e
-
-            git add data/ investor_flow_residual_summary.jsonl
-            git commit -m "chore: investor breakdown backfill progress ($CSTART~$CEND)" || echo "no changes"
-            git pull --rebase origin main
-            git push
-
-            if [ $STATUS -ne 0 ]; then
-              echo "청크 $CSTART~$CEND에서 중단(대조 불일치 또는 KRX 접속 재시도 소진, 종료코드 $STATUS) — 이후 청크는 건너뜁니다. 사람 확인 필요."
-              exit 1
+          # exit 3 = pykrx 임포트 실패(일시적 KRX 접속 문제로 추정, 데이터 문제
+          # 아님) — 이 경우만 짧게 재시도한다. exit 1(대조 불일치)은 재시도 없이
+          # 바로 중단(사람 확인 필요).
+          set +e
+          ATTEMPT=1
+          while true; do
+            python backfill_investor_breakdown.py --start "${{ inputs.start_date }}" --end "$END" \
+              --max-runtime-min "${{ inputs.max_runtime_min }}" \
+              --mismatch-ratio-stop "${{ inputs.mismatch_ratio_stop }}"
+            STATUS=$?
+            if [ $STATUS -eq 3 ] && [ $ATTEMPT -lt 3 ]; then
+              echo "일시적 KRX 접속 실패(exit 3) — ${ATTEMPT}/3차 시도, 20초 후 재시도"
+              sleep 20
+              ATTEMPT=$((ATTEMPT+1))
+              continue
             fi
-          done < /tmp/chunks.txt
+            break
+          done
+          set -e
+
+          if [ $STATUS -ne 0 ]; then
+            echo "중단(대조 불일치 또는 KRX 접속 재시도 소진, 종료코드 $STATUS) — 사람 확인 필요."
+          fi
+          exit $STATUS
+      - name: Commit progress
+        if: always()  # 대조 불일치·재시도 소진으로 죽어도, 그 직전까지 처리된
+                       # 날짜들은 손실 없이 커밋해야 다음 조사·재개가 쉽다.
+        run: |
+          git config user.name "screener-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git lfs install --local
+          git add data/ investor_flow_residual_summary.jsonl
+          git commit -m "chore: investor breakdown backfill progress (${{ inputs.start_date }}~)" || echo "no changes"
+          git pull --rebase origin main
+          git push
