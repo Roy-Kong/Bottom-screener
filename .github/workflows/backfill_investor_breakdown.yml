@@ -33,10 +33,17 @@ jobs:
           python-version: "3.11"
       - name: Install deps
         run: pip install -r requirements.txt
-      # 월 단위 청크로 pull+백필 반복 — 2026-07 사고: 기본 범위 전체(2022-01~오늘,
-      # 1150+영업일)를 한 번에 git lfs pull하려다 대부분 실패해 실제로는 9일만
-      # 처리됐음. 청크마다 pull → 실행 → 커밋·푸시까지 끝내야 중간에 멈춰도
-      # 그때까지 진행분이 안전하게 남는다.
+      # 월 단위 청크로 pull+백필 반복 — 청크마다 pull → 실행 → 커밋·푸시까지 끝내야
+      # 중간에 멈춰도 그때까지 진행분이 안전하게 남는다(LFS 용량은 문제 아니었음,
+      # 6.3/10GB로 여유 확인됨).
+      #
+      # 2026-07 진짜 원인이었던 사고: list_backfill_dates.py가 business_days 하나
+      # 쓰자고 backfill.py를 통째로 import해서 market_data_collector -> pykrx까지
+      # 끌려왔고, pykrx는 임포트 시점에 KRX 로그인 메시지를 stdout에 직접 찍는다.
+      # INCLUDES=$(python list_backfill_dates.py ...)로 그 출력을 통째로 캡처하니
+      # 로그인 배너 텍스트가 날짜 목록에 섞여 매 청크가 "대상 0일"로 나왔다(LFS
+      # pull 자체는 문제 없었음, --include에 쓰레기 값이 들어갔을 뿐). business_days를
+      # pykrx 의존성 없는 date_utils.py로 분리해 근본 수정(db.py/date_utils.py 참고).
       - name: Run investor breakdown backfill (month-chunked)
         env:
           KRX_ID: ${{ secrets.KRX_ID }}
@@ -57,14 +64,8 @@ jobs:
           while IFS=, read -r CSTART CEND; do
             echo "=== 청크 $CSTART ~ $CEND ==="
             INCLUDES=$(python list_backfill_dates.py "$CSTART" "$CEND" "daily_investor_flow")
-            FIRST_FILE=$(echo "$INCLUDES" | cut -d',' -f1)
-            echo "--- pull 전: $FIRST_FILE 크기 $(wc -c < "$FIRST_FILE" 2>&1 || echo N/A)바이트 ---"
             git lfs pull --include="$INCLUDES" || true
             git lfs pull --include="$INCLUDES"
-            # 진단(2026-07: 모든 청크가 "대상 0일" — LFS 할당량은 여유 있음(6.3/10GB)
-            # 확인됐으니, 실제로 pull이 뭘 받아왔는지 파일 크기로 직접 확인한다.
-            # 포인터 스텁은 ~130바이트, 진짜 sqlite 파일은 최소 수십KB.
-            echo "--- pull 후: $FIRST_FILE 크기 $(wc -c < "$FIRST_FILE" 2>&1 || echo N/A)바이트, 헤더: $(head -c 16 "$FIRST_FILE" 2>&1) ---"
 
             set +e
             python backfill_investor_breakdown.py --start "$CSTART" --end "$CEND" \

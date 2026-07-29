@@ -31,14 +31,7 @@ import datetime as dt
 
 import db
 import market_data_collector as collector
-
-
-def business_days(start: dt.date, end: dt.date):
-    d = start
-    while d <= end:
-        if d.weekday() < 5:      # 0=월 ... 4=금
-            yield d
-        d += dt.timedelta(days=1)
+from date_utils import business_days
 
 
 def parse_tables(tables_arg: str) -> list[str]:
