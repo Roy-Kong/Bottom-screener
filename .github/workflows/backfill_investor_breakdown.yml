@@ -57,8 +57,14 @@ jobs:
           while IFS=, read -r CSTART CEND; do
             echo "=== 청크 $CSTART ~ $CEND ==="
             INCLUDES=$(python list_backfill_dates.py "$CSTART" "$CEND" "daily_investor_flow")
+            FIRST_FILE=$(echo "$INCLUDES" | cut -d',' -f1)
+            echo "--- pull 전: $FIRST_FILE 크기 $(wc -c < "$FIRST_FILE" 2>&1 || echo N/A)바이트 ---"
             git lfs pull --include="$INCLUDES" || true
             git lfs pull --include="$INCLUDES"
+            # 진단(2026-07: 모든 청크가 "대상 0일" — LFS 할당량은 여유 있음(6.3/10GB)
+            # 확인됐으니, 실제로 pull이 뭘 받아왔는지 파일 크기로 직접 확인한다.
+            # 포인터 스텁은 ~130바이트, 진짜 sqlite 파일은 최소 수십KB.
+            echo "--- pull 후: $FIRST_FILE 크기 $(wc -c < "$FIRST_FILE" 2>&1 || echo N/A)바이트, 헤더: $(head -c 16 "$FIRST_FILE" 2>&1) ---"
 
             set +e
             python backfill_investor_breakdown.py --start "$CSTART" --end "$CEND" \
