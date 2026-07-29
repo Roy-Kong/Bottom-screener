@@ -33,6 +33,10 @@
 
   .row{background:var(--deep);border:1px solid var(--line);border-radius:13px;margin-bottom:9px;overflow:hidden}
   .row.confirmed{border-color:var(--go);box-shadow:0 0 0 1px var(--go) inset}
+  .row.ref-tier{border-style:dashed;border-color:var(--dim);opacity:.82}
+  .badge.ref{background:var(--dim);color:var(--ink)}
+  .gateline{display:flex;align-items:center;gap:10px;margin:22px 0 8px;font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+  .gateline .ln{flex:1;height:1px;background:var(--line)}
   .rhead{display:grid;grid-template-columns:34px 1fr auto auto;gap:12px;align-items:center;padding:13px 15px;cursor:pointer}
   .rank{font-family:var(--disp);font-weight:700;font-size:17px;color:var(--mute);text-align:center}
   .nm{font-family:var(--disp);font-weight:500;font-size:16px}
@@ -88,8 +92,9 @@
     </h1>
     <div class="meta" id="meta"></div>
   </div>
-  <div class="sub">코스피·코스닥 전종목을 바닥 신호 7개로 채점(60점 이상만 통과)한 뒤, 턴어라운드 신호 5개로
-    실제로 방향을 틀었는지 확인합니다. 종목을 탭하면 두 그룹의 신호별 점수가 각각 열립니다.</div>
+  <div class="sub">코스피·코스닥 전종목을 바닥 신호 7개로 채점(60점 이상 통과)한 뒤, 턴어라운드 신호 5개로
+    실제로 방향을 틀었는지 확인합니다. 52~60점은 통과선을 못 넘었지만 재량 판단용으로 참고 표시합니다(통과 통계엔
+    안 들어감). 종목을 탭하면 두 그룹의 신호별 점수가 각각 열립니다.</div>
 
   <div class="legend">
     <span class="lg"><span class="ld" style="background:var(--go)"></span>신호 강함(≥66)</span>
@@ -124,7 +129,7 @@ const TURNAROUND_ORDER = ["volume_surge","ma_breakout","short_term_breakout","re
 const SAMPLE = {
   generated_at:"(미리보기)", as_of_date:"—", universe_size:2600, scored:0,
   results:[
-    {ticker:"000660",name:"예시종목 A",score:91.2,close:207000,status:"confirmed_turnaround",
+    {ticker:"000660",name:"예시종목 A",score:91.2,close:207000,status:"confirmed_turnaround",tier:"pass",
       breakdown:{volume_dryness:88,accumulation:100,short_covering:95,pbr_low:92,dividend_yield:80,relative_strength:92,volatility_squeeze:70},
       turnaround_score:74.0,
       turnaround_breakdown:{volume_surge:82,ma_breakout:90,short_term_breakout:65,relative_strength_accel:71,accumulation_accel:62,rsi_reversal:78,macd_cross:85},
@@ -134,7 +139,7 @@ const SAMPLE = {
         bottom:"최근 20일간 기관·외국인이 250억원(유통시총의 2.1%)을 순매수했고, 그동안 주가는 +2.8%로 조용했습니다. PBR이 0.82배로 최근 5년 밴드 하위 8% 구간입니다.",
         turnaround:"20일 이평선이 60일 이평선보다 +3.0% 위로 정배열이고, 종가는 60일 이평선을 +5.0% 돌파했습니다. 최근 5일 거래량이 20일 평균 대비 220%로 늘었습니다."
       }},
-    {ticker:"005930",name:"예시종목 B",score:78.5,close:71000,status:"watching",
+    {ticker:"005930",name:"예시종목 B",score:78.5,close:71000,status:"watching",tier:"pass",
       breakdown:{volume_dryness:70,accumulation:85,short_covering:60,pbr_low:88,dividend_yield:null,relative_strength:89,volatility_squeeze:55},
       turnaround_score:22.0,
       turnaround_breakdown:{volume_surge:10,ma_breakout:20,short_term_breakout:15,relative_strength_accel:30,accumulation_accel:35,rsi_reversal:0,macd_cross:12},
@@ -144,12 +149,18 @@ const SAMPLE = {
         bottom:"최근 60일 코스피는 +5.0%인데 이 종목은 +18.0%로 지수보다 +13.0%p 선방했습니다. PBR이 1.10배로 최근 5년 밴드 하위 12% 구간입니다.",
         turnaround:""
       }},
-    {ticker:"012345",name:"예시종목 C",score:64.0,close:15300,status:"watching",
+    {ticker:"012345",name:"예시종목 C",score:64.0,close:15300,status:"watching",tier:"pass",
       breakdown:{volume_dryness:55,accumulation:40,short_covering:72,pbr_low:95,dividend_yield:60,relative_strength:62,volatility_squeeze:48},
       turnaround_score:null,
       turnaround_breakdown:null,
       liquidity:{avg_trading_value_krw:3100000000,unstable_days_20d:1,unstable:false,market_impact_pct:1.61,market_impact_level:"low"},
       explanation:{summary:null,bottom:"PBR이 0.65배로 최근 5년 밴드 하위 5% 구간입니다.",turnaround:""}},
+    {ticker:"067890",name:"예시종목 D(참고)",score:56.5,close:9200,status:"watching",tier:"watch",
+      breakdown:{volume_dryness:30,accumulation:52,short_covering:48,pbr_low:70,dividend_yield:null,relative_strength:55,volatility_squeeze:40},
+      turnaround_score:null,
+      turnaround_breakdown:null,
+      liquidity:{avg_trading_value_krw:1800000000,unstable_days_20d:2,unstable:false,market_impact_pct:2.4,market_impact_level:"mid"},
+      explanation:{summary:null,bottom:"PBR이 0.90배로 최근 5년 밴드 하위 20% 구간입니다. 60점 통과선(52~60)에는 못 미칩니다.",turnaround:""}},
   ]
 };
 
@@ -199,14 +210,16 @@ function impactBlock(r){
 
 function renderRow(r, rank){
   const confirmed = r.status === "confirmed_turnaround";
+  const isRef = r.tier === "watch";
   const dots = ORDER.map(k=>'<span class="d" style="background:'+color(r.breakdown[k])+'"></span>').join("");
-  const badge = confirmed ? '<div class="badge">✓ 턴어라운드 확인</div>' : "";
+  const badge = confirmed ? '<div class="badge">✓ 턴어라운드 확인</div>'
+    : isRef ? '<div class="badge ref">참고 · 60점 미달</div>' : "";
   const bottomBars = signalBars(r.breakdown, ORDER, LABELS);
   const turnScore = r.turnaround_score;
   const turnaroundBars = r.turnaround_breakdown
     ? signalBars(r.turnaround_breakdown, TURNAROUND_ORDER, TURNAROUND_LABELS)
     : '<div class="na" style="margin-top:8px">턴어라운드 데이터 부족(상장 이력 부족 등)</div>';
-  return '<div class="row'+(confirmed?' confirmed':'')+'" onclick="this.classList.toggle(\'open\')">'+
+  return '<div class="row'+(confirmed?' confirmed':'')+(isRef?' ref-tier':'')+'" onclick="this.classList.toggle(\'open\')">'+
     '<div class="rhead"><div class="rank">'+rank+'</div>'+
     '<div><div class="nm">'+r.name+'</div><div class="tk">'+r.ticker+'</div>'+badge+'</div>'+
     '<div class="dots">'+dots+'</div>'+
@@ -227,8 +240,9 @@ function render(data){
   const list = document.getElementById("list");
   if(!data.results || !data.results.length){ list.innerHTML='<div class="err">결과가 없습니다.</div>'; return; }
 
-  const confirmed = data.results.filter(r=>r.status==="confirmed_turnaround");
-  const watching = data.results.filter(r=>r.status!=="confirmed_turnaround");
+  const confirmed = data.results.filter(r=>r.status==="confirmed_turnaround" && r.tier!=="watch");
+  const watching = data.results.filter(r=>r.status!=="confirmed_turnaround" && r.tier!=="watch");
+  const refCandidates = data.results.filter(r=>r.tier==="watch");
   let rank = 0;
   let html = "";
   if(confirmed.length){
@@ -238,6 +252,11 @@ function render(data){
   if(watching.length){
     html += '<div class="grp-head"><span>관찰 대상 · 바닥은 맞지만 아직 안 돔</span><span>'+watching.length+'개</span></div>';
     html += watching.map(r=>renderRow(r, ++rank)).join("");
+  }
+  if(refCandidates.length){
+    html += '<div class="gateline"><span class="ln"></span><span>▲ 여기까지 60점 통과선 · 아래는 52~60 참고 후보(통과 아님)</span><span class="ln"></span></div>';
+    html += '<div class="grp-head"><span>참고 후보 · 60점 미달(52~60), 재량 판단용</span><span>'+refCandidates.length+'개</span></div>';
+    html += refCandidates.map(r=>renderRow(r, ++rank)).join("");
   }
   list.innerHTML = html;
 }

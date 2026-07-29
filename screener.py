@@ -63,7 +63,9 @@ MARKET_IMPACT_MID_PCT = 10.0           # 이 이하: "보통", 초과: "주의"
 MAX_DAILY_MOVE_RATIO = 1.32
 
 # 최종 분류 임계값
-BOTTOM_SCORE_THRESHOLD = 60            # 바닥 종합점수 이 값 미만이면 결과에서 제외
+BOTTOM_SCORE_THRESHOLD = 60            # 바닥 종합점수 이 값 미만이면 "통과"에서 제외(게이트, 불변)
+WATCH_SCORE_THRESHOLD = 52             # 이 값 미만이면 화면 참고 후보에서도 제외(하드컷, 통과 게이트 아님 —
+                                        # 2026-07 요청: 재량 판단용으로 52~60 구간만 화면에 추가 노출)
 TURNAROUND_STRONG_THRESHOLD = 50       # 개별 턴어라운드 신호가 이 값 이상이면 "강함"으로 침
 
 # 턴어라운드 신호 중 이평선 돌파·단기 고점 돌파·상대강도 가속은 전부 "가격이
@@ -841,8 +843,12 @@ def run():
         }
 
         comp = sg.composite_score(scores, bottom_weights)
-        if comp["composite"] is None or comp["composite"] < BOTTOM_SCORE_THRESHOLD:
+        if comp["composite"] is None or comp["composite"] < WATCH_SCORE_THRESHOLD:
             continue
+        # tier: 통과 게이트(BOTTOM_SCORE_THRESHOLD)는 그대로 — "watch"는 화면에
+        # 참고용으로 추가 노출만 될 뿐 아래 confirmed_turnaround 판정·통과 통계에는
+        # 안 들어간다(각각 tier=="pass" 조건, passed_results 필터링 참고).
+        tier = "pass" if comp["composite"] >= BOTTOM_SCORE_THRESHOLD else "watch"
 
         # --- 턴어라운드 신호 7개(게이트 판정용 5개 + 참고용 2개): "실제로 방향을
         # 틀었는지"만 본다 (바닥 신호와 끝까지 분리) ---
@@ -923,10 +929,14 @@ def run():
         flow_confirmed = any(
             ts.get(k) is not None and ts[k] >= TURNAROUND_STRONG_THRESHOLD for k in FLOW_GROUP
         )
-        status = "confirmed_turnaround" if (price_confirmed and flow_confirmed) else "watching"
+        # tier=="watch"(52~60 참고분)는 통과선을 안 넘었으니 confirmed_turnaround로
+        # 표시하지 않는다 — 그 라벨은 "이미 바닥 통과선을 넘은 것 중 반전까지 확인"을
+        # 뜻해서 참고분에 붙이면 화면에서 오해를 준다(요청: "참고분을 confirmed_turnaround
+        # 판정...에 넣지 말 것").
+        status = "confirmed_turnaround" if (tier == "pass" and price_confirmed and flow_confirmed) else "watching"
 
         item = {
-            "ticker": tkr, "name": name,
+            "ticker": tkr, "name": name, "tier": tier,
             "score": comp["composite"], "n_signals": comp["n_signals_used"],
             "breakdown": comp["breakdown"],
             "raw": raw,
@@ -953,19 +963,26 @@ def run():
     print(f"   [진단:이상치] 총 {outlier_count}개 종목이 생존 게이트 통과 종목 중 60일 +100% 이상")
     print(f"   [진단:분할의심] 총 {split_flag_count}개 종목이 ±30% 필터를 뚫은 잔존 분할/증자 의심"
           f"(relative_strength/ma_breakout/short_term_breakout/rsi_reversal/macd_cross None 처리됨)")
-    n_confirmed = sum(1 for r in results if r["status"] == "confirmed_turnaround")
-    print(f"   [진단:턴어라운드] 바닥 60점 이상 {len(results)}개 중 confirmed_turnaround {n_confirmed}개, "
-          f"watching {len(results) - n_confirmed}개")
+    # 통과 통계(scored/confirmed_turnaround)는 예전처럼 tier=="pass"(바닥 60점 이상)만
+    # 센다 — 52~60 참고분은 화면 노출용으로 results에 같이 담기지만 이 통계엔 안 들어간다.
+    passed_results = [r for r in results if r["tier"] == "pass"]
+    n_confirmed = sum(1 for r in passed_results if r["status"] == "confirmed_turnaround")
+    print(f"   [진단:턴어라운드] 바닥 60점 이상 {len(passed_results)}개 중 confirmed_turnaround {n_confirmed}개, "
+          f"watching {len(passed_results) - n_confirmed}개")
+    print(f"   [진단:참고분] 52~60점 참고 후보(화면 노출용, 통과 통계 미포함) "
+          f"{len(results) - len(passed_results)}개")
 
-    # confirmed_turnaround를 먼저, 그 다음 watching — 각 그룹 내에서는 바닥 점수 내림차순
-    results.sort(key=lambda x: (x["status"] != "confirmed_turnaround", -x["score"]))
+    # 점수 내림차순 최대 TOP_N개 — 통과분(항상 참고분보다 점수 높음)이 먼저 채워지고,
+    # 통과분이 TOP_N 미만이면 참고분이 점수순으로 그 아래를 채운다(52점 미만은 애초에
+    # results에 없으니 하드컷 자동 유지).
+    results.sort(key=lambda x: -x["score"])
     top = results[:TOP_N]
 
     out = {
         "generated_at": dt.datetime.now().isoformat(timespec="minutes"),
         "as_of_date": latest_date,
         "universe_size": len(universe),
-        "scored": len(results),
+        "scored": len(passed_results),
         "params": {
             "ohlcv_lookback": OHLCV_LOOKBACK_DAYS, "accum_window": ACCUM_WINDOW_DAYS,
             "min_market_cap": MIN_MARKET_CAP, "min_trading_value": MIN_AVG_TRADING_VALUE,
@@ -976,7 +993,8 @@ def run():
     }
     with open("results.json", "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
-    print(f"완료: {len(results)}개 채점, 상위 {len(top)}개 저장. ({time.time()-t0:.0f}s)")
+    print(f"완료: 통과 {len(passed_results)}개 채점(참고분 {len(results) - len(passed_results)}개 별도), "
+          f"화면 {len(top)}개 저장. ({time.time()-t0:.0f}s)")
 
 
 if __name__ == "__main__":
