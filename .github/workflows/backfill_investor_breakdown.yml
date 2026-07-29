@@ -64,8 +64,19 @@ jobs:
           while IFS=, read -r CSTART CEND; do
             echo "=== 청크 $CSTART ~ $CEND ==="
             INCLUDES=$(python list_backfill_dates.py "$CSTART" "$CEND" "daily_investor_flow")
-            git lfs pull --include="$INCLUDES" || true
-            git lfs pull --include="$INCLUDES"
+            # git lfs pull --include=이 요청한 파일을 전부 못 받아올 때가 실제로
+            # 있었다(2026-07 확인 — 21개 중 1개만 받아진 채 조용히 "완료"됨, git-lfs
+            # 자체는 에러를 안 냄). "받았다고 믿기"가 아니라 직접 검증해서 안 된
+            # 파일만 다시 요청한다.
+            PULL_TARGET="$INCLUDES"
+            for i in 1 2 3; do
+              git lfs pull --include="$PULL_TARGET" || true
+              read -r N_STUB STUB_LIST <<< "$(python count_lfs_stubs.py "$INCLUDES" | tr '\n' ' ')"
+              echo "  LFS pull 시도 $i/3: 미확보 파일 ${N_STUB}개"
+              if [ "$N_STUB" = "0" ]; then break; fi
+              PULL_TARGET="$STUB_LIST"
+              sleep 5
+            done
 
             # exit 3 = pykrx 임포트 실패(일시적 KRX 접속 문제로 추정, 데이터 문제
             # 아님) — 이 경우만 짧게 재시도한다. exit 1(대조 불일치)은 재시도 없이
