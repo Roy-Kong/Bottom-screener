@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>역헤드앤숄더 스크리너</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg:#0a0f1c; --panel:#111a2e; --border:#24304b; --text:#e6edf7; --muted:#9fb0d0;
+    --accent:#4dd0e1; --pos:#4ade80; --neg:#f87171; --warn:#facc15;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+    font-size: 14px;
+  }
+  header {
+    padding: 18px 28px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  header h1 { font-size: 18px; margin: 0; color: var(--text); }
+  header .sub { color: var(--muted); font-size: 12px; }
+  main { padding: 24px 28px; max-width: 1280px; margin: 0 auto; }
+  .grid { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px; margin-bottom: 20px;
+  }
+  .panel h2 { font-size: 14px; margin: 0 0 14px; color: var(--accent); font-weight: 600; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .field input[type=text], .field input[type=number], .field input[type=date], .field select {
+    width: 100%; background: #0d1424; border: 1px solid var(--border); color: var(--text);
+    padding: 7px 9px; border-radius: 6px; font-size: 13px;
+  }
+  .checks { display: flex; gap: 14px; flex-wrap: wrap; }
+  .checks label { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text); }
+  button {
+    background: var(--accent); color: #0a0f1c; border: none; border-radius: 6px;
+    padding: 9px 16px; font-weight: 600; cursor: pointer; font-size: 13px;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button.secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .status-line { font-size: 12px; color: var(--muted); margin-top: 10px; min-height: 16px; }
+  .warn-box {
+    background: rgba(250,204,21,0.08); border: 1px solid rgba(250,204,21,0.3); color: var(--warn);
+    border-radius: 6px; padding: 8px 10px; font-size: 11.5px; margin-bottom: 12px; line-height: 1.5;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { padding: 7px 9px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 500; position: sticky; top: 0; background: var(--panel); }
+  tbody tr:hover { background: rgba(255,255,255,0.03); }
+  .pos { color: var(--pos); } .neg { color: var(--neg); }
+  .tag { display:inline-block; padding:2px 7px; border-radius: 10px; font-size: 10.5px; font-weight:600; }
+  .tag-breakout { background: rgba(74,222,128,0.15); color: var(--pos); }
+  .tag-retest { background: rgba(250,204,21,0.15); color: var(--warn); }
+  .tag-forming { background: rgba(159,176,208,0.15); color: var(--muted); }
+  .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 10px; margin-bottom: 16px; }
+  .stat-card { background: #0d1424; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .stat-card .k { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .stat-card .v { font-size: 17px; font-weight: 700; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+  .tabs button { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+  .tabs button.active { background: var(--accent); color: #0a0f1c; border-color: var(--accent); }
+  .table-scroll { max-height: 480px; overflow: auto; }
+  canvas { width: 100%; height: 240px; }
+  .section-title { font-size: 13px; color: var(--muted); margin: 18px 0 8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>역헤드앤숄더(Inverse H&amp;S) 스크리너</h1>
+  <span class="sub">바닥스크리너와 독립 · 역헤드앤숄더 패턴 단독 스크리닝 + 수익률 시뮬레이션</span>
+</header>
+<main>
+  <div class="tabs">
+    <button id="tab-scan" class="active" onclick="switchTab('scan')">실시간 스캔</button>
+    <button id="tab-sim" onclick="switchTab('sim')">수익률 시뮬레이션</button>
+  </div>
+
+  <!-- ================= 스캔 탭 ================= -->
+  <div id="view-scan" class="grid">
+    <div>
+      <div class="panel">
+        <h2>스캔 조건</h2>
+        <div class="field">
+          <label>기준일(비우면 DB 최신일)</label>
+          <input type="text" id="scan-asof" placeholder="YYYYMMDD">
+        </div>
+        <div class="field">
+          <label>최소 점수</label>
+          <input type="number" id="scan-minscore" value="50" step="1">
+        </div>
+        <div class="field">
+          <label>상태</label>
+          <div class="checks">
+            <label><input type="checkbox" class="scan-status" value="forming" checked> forming</label>
+            <label><input type="checkbox" class="scan-status" value="retest" checked> retest</label>
+            <label><input type="checkbox" class="scan-status" value="breakout" checked> breakout</label>
+          </div>
+        </div>
+        <button id="btn-scan" onclick="runScan()">스캔 실행</button>
+        <div class="status-line" id="scan-status-line"></div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <h2>검출 결과 <span id="scan-count" class="sub" style="color:var(--muted)"></span></h2>
+        <div class="table-scroll">
+          <table id="scan-table">
+            <thead><tr>
+              <th>종목</th><th>상태</th><th>점수</th><th>LS일</th><th>HEAD일</th><th>RS일</th>
+              <th>돌파일</th><th>현재가</th><th>목표가</th><th>손절가</th><th>RR</th><th>거래대금비</th><th>갭경고</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 시뮬레이션 탭 ================= -->
+  <div id="view-sim" class="grid" style="display:none">
+    <div>
+      <div class="panel">
+        <h2>시뮬레이션 조건</h2>
+        <div class="field"><label>시작일</label><input type="text" id="sim-start" placeholder="YYYYMMDD"></div>
+        <div class="field"><label>종료일</label><input type="text" id="sim-end" placeholder="YYYYMMDD"></div>
+        <div class="field">
+          <label>진입 상태(이 상태로 처음 도달한 날 다음날 시가 매수)</label>
+          <div class="checks">
+            <label><input type="checkbox" class="sim-status" value="breakout" checked> breakout</label>
+            <label><input type="checkbox" class="sim-status" value="retest"> retest</label>
+          </div>
+        </div>
+        <div class="field"><label>최소 점수</label><input type="number" id="sim-minscore" value="50" step="1"></div>
+        <div class="field"><label>동시보유 슬롯 수</label><input type="number" id="sim-slots" value="10" step="1"></div>
+        <div class="field"><label>최대 보유 영업일(만기청산)</label><input type="number" id="sim-maxhold" value="60" step="1"></div>
+        <div class="field">
+          <label>유동성 상위 N종목만(속도용, 비우면 전종목)</label>
+          <input type="number" id="sim-topn" value="800" step="50">
+        </div>
+        <div class="warn-box">
+          상위 N종목 제한은 소형주를 배제해 전략 성격을 바꾼다. 전종목(비움) 스캔은
+          기간이 길수록 수 분~수십 분이 걸릴 수 있다 — 진행 상황은 아래 상태줄에 표시된다.
+        </div>
+        <button id="btn-sim" onclick="runSim()">시뮬레이션 실행</button>
+        <div class="status-line" id="sim-status-line"></div>
+      </div>
+    </div>
+    <div>
+      <div class="panel" id="sim-results" style="display:none">
+        <h2>결과 요약</h2>
+        <div class="stat-cards" id="sim-stat-cards"></div>
+        <div class="section-title">자산 곡선</div>
+        <canvas id="equity-canvas" width="900" height="240"></canvas>
+
+        <div class="section-title">청산 사유별</div>
+        <table id="sim-reason-table"><thead><tr><th>사유</th><th>건수</th><th>승률</th><th>평균수익률</th></tr></thead><tbody></tbody></table>
+
+        <div class="section-title">진입 상태별</div>
+        <table id="sim-status-table"><thead><tr><th>진입상태</th><th>건수</th><th>승률</th><th>평균수익률</th><th>손익합</th></tr></thead><tbody></tbody></table>
+
+        <div class="section-title">거래 로그</div>
+        <div class="table-scroll">
+          <table id="sim-trades-table">
+            <thead><tr>
+              <th>종목</th><th>진입상태</th><th>신호일</th><th>매수일</th><th>매수가</th>
+              <th>매도일</th><th>매도가</th><th>사유</th><th>수익률</th><th>손익</th><th>점수</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+function switchTab(name) {
+  document.getElementById('view-scan').style.display = name === 'scan' ? 'grid' : 'none';
+  document.getElementById('view-sim').style.display = name === 'sim' ? 'grid' : 'none';
+  document.getElementById('tab-scan').classList.toggle('active', name === 'scan');
+  document.getElementById('tab-sim').classList.toggle('active', name === 'sim');
+}
+
+async function pollJob(jobId, onTick) {
+  while (true) {
+    const res = await fetch('/api/job?id=' + jobId);
+    const job = await res.json();
+    if (job.status === 'running') {
+      if (onTick) onTick();
+      await new Promise(r => setTimeout(r, 1500));
+      continue;
+    }
+    return job;
+  }
+}
+
+function fmtPct(x) { return x === null || x === undefined ? '-' : (x * 100).toFixed(2) + '%'; }
+function fmtNum(x) { return x === null || x === undefined ? '-' : Number(x).toLocaleString(); }
+
+// ---------------- 스캔 ----------------
+async function runScan() {
+  const btn = document.getElementById('btn-scan');
+  const lineEl = document.getElementById('scan-status-line');
+  btn.disabled = true;
+  lineEl.textContent = '스캔 시작 중...';
+  const statuses = Array.from(document.querySelectorAll('.scan-status:checked')).map(el => el.value);
+  const body = {
+    as_of: document.getElementById('scan-asof').value || null,
+    min_score: parseFloat(document.getElementById('scan-minscore').value),
+    statuses,
+  };
+  try {
+    const startRes = await fetch('/api/scan/start', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const { job_id } = await startRes.json();
+    let ticks = 0;
+    const job = await pollJob(job_id, () => { ticks++; lineEl.textContent = `스캔 진행 중... (${ticks * 1.5}s경과, 전종목 스캔은 1~2분 소요)`; });
+    if (job.status === 'error') { lineEl.textContent = '오류: ' + job.error; btn.disabled = false; return; }
+    renderScan(job.result);
+    lineEl.textContent = `완료 — ${job.result.n}건 검출`;
+  } catch (e) {
+    lineEl.textContent = '요청 실패: ' + e;
+  }
+  btn.disabled = false;
+}
+
+function renderScan(result) {
+  const tbody = document.querySelector('#scan-table tbody');
+  tbody.innerHTML = '';
+  document.getElementById('scan-count').textContent = `(${result.n}건)`;
+  for (const p of result.patterns) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${p.ticker}</td>
+      <td><span class="tag tag-${p.status}">${p.status}</span></td>
+      <td>${p.score?.toFixed(1) ?? '-'}</td>
+      <td>${p.d_ls}</td><td>${p.d_head}</td><td>${p.d_rs}</td><td>${p.d_breakout ?? '-'}</td>
+      <td>${fmtNum(p.close)}</td><td>${fmtNum(p.target)}</td><td>${fmtNum(p.stop)}</td>
+      <td>${p.rr ?? '-'}</td><td>${p.breakout_vol_ratio ?? '-'}</td>
+      <td>${p.gap_warning ? '⚠' : ''}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+// ---------------- 시뮬레이션 ----------------
+async function runSim() {
+  const btn = document.getElementById('btn-sim');
+  const lineEl = document.getElementById('sim-status-line');
+  btn.disabled = true;
+  lineEl.textContent = '시뮬레이션 시작 중...';
+  const statuses = Array.from(document.querySelectorAll('.sim-status:checked')).map(el => el.value);
+  const topnRaw = document.getElementById('sim-topn').value;
+  const body = {
+    start: document.getElementById('sim-start').value,
+    end: document.getElementById('sim-end').value,
+    statuses,
+    min_score: parseFloat(document.getElementById('sim-minscore').value),
+    max_slots: parseInt(document.getElementById('sim-slots').value),
+    max_hold_trading_days: parseInt(document.getElementById('sim-maxhold').value),
+    top_n_by_liquidity: topnRaw ? parseInt(topnRaw) : null,
+  };
+  try {
+    const startRes = await fetch('/api/simulate/start', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const { job_id } = await startRes.json();
+    let ticks = 0;
+    const job = await pollJob(job_id, () => { ticks++; lineEl.textContent = `시뮬레이션 진행 중... (${ticks * 1.5}s경과, 기간이 길수록 오래 걸림)`; });
+    if (job.status === 'error') { lineEl.textContent = '오류: ' + job.error; btn.disabled = false; return; }
+    renderSim(job.result);
+    lineEl.textContent = `완료 — 거래 ${job.result.stats.n_trades ?? 0}건`;
+  } catch (e) {
+    lineEl.textContent = '요청 실패: ' + e;
+  }
+  btn.disabled = false;
+}
+
+function renderSim(result) {
+  document.getElementById('sim-results').style.display = 'block';
+  const s = result.stats;
+  const cards = document.getElementById('sim-stat-cards');
+  const items = [
+    ['거래건수', s.n_trades ?? 0],
+    ['승률', fmtPct(s.win_rate)],
+    ['평균수익률', fmtPct(s.avg_return_pct)],
+    ['총수익률', fmtPct(s.total_return_pct)],
+    ['최대낙폭', fmtPct(s.max_drawdown_pct)],
+    ['최종자산', fmtNum(s.final_equity)],
+  ];
+  cards.innerHTML = items.map(([k, v]) => `<div class="stat-card"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+
+  drawEquity(result.equity);
+
+  const reasonBody = document.querySelector('#sim-reason-table tbody');
+  reasonBody.innerHTML = '';
+  for (const [reason, r] of Object.entries(s.by_sell_reason || {})) {
+    reasonBody.innerHTML += `<tr><td style="text-align:left">${reason}</td><td>${r.n}</td><td>${fmtPct(r.win_rate)}</td><td class="${r.avg_return_pct>=0?'pos':'neg'}">${fmtPct(r.avg_return_pct)}</td></tr>`;
+  }
+  const statusBody = document.querySelector('#sim-status-table tbody');
+  statusBody.innerHTML = '';
+  for (const [status, r] of Object.entries(s.by_entry_status || {})) {
+    statusBody.innerHTML += `<tr><td style="text-align:left">${status}</td><td>${r.n}</td><td>${fmtPct(r.win_rate)}</td><td class="${r.avg_return_pct>=0?'pos':'neg'}">${fmtPct(r.avg_return_pct)}</td><td>${fmtNum(r.total_pnl)}</td></tr>`;
+  }
+
+  const tradesBody = document.querySelector('#sim-trades-table tbody');
+  tradesBody.innerHTML = '';
+  for (const t of result.trades) {
+    tradesBody.innerHTML += `<tr>
+      <td>${t.ticker}</td><td><span class="tag tag-${t.entry_status}">${t.entry_status}</span></td>
+      <td>${t.signal_date}</td><td>${t.buy_date}</td><td>${fmtNum(t.buy_price)}</td>
+      <td>${t.sell_date ?? '-'}</td><td>${fmtNum(t.sell_price)}</td><td>${t.sell_reason ?? '-'}</td>
+      <td class="${t.return_pct>=0?'pos':'neg'}">${fmtPct(t.return_pct)}</td><td>${fmtNum(t.pnl)}</td><td>${t.score?.toFixed(1) ?? '-'}</td>
+    </tr>`;
+  }
+}
+
+function drawEquity(equity) {
+  const canvas = document.getElementById('equity-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  if (!equity || equity.length === 0) return;
+  const values = equity.map(e => e.equity);
+  const min = Math.min(...values), max = Math.max(...values);
+  const pad = 20;
+  const xStep = (W - pad * 2) / Math.max(equity.length - 1, 1);
+  const yScale = (H - pad * 2) / Math.max(max - min, 1);
+
+  ctx.strokeStyle = '#24304b';
+  ctx.beginPath();
+  ctx.moveTo(pad, H - pad); ctx.lineTo(W - pad, H - pad);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#4dd0e1';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  equity.forEach((e, i) => {
+    const x = pad + i * xStep;
+    const y = H - pad - (e.equity - min) * yScale;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  ctx.fillStyle = '#9fb0d0';
+  ctx.font = '10px sans-serif';
+  ctx.fillText(fmtNum(max), 4, pad);
+  ctx.fillText(fmtNum(min), 4, H - pad);
+}
+</script>
+</body>
+</html>
