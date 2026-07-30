@@ -113,42 +113,40 @@ def is_real_sqlite_file(path: Path) -> bool:
 
 def table_collected(date: str, table: str) -> bool:
     """이 (date, table) 조합이 이미 수집 시도됐는지(휴장일이라 0건이어도 '시도함'
-       으로 간주 — 재시도 방지). collected_marker가 있는 파일(테이블 선택형
-       백필로 만들어진 파일)은 그 마커로 정확히 판단한다. collected_marker가
-       이 날짜에 대해 전혀 없는 파일(2022~ 전체 4테이블 백필처럼, 이 기능이
-       생기기 전에 항상 4개를 한 번에 통째로 수집하던 구버전 결과물)은 존재
-       자체를 '표준 4개 테이블 전부 수집 완료'로 간주한다 — 안 그러면 기존
-       완료 구간을 이 프레임으로 다시 돌릴 때 전부 재수집하게 된다."""
+       으로 간주 — 재시도 방지). 이 테이블 전용 마커가 있으면 그걸로 확정 판단한다.
+       마커가 없으면(2022~ 전체 4테이블 백필처럼 마커 시스템이 생기기 전에 채워진
+       구버전 결과물 포함) 그 테이블에 실제 데이터가 있는지 직접 확인한다.
+
+       2026-07 두 번 발견된 버그: 예전엔 "이 날짜에 아무 마커도 없으면 표준 4개
+       테이블 전부 완료"로 간주했는데, daily_prices_ohlc(backfill_ohlc.py) 같은
+       비표준 마커든, daily_short(backfill_short_weekly.yml) 같은 다른 표준
+       테이블의 정상 마커든 — 이 날짜에 "어떤" 마커라도 하나 있으면 그 폴백이
+       안 걸려서, 정작 마커 없이 레거시로 채워진 daily_investor_flow를 "미수집"
+       으로 오판했다(실제로는 데이터가 있었음). 다른 테이블 마커 유무와 완전히
+       무관하게, 이 테이블 자체를 직접 확인하도록 바꿔서 근본적으로 막는다."""
     path = daily_db_path(date)
     if not path.exists():
         return False
     if not is_real_sqlite_file(path):
-        # 포인터 스텁·0바이트·손상 파일 — 아래 except 분기와 별개로, marker_count==0
-        # "레거시 완료" 폴백이 0바이트 파일에서 잘못 발동하는 걸 막는 명시적 1차 방어선.
         return False
     conn = sqlite3.connect(str(path))
     try:
         conn.execute(
             "CREATE TABLE IF NOT EXISTS collected_marker "
             "(date TEXT NOT NULL, table_name TEXT NOT NULL, PRIMARY KEY (date, table_name))")
-        # "레거시 완료" 폴백은 표준 4개 테이블(ALL_TABLES) 마커의 존재 여부만 봐야
-        # 한다 — backfill_ohlc.py처럼 표준 4개와 무관한 marker_name(예:
-        # "daily_prices_ohlc")도 이 테이블에 같이 쓰는데, 그런 비표준 마커가
-        # 하나라도 있으면 marker_count>0이 돼서 폴백이 안 걸리고, 정작
-        # daily_investor_flow 같은 표준 테이블은 마커가 없다는 이유로 "미수집"
-        # 오판이 났다(2026-07 실제 발견: 20220104.db가 daily_prices_ohlc 마커만
-        # 있고 daily_investor_flow는 애초에 구버전이라 마커가 없어서 재수집 대상으로
-        # 잘못 판정됨). ALL_TABLES로만 필터링해서 이 오염을 막는다.
-        placeholders = ",".join("?" * len(ALL_TABLES))
-        marker_count = conn.execute(
-            f"SELECT COUNT(*) FROM collected_marker WHERE date=? AND table_name IN ({placeholders})",
-            (date, *ALL_TABLES)).fetchone()[0]
-        if marker_count == 0:
-            return table in ALL_TABLES
         row = conn.execute(
             "SELECT 1 FROM collected_marker WHERE date=? AND table_name=? LIMIT 1",
             (date, table)).fetchone()
-        return row is not None
+        if row is not None:
+            return True
+        # 마커 없음 — 이 테이블에 실제 행이 있는지 직접 확인(레거시 백필 등).
+        # 0건이면 "휴장이라 원래 없음"과 "아직 미수집"을 마커 없이는 구분 못 하니
+        # 미수집으로 본다 — 재수집해도 휴장이면 여전히 0건이라 손해가 없다.
+        try:
+            n = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+        except sqlite3.OperationalError:
+            return False
+        return n > 0
     except sqlite3.DatabaseError:
         # 커밋은 됐지만 아직 실제 LFS 내용을 받아오지 않은 포인터 스텁 상태(git lfs
         # pull 없이 checkout만 한 경우). 내용을 열어볼 수 없으니 "미수집"으로 보고
