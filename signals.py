@@ -128,6 +128,16 @@ def score_volume_dryness(recent6to25_median_vol: float, past120_median_vol: floa
 # percentile 전환)과는 무관한 별개 장치라 그대로 유지.
 ACCUM_QUIET_FLOOR = 0.7
 
+# raw% 하한 게이트 임계값 — 순매수/시총이 이 이하면 "자기 히스토리 대비로만 강한"
+# percentile 인플레이션으로 간주해 감쇠. 2026-07 43앵커 스윕(2023-01~2026-06,
+# 약세/횡보/강세 국면 포함) 결과: 이 값에서 정당대형주(percentile 높고 raw도
+# 하위30% 밖) 유지율 median 88%(레짐별로도 촘촘, 약세 83~90%·횡보 71~100%·
+# 강세 54~100%) + 인플레(percentile 높은데 raw 하위30% 미만) median 75% 차단
+# (약세·횡보 국면 90~100%, 강세 국면은 median 92%지만 앵커별 편차 큼 — 이
+# 도구가 원래 하락장/박스권 바닥 탐지에 최적화된 성격과 일치해 감수하기로 함).
+# 국면별로 하한을 다르게 주는 안은 과최적화 위험이 커서 안 함 — 단일 값 유지.
+RAW_FLOOR_PCT = 0.0035
+
 
 def score_accumulation(net_buy_value_20d: float, float_market_cap: float,
                        price_change_pct_20d: float, intensity_history: list[float]) -> float | None:
@@ -144,6 +154,17 @@ def score_accumulation(net_buy_value_20d: float, float_market_cap: float,
        다른 분위는 그대로 유지 — 부작용 없음). "그 종목치고 평소보다 강한
        매집인가"를 보므로 절대 규모가 아니라 상대적 강도를 보게 돼 시총 편향이
        사라진다.
+
+       그런데 percentile만으로는 그 종목이 원래 매집이 계속 시원찮았으면 "시원찮은
+       걸로도" 고득점이 나가는 인플레이션이 있다(2026-07 진단, 신규 통과 종목 raw
+       intensity median이 기존 통과 종목의 1/3.4). RAW_FLOOR_PCT(순매수/시총) 미만이면
+       raw_gate로 선형 감쇠해 완화한다 — 절벽이 아니라 선형인 이유는 임계값 바로
+       근처에서 점수가 뚝 끊기면 그 경계의 노이즈(하루 순매수 변동)에 과민해지기
+       때문. 대형주는 절대 순매수액이 커도 시총 대비 비율(raw%)이 낮다는 우려가
+       있었지만, 실측(43앵커 스윕)에서는 절대금액 하한보다 raw% 하한이 오히려 더
+       낫다고 확인됨 — raw%와 인플레 종목 raw% 사이 꼬리 겹침이, 절대금액과 인플레
+       종목 절대금액 사이 꼬리 겹침보다 작다(진짜 대형주 매집은 raw%로도 대개
+       RAW_FLOOR_PCT를 넘는다).
 
        float_market_cap은 이름과 달리 현재 '유통'시가총액이 아니라 전체 시가총액이다
        (daily_prices.market_cap, point-in-time) — 유통비율 데이터가 없어 이번엔
@@ -164,7 +185,8 @@ def score_accumulation(net_buy_value_20d: float, float_market_cap: float,
         return None
     dp = abs(price_change_pct_20d)
     quiet = 1.0 if dp <= 5 else _clamp(1 - (dp - 5) / 15, 0, 1)  # 5%↑ 움직이면 감쇠, 20%↑면 0
-    return _clamp(base * (ACCUM_QUIET_FLOOR + (1 - ACCUM_QUIET_FLOOR) * quiet))
+    raw_gate = _clamp(intensity / RAW_FLOOR_PCT, 0.0, 1.0)  # RAW_FLOOR_PCT 이상=1.0, 그 아래는 비례 감쇠
+    return _clamp(base * (ACCUM_QUIET_FLOOR + (1 - ACCUM_QUIET_FLOOR) * quiet) * raw_gate)
 
 
 # score_short_covering 곡선 파라미터 (실측 공매도잔고 분포 리포트 기반, 튜닝 대상):
