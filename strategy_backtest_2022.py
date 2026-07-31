@@ -207,6 +207,8 @@ def screen_and_score(anchor_date: dt.date, asof: str, use_cache: bool = True) ->
                 asof, universe, ticker_market, sector_map, sector_names,
                 market_idx_by_date, sector_idx_by_date)
 
+    accum_intensity_hist, _ = dbr.load_signal_history_from_db(anchor_date)
+
     out = []
     n_len_ok = 0  # 관찰용(2026-07 Group B 진단): 유니버스 대비 이 비율이 비정상적으로
                   # 낮으면 원인 불명의 간헐적 I/O 실패 의심 — 재시도/스킵 처리는 하지
@@ -264,7 +266,8 @@ def screen_and_score(anchor_date: dt.date, asof: str, use_cache: bool = True) ->
 
         bottom_scores = {
             "volume_dryness": sg.score_volume_dryness(rec6to25, past120),
-            "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100),
+            "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100,
+                                                   accum_intensity_hist.get(tkr, [])),
             "short_covering": sg.score_short_covering(short_cur.get(tkr, 0.0), short_max.get(tkr, 0.0)),
             "pbr_low": None if capital_eroding else sg.score_pbr_low(cur_pbr, pbr_series),
             "dividend_yield": sg.score_dividend_yield(cur_div, div_series, cur_dps, cur_eps, scr.had_dividend_cut(fh)),

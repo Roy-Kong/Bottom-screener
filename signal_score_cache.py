@@ -24,6 +24,14 @@ from pathlib import Path
 
 CACHE_DIR = Path(__file__).parent / "cache" / "daily_signal_scores"
 
+# v2(2026-07): score_accumulation/score_volume_dryness가 절대문턱(_lin) 방식에서
+# 자기 히스토리 percentile 방식으로 바뀌어, 그 이전에 저장된 raw 점수(버전 표시가
+# 아예 없는 v1, bare list)는 stale하다 — "한 번 계산되면 안 바뀐다"는 이 캐시의
+# 원래 전제가 신호 공식 자체가 바뀌는 경우엔 성립하지 않으므로, 스키마 버전을 찍어
+# v1 파일은 조용히 무시(캐시미스로 처리해 재계산)한다. v1 파일 자체는 지우지 않음
+# (필요하면 나중에 별도로 정리 — 지금은 정합성만 확보).
+CACHE_SCHEMA_VERSION = 2
+
 
 def _path(date: str) -> Path:
     return CACHE_DIR / f"{date}.json"
@@ -34,11 +42,15 @@ def save_day_scores(date: str, entries: list[dict]) -> None:
        "pbr_caution_sector":bool}, ...] — 그날 기본 게이트(생존게이트·거래대금·
        시총·PBR>0)를 통과한 전 종목(최종 65점 미달이어도 포함)."""
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    _path(date).write_text(json.dumps(entries, ensure_ascii=False), encoding="utf-8")
+    payload = {"schema_version": CACHE_SCHEMA_VERSION, "entries": entries}
+    _path(date).write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
 
 
 def load_day_scores(date: str) -> list[dict] | None:
     path = _path(date)
     if not path.exists():
         return None
-    return json.loads(path.read_text(encoding="utf-8"))
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(raw, list) or raw.get("schema_version") != CACHE_SCHEMA_VERSION:
+        return None  # 구버전(v1) 또는 스키마 불일치 — stale, 캐시미스로 재계산
+    return raw["entries"]

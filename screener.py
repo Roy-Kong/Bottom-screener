@@ -33,6 +33,7 @@ from pykrx_import import import_pykrx_stock
 stock = import_pykrx_stock()
 import signals as sg
 import explain as ex
+import db_reader as dr
 
 # ---------------- 설정 (백테스트로 조정할 파라미터) ----------------
 TARGET_MARKETS = ["KOSPI", "KOSDAQ"]
@@ -667,6 +668,10 @@ def run():
     print(f"   업종지수 {len(sector_codes_needed)}개 중 "
           f"{sum(1 for v in sector_idx_by_date.values() if v)}개 데이터 확보")
 
+    print("6c) 매집 자기 히스토리 수집(로컬 DB, percentile 정규화용)…")
+    accum_intensity_hist, _ = dr.load_signal_history_from_db(anchor)
+    print(f"   accumulation 히스토리 {len(accum_intensity_hist)}종목 확보")
+
     print("7) 채점(바닥 7개 + 턴어라운드 7개 신호, 그중 5개만 게이트 판정에 사용)…")
     results = []
     bench_kind_count = {"sector": 0, "market:1001": 0, "market:2001": 0}  # 진단: 벤치마크 종류 분포
@@ -802,7 +807,8 @@ def run():
         # --- 바닥 신호 7개: "매도세 소진·역사적으로 싸다"만 본다 ---
         scores = {
             "volume_dryness": sg.score_volume_dryness(rec6to25, past120),
-            "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100),
+            "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100,
+                                                   accum_intensity_hist.get(tkr, [])),
             "short_covering": sg.score_short_covering(short_cur.get(tkr), short_max.get(tkr)),
             "pbr_low": None if capital_eroding else sg.score_pbr_low(cur_pbr, pbr_series),
             "dividend_yield": sg.score_dividend_yield(cur_div, div_series, cur_dps, cur_eps, had_dividend_cut(fh)),

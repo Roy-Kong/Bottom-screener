@@ -79,6 +79,13 @@ def percentile_rank(history: list[float], value: float) -> float | None:
 
 
 # ---------- 개별 신호 ----------
+# 자기 히스토리 percentile 기반 신호(accumulation, 추후 volume_dryness도 동일 전환
+# 예정)가 쓰는 최소 히스토리 길이 — 이보다 짧으면(신규상장 등) percentile 자체가
+# 불안정해 신호를 아예 안 쓴다(None). 2026-07 진단에서 12개월 기준 결측률
+# 6.6~15.4% 확인, 그 정도는 감수.
+MIN_HISTORY_MONTHS = 12
+
+
 def score_volume_dryness(recent6to25_median_vol: float, past120_median_vol: float) -> float | None:
     """① 거래량 고갈. 최근 6~25일(가장 최근 5일 제외) 중앙값 / 과거 120일 중앙값.
        낮을수록 고점. 비율 1.0 이상 → 0점, 0.3 이하 → 100점.
@@ -94,11 +101,6 @@ def score_volume_dryness(recent6to25_median_vol: float, past120_median_vol: floa
     return _lin(ratio, 1.0, 0.3, 0.0, 100.0)
 
 
-# 만점(100) 인정 intensity 임계값. 2026-07 진단(41개 앵커, 순매수 종목 n=10,650)의
-# 실측 분포 p90=2.64%에서 도출 — 예전 0.02(2%)는 분모가 거래대금×50 근사치였을 때
-# 값이라 분모를 실제 시총으로 바꾸면서 재보정했다(눈대중 아님, 분포 기반).
-ACCUM_FULL_CREDIT_INTENSITY = 0.026
-
 # quiet(주가조용 승수, 0~1)의 최종 영향력 하한. 진단 결과 quiet의 원천(|20일
 # 주가변동률|)이 volatility_squeeze와 스피어만 ρ≈0.61로 상당 부분 겹치고
 # (volume_dryness와는 ρ≈0.14로 독립) — 즉 quiet가 주는 정보의 절반 이상은
@@ -106,28 +108,44 @@ ACCUM_FULL_CREDIT_INTENSITY = 0.026
 # base를 0까지 죽이는 곱셈 지배력(구간 [0,1])을 [ACCUM_QUIET_FLOOR,1.0]로 좁혔다
 # — quiet=0(20%+ 급변)이어도 매집강도의 70%는 인정한다. 강한 매집(base>70)이
 # 단기 주가 반응 때문에 통째로 0으로 죽던 문제(진단에서 1,087건 확인)를 없애면서,
-# volatility_squeeze와의 이중계산도 자연히 완화된다.
+# volatility_squeeze와의 이중계산도 자연히 완화된다. 시총편향 수정(2026-07,
+# percentile 전환)과는 무관한 별개 장치라 그대로 유지.
 ACCUM_QUIET_FLOOR = 0.7
 
 
 def score_accumulation(net_buy_value_20d: float, float_market_cap: float,
-                       price_change_pct_20d: float) -> float | None:
-    """③ 기관·외국인 매집. 20일 누적 순매수액 / 시가총액 = 강도. 주가가 조용할수록
-       (변동 작을수록) 가중 — 단, 이 가중은 최대 (1-ACCUM_QUIET_FLOOR)만큼의 보너스일
-       뿐 매집강도 자체를 0으로 죽이지 않는다(ACCUM_QUIET_FLOOR 주석 참고). 순매수
-       음수면 0.
+                       price_change_pct_20d: float, intensity_history: list[float]) -> float | None:
+    """③ 기관·외국인 매집. intensity = 20일 누적 순매수액/시가총액을 그 종목 "자기
+       히스토리"(intensity_history, 보통 과거 12~24개월 월별 표본) 대비 percentile로
+       정규화한다. 주가가 조용할수록(변동 작을수록) 가중 — 단, 이 가중은 최대
+       (1-ACCUM_QUIET_FLOOR)만큼의 보너스일 뿐 매집강도 자체를 0으로 죽이지 않는다
+       (ACCUM_QUIET_FLOOR 주석 참고). 순매수 음수면 0(percentile 계산 자체를 생략 —
+       순매도인데 히스토리상 "상대적으로 덜 판" 정도로 점수가 나가는 걸 막는다).
+
+       2026-07 결정: 예전엔 절대문턱(2.6%)을 썼는데, 초대형주는 시총이 워낙 커서
+       실제 상당한 순매수도 이 절대비율에 못 미쳐 구조적으로 0점에 깔리는 편향이
+       실측 확인됐다(시총 5분위 median: 대형주1.1점, percentile 전환 시 40.8점,
+       다른 분위는 그대로 유지 — 부작용 없음). "그 종목치고 평소보다 강한
+       매집인가"를 보므로 절대 규모가 아니라 상대적 강도를 보게 돼 시총 편향이
+       사라진다.
 
        float_market_cap은 이름과 달리 현재 '유통'시가총액이 아니라 전체 시가총액이다
        (daily_prices.market_cap, point-in-time) — 유통비율 데이터가 없어 이번엔
        전체 시총으로 근사한다. 지주사·재벌계열처럼 유통비율이 낮은 종목은 진짜
        매집강도가 여기 계산보다 더 셀 수 있다(분모 과대 → intensity 과소평가 방향의
-       한계, 별도 과제)."""
+       한계, 별도 과제).
+
+       intensity_history가 MIN_HISTORY_MONTHS 미만이면(신규상장 등) None(신호 미적용)."""
     if not _valid(net_buy_value_20d, float_market_cap, price_change_pct_20d) or float_market_cap <= 0:
         return None
     if net_buy_value_20d <= 0:
         return 0.0
-    intensity = net_buy_value_20d / float_market_cap        # 예: 0.026 = 시총의 2.6% 매집
-    base = _lin(intensity, 0.0, ACCUM_FULL_CREDIT_INTENSITY, 0.0, 100.0)
+    if len(intensity_history) < MIN_HISTORY_MONTHS:
+        return None
+    intensity = net_buy_value_20d / float_market_cap
+    base = percentile_rank(intensity_history, intensity)
+    if base is None:
+        return None
     dp = abs(price_change_pct_20d)
     quiet = 1.0 if dp <= 5 else _clamp(1 - (dp - 5) / 15, 0, 1)  # 5%↑ 움직이면 감쇠, 20%↑면 0
     return _clamp(base * (ACCUM_QUIET_FLOOR + (1 - ACCUM_QUIET_FLOOR) * quiet))
@@ -438,9 +456,10 @@ if __name__ == "__main__":
 
     # 시나리오 A: 교과서적 바닥 (하이닉스 2022 스타일)
     # 거래량 마름, 외국인 조용히 매집, 공매도 급감, PBR 최저, 지수보다 선방
+    accum_hist_a = [-0.005, 0.002, 0.008, 0.01, 0.015, -0.002, 0.005, 0.012, 0.018, 0.02, 0.007, 0.003]
     a = {
         "volume_dryness": score_volume_dryness(35, 100),          # ratio 0.35
-        "accumulation": score_accumulation(2.5e11, 1.0e13, 3.0),  # 2.5% 매집, 주가 +3% (조용)
+        "accumulation": score_accumulation(2.5e11, 1.0e13, 3.0, accum_hist_a),  # 2.5% 매집(히스토리 최고 수준), 주가 +3% (조용)
         "short_covering": score_short_covering(0.4, 1.0),         # 3개월 최고의 40%
         "pbr_low": score_pbr_low(0.9, [2.1, 1.8, 1.5, 1.2, 1.0, 0.95, 1.3, 2.0, 1.7, 1.1]),
         "dividend_yield": score_dividend_yield(5.0, [1.5, 2.0, 2.5, 3.0, 4.0, 5.0], dps=1000, eps=8000, had_dividend_cut=False),
@@ -455,7 +474,7 @@ if __name__ == "__main__":
     # 시나리오 B: 고점/과열 (테슬라 스타일 - 프레임 반대편)
     b = {
         "volume_dryness": score_volume_dryness(120, 100),         # 거래 오히려 증가
-        "accumulation": score_accumulation(-1e11, 1.0e13, 8.0),   # 순매도 + 주가 급등
+        "accumulation": score_accumulation(-1e11, 1.0e13, 8.0, []),   # 순매도 → 히스토리 무관하게 0점(short-circuit)
         "short_covering": score_short_covering(0.95, 1.0),        # 공매도 안 줄음
         "pbr_low": score_pbr_low(2.0, [2.1, 1.8, 1.5, 1.2, 1.0, 0.95, 1.3, 2.0, 1.7, 1.1]),
         "dividend_yield": score_dividend_yield(0.0, [], dps=0, eps=5000, had_dividend_cut=False),  # 무배당

@@ -121,6 +121,9 @@ def run_backtest(anchor_str: str, top_n: int = 10):
     sector_codes_needed = set(sector_map.values())
     sector_idx_by_date = scr.collect_sector_index_ohlcv(sector_codes_needed, ohlcv_dates[0], latest_date)
 
+    print("6c) 매집·거래량고갈 자기 히스토리 로딩… (DB, percentile 정규화용)")
+    accum_intensity_hist, _ = dbr.load_signal_history_from_db(anchor_date)
+
     print("7) 채점(바닥 7개 신호만, 생존 게이트 포함)…")
     results = []
     for tkr, name in universe.items():
@@ -175,7 +178,8 @@ def run_backtest(anchor_str: str, top_n: int = 10):
 
         scores = {
             "volume_dryness": sg.score_volume_dryness(rec6to25, past120),
-            "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100),
+            "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100,
+                                                   accum_intensity_hist.get(tkr, [])),
             "short_covering": sg.score_short_covering(short_cur.get(tkr, 0.0), short_max.get(tkr, 0.0)),
             "pbr_low": None if capital_eroding else sg.score_pbr_low(cur_pbr, pbr_series),
             "dividend_yield": sg.score_dividend_yield(cur_div, div_series, cur_dps, cur_eps, scr.had_dividend_cut(fh)),
@@ -308,6 +312,9 @@ def run_backtest_from_db(anchor_str: str, top_n: int = 10):
         print("6b) 업종지수 OHLCV 수집… (라이브 pykrx, DB 커버리지 밖)")
         sector_idx_by_date = scr.collect_sector_index_ohlcv(sector_codes_needed, ohlcv_dates[0], latest_date)
 
+    print("6c) 매집·거래량고갈 자기 히스토리 로딩… (DB, percentile 정규화용)")
+    accum_intensity_hist, _ = dbr.load_signal_history_from_db(anchor_date)
+
     print("7) 채점(바닥 7개 신호만, 생존 게이트 포함)…")
     results = []
     for tkr, name in universe.items():
@@ -362,7 +369,8 @@ def run_backtest_from_db(anchor_str: str, top_n: int = 10):
 
         scores = {
             "volume_dryness": sg.score_volume_dryness(rec6to25, past120),
-            "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100),
+            "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100,
+                                                   accum_intensity_hist.get(tkr, [])),
             "short_covering": sg.score_short_covering(short_cur.get(tkr, 0.0), short_max.get(tkr, 0.0)),
             "pbr_low": None if capital_eroding else sg.score_pbr_low(cur_pbr, pbr_series),
             "dividend_yield": sg.score_dividend_yield(cur_div, div_series, cur_dps, cur_eps, scr.had_dividend_cut(fh)),

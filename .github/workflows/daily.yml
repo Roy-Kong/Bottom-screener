@@ -18,6 +18,33 @@ jobs:
           python-version: "3.11"
       - name: Install deps
         run: pip install -r requirements.txt
+      - name: Pull trailing history DB files (LFS)
+        # accumulation/volume_dryness가 종목 자기 히스토리(최근 24개월치 월별 표본,
+        # db_reader.SIGNAL_HISTORY_MONTHS) 대비 percentile로 채점되도록 바뀌면서
+        # (2026-07), screener.py가 이제 매일 실행마다 data/*.db 과거 파일을 읽는다.
+        # actions/checkout은 기본적으로 LFS 실체가 아니라 포인터 스텁만 받아오므로,
+        # 이 pull이 없으면 히스토리가 항상 빈 채로(포인터 스텁 → is_real_sqlite_file
+        # 실패 → 조용히 빈 리스트) 로드돼 두 신호가 매일 None으로 나오는 심각한
+        # 무음 회귀가 생긴다. 여기서 필요한 트레일링 구간(24개월+120영업일 버퍼,
+        # 여유 있게 970일)만 월별 와일드카드로 골라 받는다 — 전체 히스토리를
+        # 매일 통째로 받으면 낭비가 크다.
+        run: |
+          git lfs install --local
+          python - <<'PY'
+          import datetime as dt
+          end = dt.date.today()
+          start = end - dt.timedelta(days=970)
+          months = set()
+          d = start
+          while d <= end:
+              months.add(d.strftime("%Y%m"))
+              d += dt.timedelta(days=1)
+          patterns = ",".join(f"data/{m}*.db" for m in sorted(months))
+          with open("lfs_include.txt", "w") as f:
+              f.write(patterns)
+          PY
+          git lfs pull --include="$(cat lfs_include.txt)"
+          rm -f lfs_include.txt
       - name: Run screener
         env:
           KRX_ID: ${{ secrets.KRX_ID }}

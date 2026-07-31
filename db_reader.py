@@ -19,6 +19,7 @@ db_reader.py — data/YYYYMMDD.db(하루 1파일)들에서 backtest.py가 쓰는
 from __future__ import annotations
 import sqlite3
 import datetime as dt
+import statistics
 
 import screener as scr
 import db
@@ -168,6 +169,157 @@ def load_accumulation_from_db(dates: list[str]) -> dict[str, float]:
                 continue
             total[tkr] = total.get(tkr, 0.0) + val
     return total
+
+
+SIGNAL_HISTORY_MONTHS = 24  # accumulation/volume_dryness 자기 히스토리 percentile용 표본 개월수
+
+
+def _trading_dates_window_from_db(end: dt.date, calendar_days_back: int) -> list[str]:
+    """end 이전 calendar_days_back일 이내, 실제 거래(daily_prices에 행이 있음)가
+       있었던 날짜 목록(오름차순) — find_trading_day_on_or_before_db와 같은 이유로
+       파일 존재만이 아니라 행 존재까지 확인한다(휴장일 빈 스텁 스키마 제외)."""
+    start_ds = scr.yyyymmdd(end - dt.timedelta(days=calendar_days_back))
+    end_ds = scr.yyyymmdd(end)
+    out = []
+    for d in db.existing_dates():
+        if not (start_ds <= d <= end_ds):
+            continue
+        rows = _read_day(d, "daily_prices", "COUNT(*)")
+        if rows and rows[0][0] > 0:
+            out.append(d)
+    return out
+
+
+class SignalHistorySource:
+    """daily_investor_flow(inst_foreign_net_buy)/daily_prices(volume, market_cap)를
+       [start, end] 구간 전체에 걸쳐 한 번만 벌크 적재해두고, 그 안의 여러 앵커
+       날짜에 대해 반복적으로 accumulation/volume_dryness 자기 히스토리를 뽑아 쓸 수
+       있게 한다(파일 재오픈 없이 메모리에서 슬라이싱).
+
+       하루 단위로 앵커가 계속 바뀌는 시뮬레이션(portfolio_simulation.py처럼 날짜별
+       재채점)에서 앵커마다 load_signal_history_from_db를 새로 부르면 겹치는 구간을
+       매번 다시 읽어 심각하게 느려진다 — 이 클래스는 그 구간을 한 번만 적재해
+       재사용한다(이 세션에서 확립된 '한 번 적재, 메모리에서 슬라이싱' 패턴,
+       diagnose_all_signals_bias.py에서 검증된 접근과 동일).
+
+       시점 무결성: for_anchor(anchor)는 anchor 이전(포함) 거래일만 쓰는 월별 표본을
+       만들므로, 시뮬레이션 중 앵커가 하루씩 전진해도 그 시점엔 아직 존재하지 않았을
+       미래 데이터가 히스토리에 섞이지 않는다."""
+
+    def __init__(self, trading_dates: list[str],
+                 flow_by_date: dict[str, dict[str, float]],
+                 vol_by_date: dict[str, dict[str, float]],
+                 mc_by_date: dict[str, dict[str, float]]):
+        self.trading_dates = trading_dates
+        self.flow_by_date = flow_by_date
+        self.vol_by_date = vol_by_date
+        self.mc_by_date = mc_by_date
+
+    def for_anchor(
+        self, anchor: dt.date, months: int = SIGNAL_HISTORY_MONTHS,
+    ) -> tuple[dict[str, list[float]], dict[str, list[float]]]:
+        """(accumulation intensity 히스토리, volume_dryness 비율 히스토리) —
+           둘 다 {ticker: [월별 표본, 과거→최근순]}. score_accumulation의
+           intensity_history / score_volume_dryness의 ratio_history 인자용.
+
+           월별 표본 규칙은 month_end_samples(펀더멘털 5년 밴드와 동일 방식)를
+           재사용해 실제 거래일로 스냅한다. 표본 하나당:
+             - intensity = 그 거래일 기준 직전 20영업일 누적(기관+외국인 순매수)/시가총액
+             - vd_ratio = 6~25일전(최근5일 제외) 거래량 중앙값 / 직전 120영업일 중앙값
+           (score_accumulation/score_volume_dryness의 실시간 계산과 동일한 정의)."""
+        anchor_ds = scr.yyyymmdd(anchor)
+        trading_dates = [d for d in self.trading_dates if d <= anchor_ds]
+        if len(trading_dates) < 120:
+            return {}, {}
+
+        calendar_samples = scr.month_end_samples(months, anchor)  # 최신→과거 순
+        monthly_anchors: list[str] = []
+        seen: set[str] = set()
+        for ds in reversed(calendar_samples):  # 과거→최근 순으로 뒤집어 처리
+            cutoff = scr.yyyymmdd(dt.datetime.strptime(ds, "%Y%m%d").date())
+            snapped = None
+            for d in reversed(trading_dates):
+                if d <= cutoff:
+                    snapped = d
+                    break
+            if snapped and snapped not in seen:
+                seen.add(snapped)
+                monthly_anchors.append(snapped)
+
+        accum_hist: dict[str, list[float]] = {}
+        vd_hist: dict[str, list[float]] = {}
+        for ds in monthly_anchors:
+            idx = trading_dates.index(ds)
+            if idx < 119:
+                continue  # 120영업일 윈도우 미확보(백필 시작 근처)
+
+            win20 = trading_dates[idx - 19: idx + 1]
+            accum_sum: dict[str, float] = {}
+            for d in win20:
+                for t, v in self.flow_by_date.get(d, {}).items():
+                    accum_sum[t] = accum_sum.get(t, 0.0) + v
+            for t, mc in self.mc_by_date.get(ds, {}).items():
+                if mc and mc > 0:
+                    accum_hist.setdefault(t, []).append(accum_sum.get(t, 0.0) / mc)
+
+            if idx < 24:
+                continue  # 6~25일전 구간 미확보
+            win120 = trading_dates[idx - 119: idx + 1]
+            win25_5 = trading_dates[idx - 24: idx - 4]
+            vol_recent: dict[str, list[float]] = {}
+            for d in win25_5:
+                for t, v in self.vol_by_date.get(d, {}).items():
+                    vol_recent.setdefault(t, []).append(v)
+            vol_past: dict[str, list[float]] = {}
+            for d in win120:
+                for t, v in self.vol_by_date.get(d, {}).items():
+                    vol_past.setdefault(t, []).append(v)
+            for t, past_list in vol_past.items():
+                past_med = statistics.median(past_list)
+                if past_med > 0 and t in vol_recent:
+                    vd_hist.setdefault(t, []).append(statistics.median(vol_recent[t]) / past_med)
+
+        return accum_hist, vd_hist
+
+
+def build_signal_history_source(
+    start: dt.date, end: dt.date, months: int = SIGNAL_HISTORY_MONTHS,
+) -> SignalHistorySource:
+    """[start, end] 구간 안의 모든 앵커를 지원하도록, start보다 (months개월+120영업일)
+       더 이전까지 거슬러 올라간 전체 범위를 한 번만 벌크 적재해 SignalHistorySource를
+       만든다. 시뮬레이션 기간 전체를 커버하는 start/end로 한 번 호출해두면, 그 안의
+       날짜별 앵커마다 for_anchor()를 호출해도 파일을 다시 읽지 않는다."""
+    calendar_days_back = months * 31 + 200
+    # 버퍼는 항상 start 기준으로 더 거슬러 올라간다 — start는 "이 구간에서 요청될 가장
+    # 이른 앵커"이고, 그 앵커도 자기 히스토리를 온전히 확보해야 하므로. start==end
+    # (단일 앵커 호출)여도 이 식은 그대로 성립한다.
+    trading_dates = _trading_dates_window_from_db(end, (end - start).days + calendar_days_back)
+    if not trading_dates:
+        return SignalHistorySource([], {}, {}, {})
+
+    flow_by_date: dict[str, dict[str, float]] = {}
+    vol_by_date: dict[str, dict[str, float]] = {}
+    mc_by_date: dict[str, dict[str, float]] = {}
+    for d in trading_dates:
+        flow_rows = _read_day(d, "daily_investor_flow", "ticker, inst_foreign_net_buy")
+        flow_by_date[d] = {t: v for t, v in flow_rows if v is not None}
+        price_rows = _read_day(d, "daily_prices", "ticker, volume, market_cap")
+        vol_by_date[d] = {t: (v or 0.0) for t, v, mc in price_rows}
+        mc_by_date[d] = {t: mc for t, v, mc in price_rows if mc}
+
+    return SignalHistorySource(trading_dates, flow_by_date, vol_by_date, mc_by_date)
+
+
+def load_signal_history_from_db(
+    anchor: dt.date, months: int = SIGNAL_HISTORY_MONTHS,
+) -> tuple[dict[str, list[float]], dict[str, list[float]]]:
+    """단일 앵커용 편의 함수 — anchor 하나만 채점할 때(screener.py 라이브 실행,
+       backtest.py 단발 조회 등) build_signal_history_source + for_anchor를 한 번에
+       묶어서 호출한다. 앵커가 여러 개(날짜별 반복 시뮬레이션)면 이 함수를 반복 호출하지
+       말고 build_signal_history_source를 한 번만 부른 뒤 for_anchor를 재사용할 것
+       (portfolio_simulation.py 참고)."""
+    source = build_signal_history_source(anchor, anchor, months)
+    return source.for_anchor(anchor, months)
 
 
 INDEX_COVERAGE_START = "20220103"  # daily_index(data/index_history.sqlite) 백필 시작일

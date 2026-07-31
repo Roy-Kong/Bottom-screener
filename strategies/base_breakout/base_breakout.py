@@ -132,10 +132,16 @@ def preload_all(start: str, end: str, month_snaps: dict[str, dict]) -> dict:
     print(f"  펀더멘털 5년 밴드(월 단위, {len(relevant_months)}개월)…")
     fund_hist_by_month = _bulk_load_fundamental_by_month(relevant_months)
 
+    print("  매집·거래량고갈 자기 히스토리(percentile 정규화용)…")
+    signal_history_source = dbr.build_signal_history_source(
+        dt.datetime.strptime(lookback_start, "%Y%m%d").date(),
+        dt.datetime.strptime(end, "%Y%m%d").date())
+
     return {
         "matrix": matrix, "short_by_date": short_by_date, "market_cap_by_date": market_cap_by_date,
         "accum_by_date": accum_by_date, "market_idx_by_date": market_idx_by_date,
         "sector_idx_by_date": sector_idx_by_date, "fund_hist_by_month": fund_hist_by_month,
+        "signal_history_source": signal_history_source,
     }
 
 
@@ -337,7 +343,10 @@ def ticker_bottom_score(tkr: str, day: str, pre: dict, month_snaps: dict[str, di
     cur_dps = fh_all[0]["DPS"] if fh_all else 0.0
     cur_eps = fh_all[0]["EPS"] if fh_all else 0.0
     bw_series = scr.bollinger_bandwidth_series(closes)
-    float_mc = avg_trading_value * 50
+    # accumulation 분모: 거래대금 근사치(avg_trading_value*50) -> 실제 시총(cur_market_cap,
+    # 생존게이트에서 이미 확인됨)으로 교체 — screener.py 등 다른 5개 경로와 동일 기준이어야
+    # db_reader의 히스토리(실제 시총 기반)와 지금 값의 percentile 비교가 성립한다.
+    float_mc = cur_market_cap
     sector_name = sector_names.get(sector_map.get(tkr))
     pbr_caution_sector = scr.is_pbr_caution_sector(sector_name)
     capital_eroding = scr.had_progressive_capital_erosion(fh_all)
@@ -346,13 +355,23 @@ def ticker_bottom_score(tkr: str, day: str, pre: dict, month_snaps: dict[str, di
     short_cur = pre["short_by_date"].get(dates[-1], {}).get(tkr, 0.0)
     accum_20d = _sum_window(pre["accum_by_date"], tkr, dates, 20)
 
+    # day 단위로 캐싱(전종목 공유) — for_anchor 자체가 전종목 히스토리를 계산하므로
+    # (tkr,day) 메모이제이션 호출마다 매번 다시 부르면 같은 day를 여러 종목이
+    # 재계산하게 된다. pre는 preload_all이 만든 뒤 함수 전체에서 공유하는 dict라
+    # 여기 lazily 채워도 안전하다.
+    day_hist_cache = pre.setdefault("_signal_history_day_cache", {})
+    if day not in day_hist_cache:
+        day_hist_cache[day] = pre["signal_history_source"].for_anchor(day_date)
+    accum_intensity_hist, _ = day_hist_cache[day]
+
     bottom_weights = dict(sg.BOTTOM_WEIGHTS)
     if pbr_caution_sector:
         bottom_weights["pbr_low"] = bottom_weights["pbr_low"] / 2
 
     bottom_scores = {
         "volume_dryness": sg.score_volume_dryness(rec6to25, past120),
-        "accumulation": sg.score_accumulation(accum_20d, float_mc, ret20_price * 100),
+        "accumulation": sg.score_accumulation(accum_20d, float_mc, ret20_price * 100,
+                                               accum_intensity_hist.get(tkr, [])),
         "short_covering": sg.score_short_covering(short_cur, short_max),
         "pbr_low": None if capital_eroding else sg.score_pbr_low(cur_pbr, pbr_series),
         "dividend_yield": sg.score_dividend_yield(cur_div, div_series, cur_dps, cur_eps, scr.had_dividend_cut(fh_all)),

@@ -137,7 +137,8 @@ def hold_deadline(buy_date: str, trading_days: list[str]) -> str:
 
 def _compute_raw_scores_for_day(day: str, universe: dict, sector_map: dict, sector_names: dict,
                                 ticker_market: dict, matrix: dict, fund_hist: dict,
-                                market_idx_by_date: dict, sector_idx_by_date: dict) -> list[dict]:
+                                market_idx_by_date: dict, sector_idx_by_date: dict,
+                                signal_history_source: dbr.SignalHistorySource) -> list[dict]:
     """그날 기본 게이트(생존게이트·거래대금·시총·PBR>0)를 통과한 전 종목의 신호별
        raw 점수(가중치 적용 전, 최종 컷라인 미적용)를 반환한다. 로직은
        strategy_backtest_2022.screen_and_score의 종목별 채점 부분과 동일하다
@@ -170,6 +171,9 @@ def _compute_raw_scores_for_day(day: str, universe: dict, sector_map: dict, sect
     accum = dbr.load_accumulation_from_db(dbr.date_range_inclusive(db_dates_sorted, accum_from, latest_date))
     accum_recent5 = dbr.load_accumulation_from_db(dbr.date_range_inclusive(db_dates_sorted, accum_recent5_from, latest_date))
     accum_prior15 = dbr.load_accumulation_from_db(dbr.date_range_inclusive(db_dates_sorted, accum_prior15_from, accum_prior15_to))
+
+    accum_intensity_hist, _ = signal_history_source.for_anchor(
+        dt.datetime.strptime(day, "%Y%m%d").date())
 
     out = []
     for tkr, name in universe.items():
@@ -217,7 +221,8 @@ def _compute_raw_scores_for_day(day: str, universe: dict, sector_map: dict, sect
 
         bottom_scores = {
             "volume_dryness": sg.score_volume_dryness(rec6to25, past120),
-            "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100),
+            "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100,
+                                                   accum_intensity_hist.get(tkr, [])),
             "short_covering": sg.score_short_covering(short_cur.get(tkr, 0.0), short_max.get(tkr, 0.0)),
             "pbr_low": None if capital_eroding else sg.score_pbr_low(cur_pbr, pbr_series),
             "dividend_yield": sg.score_dividend_yield(cur_div, div_series, cur_dps, cur_eps, scr.had_dividend_cut(fh)),
@@ -300,14 +305,16 @@ def combine_scores(raw_entries: list[dict], score_threshold: float = SCORE_THRES
 
 
 def score_day(day: str, universe: dict, sector_map: dict, sector_names: dict, ticker_market: dict,
-              matrix: dict, fund_hist: dict, market_idx_by_date: dict, sector_idx_by_date: dict) -> list[dict]:
+              matrix: dict, fund_hist: dict, market_idx_by_date: dict, sector_idx_by_date: dict,
+              signal_history_source: dbr.SignalHistorySource) -> list[dict]:
     """그날(day) 기준 바닥점수 65점 이상 종목 리스트(점수 내림차순). raw 점수가
        cache/daily_signal_scores/{day}.json에 이미 있으면 DB를 전혀 안 읽고
        그것만 다른 가중치로 재조합한다 — 없으면 계산 후 캐시에 저장한다."""
     raw_entries = signal_score_cache.load_day_scores(day)
     if raw_entries is None:
         raw_entries = _compute_raw_scores_for_day(day, universe, sector_map, sector_names, ticker_market,
-                                                   matrix, fund_hist, market_idx_by_date, sector_idx_by_date)
+                                                   matrix, fund_hist, market_idx_by_date, sector_idx_by_date,
+                                                   signal_history_source)
         signal_score_cache.save_day_scores(day, raw_entries)
     return combine_scores(raw_entries, SCORE_THRESHOLD)
 
@@ -346,6 +353,10 @@ def run(start: str, end: str, out_csv: str) -> None:
         anchor = dt.date(y, m, 1)
         fund_hist_by_month[ym] = dbr.load_fundamental_history_from_db(
             scr.month_end_samples(scr.FUND_HISTORY_MONTHS, anchor))
+
+    print("사전 로딩: 매집·거래량고갈 자기 히스토리(시뮬레이션 전체 구간, percentile 정규화용)…")
+    signal_history_source = dbr.build_signal_history_source(
+        anchor0, dt.datetime.strptime(end, "%Y%m%d").date())
 
     trading_days = build_trading_calendar(matrix, start, end)
     print(f"시뮬레이션 대상 거래일: {len(trading_days)}일 ({trading_days[0]}~{trading_days[-1]})")
@@ -398,7 +409,8 @@ def run(start: str, end: str, out_csv: str) -> None:
         # 0) 첫날 부트스트랩: 그날 시가 기준으로 그날 스크리닝 상위 10개 매수
         if i == 0:
             today_candidates = score_day(day, universe, sector_map, sector_names, ticker_market,
-                                         matrix, fund_hist, market_idx_by_date, sector_idx_by_date)
+                                         matrix, fund_hist, market_idx_by_date, sector_idx_by_date,
+                                         signal_history_source)
             base_value = cash
             for cand in today_candidates[:N_SLOTS]:
                 tkr = cand["ticker"]
@@ -453,7 +465,8 @@ def run(start: str, end: str, out_csv: str) -> None:
         empty_slot_days += open_slots
         if open_slots > 0:
             today_candidates = score_day(day, universe, sector_map, sector_names, ticker_market,
-                                         matrix, fund_hist, market_idx_by_date, sector_idx_by_date)
+                                         matrix, fund_hist, market_idx_by_date, sector_idx_by_date,
+                                         signal_history_source)
             picked = []
             for cand in today_candidates:
                 if len(picked) >= open_slots:
