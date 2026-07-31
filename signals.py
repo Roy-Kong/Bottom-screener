@@ -79,26 +79,42 @@ def percentile_rank(history: list[float], value: float) -> float | None:
 
 
 # ---------- 개별 신호 ----------
-# 자기 히스토리 percentile 기반 신호(accumulation, 추후 volume_dryness도 동일 전환
-# 예정)가 쓰는 최소 히스토리 길이 — 이보다 짧으면(신규상장 등) percentile 자체가
-# 불안정해 신호를 아예 안 쓴다(None). 2026-07 진단에서 12개월 기준 결측률
-# 6.6~15.4% 확인, 그 정도는 감수.
+# 두 신호(volume_dryness/accumulation)에 공통으로 쓰는 최소 히스토리 길이 — 이보다
+# 짧으면(신규상장 등) 자기 히스토리 percentile 자체가 불안정해 신호를 아예 안 쓴다
+# (None). 2026-07 진단에서 12개월 기준 결측률 6.6~15.4% 확인, 그 정도는 감수.
 MIN_HISTORY_MONTHS = 12
 
 
-def score_volume_dryness(recent6to25_median_vol: float, past120_median_vol: float) -> float | None:
-    """① 거래량 고갈. 최근 6~25일(가장 최근 5일 제외) 중앙값 / 과거 120일 중앙값.
-       낮을수록 고점. 비율 1.0 이상 → 0점, 0.3 이하 → 100점.
+def score_volume_dryness(recent6to25_median_vol: float, past120_median_vol: float,
+                         ratio_history: list[float]) -> float | None:
+    """① 거래량 고갈. 최근 6~25일(가장 최근 5일 제외) 중앙값 / 과거 120일 중앙값 =
+       비율. 이 비율을 그 종목 "자기 히스토리"(ratio_history, 보통 과거 12~24개월
+       월별 표본) 대비 percentile로 정규화한다. 낮을수록(거래 마름) 고점이라
+       pbr_low와 동일하게 역방향(100-percentile)을 쓴다.
+
+       2026-07 결정: 예전엔 절대비율문턱(1.0→0점, 0.3→100점)을 썼는데, 초대형주는
+       원래 거래량이 커서(지수 편입 매매·옵션 관련 물량 등) 이 절대 문턱 자체가
+       구조적으로 안 맞아 대형주에서 계통적으로 낮게 나오는 편향이 실측 확인됐다
+       (시총 5분위 median: 소형주12.2 vs 대형주3.5). 자기 히스토리 percentile로
+       바꾸니 "그 종목치고 평소보다 얼마나 조용한가"를 보게 돼 전 분위가 43~49로
+       고르게 수렴함을 확인(부작용 없이 대형주만 정확히 살아남는 가장 깨끗한 케이스).
 
        가장 최근 5일을 일부러 빼는 이유: 턴어라운드 신호 '거래량 동반 상승'(⑨)이
        보는 구간(최근 5일 vs 최근 20일)과 겹치면, 실제로 반응이 막 시작된 순간에
        그 반응 자체가 이 신호의 '최근' 구간에 섞여 들어가 "조용했다"는 판정을
        흐린다. 구간을 분리해야 '오래 조용했다(①) → 최근에 반응했다(⑨)'가
-       서로 다른 날짜로 깔끔하게 구분된다."""
+       서로 다른 날짜로 깔끔하게 구분된다.
+
+       ratio_history가 MIN_HISTORY_MONTHS 미만이면(신규상장 등) None(신호 미적용)."""
     if not _valid(recent6to25_median_vol, past120_median_vol) or past120_median_vol <= 0:
         return None
+    if len(ratio_history) < MIN_HISTORY_MONTHS:
+        return None
     ratio = recent6to25_median_vol / past120_median_vol
-    return _lin(ratio, 1.0, 0.3, 0.0, 100.0)
+    pr = percentile_rank(ratio_history, ratio)
+    if pr is None:
+        return None
+    return _clamp(100.0 - pr)
 
 
 # quiet(주가조용 승수, 0~1)의 최종 영향력 하한. 진단 결과 quiet의 원천(|20일
@@ -456,9 +472,10 @@ if __name__ == "__main__":
 
     # 시나리오 A: 교과서적 바닥 (하이닉스 2022 스타일)
     # 거래량 마름, 외국인 조용히 매집, 공매도 급감, PBR 최저, 지수보다 선방
+    vd_hist_a = [0.9, 1.1, 0.8, 1.0, 0.95, 0.85, 1.05, 0.7, 0.6, 0.5, 0.3, 0.42, 0.55, 0.65]  # 평소 대비 비교용
     accum_hist_a = [-0.005, 0.002, 0.008, 0.01, 0.015, -0.002, 0.005, 0.012, 0.018, 0.02, 0.007, 0.003]
     a = {
-        "volume_dryness": score_volume_dryness(35, 100),          # ratio 0.35
+        "volume_dryness": score_volume_dryness(35, 100, vd_hist_a),          # ratio 0.35, 자기 히스토리 대비 하위권
         "accumulation": score_accumulation(2.5e11, 1.0e13, 3.0, accum_hist_a),  # 2.5% 매집(히스토리 최고 수준), 주가 +3% (조용)
         "short_covering": score_short_covering(0.4, 1.0),         # 3개월 최고의 40%
         "pbr_low": score_pbr_low(0.9, [2.1, 1.8, 1.5, 1.2, 1.0, 0.95, 1.3, 2.0, 1.7, 1.1]),
@@ -472,8 +489,9 @@ if __name__ == "__main__":
     print(f"   → 종합 {ra['composite']} (신호 {ra['n_signals_used']}개)\n")
 
     # 시나리오 B: 고점/과열 (테슬라 스타일 - 프레임 반대편)
+    vd_hist_b = [0.7, 0.8, 0.9, 0.75, 0.85, 1.0, 0.95, 1.1, 0.6, 0.65, 0.7, 0.8]  # 평소보다 지금이 더 활발
     b = {
-        "volume_dryness": score_volume_dryness(120, 100),         # 거래 오히려 증가
+        "volume_dryness": score_volume_dryness(120, 100, vd_hist_b),         # 거래 오히려 증가, 히스토리 최고 수준
         "accumulation": score_accumulation(-1e11, 1.0e13, 8.0, []),   # 순매도 → 히스토리 무관하게 0점(short-circuit)
         "short_covering": score_short_covering(0.95, 1.0),        # 공매도 안 줄음
         "pbr_low": score_pbr_low(2.0, [2.1, 1.8, 1.5, 1.2, 1.0, 0.95, 1.3, 2.0, 1.7, 1.1]),

@@ -172,7 +172,7 @@ def _compute_raw_scores_for_day(day: str, universe: dict, sector_map: dict, sect
     accum_recent5 = dbr.load_accumulation_from_db(dbr.date_range_inclusive(db_dates_sorted, accum_recent5_from, latest_date))
     accum_prior15 = dbr.load_accumulation_from_db(dbr.date_range_inclusive(db_dates_sorted, accum_prior15_from, accum_prior15_to))
 
-    accum_intensity_hist, _ = signal_history_source.for_anchor(
+    accum_intensity_hist, vd_ratio_hist = signal_history_source.for_anchor(
         dt.datetime.strptime(day, "%Y%m%d").date())
 
     out = []
@@ -220,7 +220,7 @@ def _compute_raw_scores_for_day(day: str, universe: dict, sector_map: dict, sect
         capital_eroding = scr.had_progressive_capital_erosion(fh)
 
         bottom_scores = {
-            "volume_dryness": sg.score_volume_dryness(rec6to25, past120),
+            "volume_dryness": sg.score_volume_dryness(rec6to25, past120, vd_ratio_hist.get(tkr, [])),
             "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100,
                                                    accum_intensity_hist.get(tkr, [])),
             "short_covering": sg.score_short_covering(short_cur.get(tkr, 0.0), short_max.get(tkr, 0.0)),

@@ -207,7 +207,7 @@ def screen_and_score(anchor_date: dt.date, asof: str, use_cache: bool = True) ->
                 asof, universe, ticker_market, sector_map, sector_names,
                 market_idx_by_date, sector_idx_by_date)
 
-    accum_intensity_hist, _ = dbr.load_signal_history_from_db(anchor_date)
+    accum_intensity_hist, vd_ratio_hist = dbr.load_signal_history_from_db(anchor_date)
 
     out = []
     n_len_ok = 0  # 관찰용(2026-07 Group B 진단): 유니버스 대비 이 비율이 비정상적으로
@@ -265,7 +265,7 @@ def screen_and_score(anchor_date: dt.date, asof: str, use_cache: bool = True) ->
             bottom_weights["pbr_low"] = bottom_weights["pbr_low"] / 2
 
         bottom_scores = {
-            "volume_dryness": sg.score_volume_dryness(rec6to25, past120),
+            "volume_dryness": sg.score_volume_dryness(rec6to25, past120, vd_ratio_hist.get(tkr, [])),
             "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100,
                                                    accum_intensity_hist.get(tkr, [])),
             "short_covering": sg.score_short_covering(short_cur.get(tkr, 0.0), short_max.get(tkr, 0.0)),

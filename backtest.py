@@ -122,7 +122,7 @@ def run_backtest(anchor_str: str, top_n: int = 10):
     sector_idx_by_date = scr.collect_sector_index_ohlcv(sector_codes_needed, ohlcv_dates[0], latest_date)
 
     print("6c) 매집·거래량고갈 자기 히스토리 로딩… (DB, percentile 정규화용)")
-    accum_intensity_hist, _ = dbr.load_signal_history_from_db(anchor_date)
+    accum_intensity_hist, vd_ratio_hist = dbr.load_signal_history_from_db(anchor_date)
 
     print("7) 채점(바닥 7개 신호만, 생존 게이트 포함)…")
     results = []
@@ -177,7 +177,7 @@ def run_backtest(anchor_str: str, top_n: int = 10):
             bottom_weights["pbr_low"] = bottom_weights["pbr_low"] / 2
 
         scores = {
-            "volume_dryness": sg.score_volume_dryness(rec6to25, past120),
+            "volume_dryness": sg.score_volume_dryness(rec6to25, past120, vd_ratio_hist.get(tkr, [])),
             "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100,
                                                    accum_intensity_hist.get(tkr, [])),
             "short_covering": sg.score_short_covering(short_cur.get(tkr, 0.0), short_max.get(tkr, 0.0)),
@@ -313,7 +313,7 @@ def run_backtest_from_db(anchor_str: str, top_n: int = 10):
         sector_idx_by_date = scr.collect_sector_index_ohlcv(sector_codes_needed, ohlcv_dates[0], latest_date)
 
     print("6c) 매집·거래량고갈 자기 히스토리 로딩… (DB, percentile 정규화용)")
-    accum_intensity_hist, _ = dbr.load_signal_history_from_db(anchor_date)
+    accum_intensity_hist, vd_ratio_hist = dbr.load_signal_history_from_db(anchor_date)
 
     print("7) 채점(바닥 7개 신호만, 생존 게이트 포함)…")
     results = []
@@ -368,7 +368,7 @@ def run_backtest_from_db(anchor_str: str, top_n: int = 10):
             bottom_weights["pbr_low"] = bottom_weights["pbr_low"] / 2
 
         scores = {
-            "volume_dryness": sg.score_volume_dryness(rec6to25, past120),
+            "volume_dryness": sg.score_volume_dryness(rec6to25, past120, vd_ratio_hist.get(tkr, [])),
             "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100,
                                                    accum_intensity_hist.get(tkr, [])),
             "short_covering": sg.score_short_covering(short_cur.get(tkr, 0.0), short_max.get(tkr, 0.0)),

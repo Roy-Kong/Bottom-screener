@@ -362,14 +362,14 @@ def ticker_bottom_score(tkr: str, day: str, pre: dict, month_snaps: dict[str, di
     day_hist_cache = pre.setdefault("_signal_history_day_cache", {})
     if day not in day_hist_cache:
         day_hist_cache[day] = pre["signal_history_source"].for_anchor(day_date)
-    accum_intensity_hist, _ = day_hist_cache[day]
+    accum_intensity_hist, vd_ratio_hist = day_hist_cache[day]
 
     bottom_weights = dict(sg.BOTTOM_WEIGHTS)
     if pbr_caution_sector:
         bottom_weights["pbr_low"] = bottom_weights["pbr_low"] / 2
 
     bottom_scores = {
-        "volume_dryness": sg.score_volume_dryness(rec6to25, past120),
+        "volume_dryness": sg.score_volume_dryness(rec6to25, past120, vd_ratio_hist.get(tkr, [])),
         "accumulation": sg.score_accumulation(accum_20d, float_mc, ret20_price * 100,
                                                accum_intensity_hist.get(tkr, [])),
         "short_covering": sg.score_short_covering(short_cur, short_max),

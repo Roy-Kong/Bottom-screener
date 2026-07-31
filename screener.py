@@ -668,9 +668,10 @@ def run():
     print(f"   업종지수 {len(sector_codes_needed)}개 중 "
           f"{sum(1 for v in sector_idx_by_date.values() if v)}개 데이터 확보")
 
-    print("6c) 매집 자기 히스토리 수집(로컬 DB, percentile 정규화용)…")
-    accum_intensity_hist, _ = dr.load_signal_history_from_db(anchor)
-    print(f"   accumulation 히스토리 {len(accum_intensity_hist)}종목 확보")
+    print("6c) 매집·거래량고갈 자기 히스토리 수집(로컬 DB, percentile 정규화용)…")
+    accum_intensity_hist, vd_ratio_hist = dr.load_signal_history_from_db(anchor)
+    print(f"   accumulation 히스토리 {len(accum_intensity_hist)}종목, "
+          f"volume_dryness 히스토리 {len(vd_ratio_hist)}종목 확보")
 
     print("7) 채점(바닥 7개 + 턴어라운드 7개 신호, 그중 5개만 게이트 판정에 사용)…")
     results = []
@@ -806,7 +807,7 @@ def run():
 
         # --- 바닥 신호 7개: "매도세 소진·역사적으로 싸다"만 본다 ---
         scores = {
-            "volume_dryness": sg.score_volume_dryness(rec6to25, past120),
+            "volume_dryness": sg.score_volume_dryness(rec6to25, past120, vd_ratio_hist.get(tkr, [])),
             "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100,
                                                    accum_intensity_hist.get(tkr, [])),
             "short_covering": sg.score_short_covering(short_cur.get(tkr), short_max.get(tkr)),
