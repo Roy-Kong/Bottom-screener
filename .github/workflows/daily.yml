@@ -2,7 +2,8 @@ name: daily-screener
 
 on:
   schedule:
-    - cron: "0 7 * * 1-5"  # UTC 07:00 = KST 16:00(장마감 15:30 직후), 평일만
+    - cron: "0 7 * * 1-5"   # UTC 07:00 = KST 16:00(장마감 15:30 직후), 최초 실행
+    - cron: "30 7 * * 1-5"  # UTC 07:30 = KST 16:30, 최초 실행 실패시에만 자동 재시도
   workflow_dispatch:
 
 permissions:
@@ -13,12 +14,39 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 20  # 재시도 게이트가 results.json 최근 커밋 날짜를 봐야 함
+      - name: 재시도 슬롯 게이트 — 오늘 최초 실행이 이미 성공했으면 스킵
+        # KRX 쪽 일시적 응답 이상(로그인 실패)으로 스크리너가 실패하는 경우가
+        # 있어(2026-08 실측) 16:30에 같은 워크플로우를 한 번 더 예약해뒀다.
+        # 16:00 실행이 이미 성공해 오늘자 results.json이 커밋됐으면 16:30
+        # 슬롯은 중복 실행하지 않고 조용히 스킵한다 — github.event.schedule로
+        # 어느 cron이 이 실행을 트리거했는지 구분(workflow_dispatch 수동 실행이나
+        # 16:00 슬롯은 항상 그대로 진행).
+        id: gate
+        run: |
+          if [ "${{ github.event.schedule }}" = "30 7 * * 1-5" ]; then
+            TODAY_KST=$(TZ=Asia/Seoul date +%Y%m%d)
+            LAST_DATE=$(TZ=Asia/Seoul git log -1 --date=format-local:%Y%m%d --format=%ad -- results.json 2>/dev/null || echo "")
+            if [ "$TODAY_KST" = "$LAST_DATE" ]; then
+              echo "오늘($TODAY_KST) 16:00 실행이 이미 성공 — 16:30 재시도 스킵"
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "오늘 아직 결과 없음(최근 커밋=$LAST_DATE) — 16:00 실행 실패로 보고 재시도"
+              echo "skip=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/setup-python@v5
+        if: steps.gate.outputs.skip != 'true'
         with:
           python-version: "3.11"
       - name: Install deps
+        if: steps.gate.outputs.skip != 'true' && success()
         run: pip install -r requirements.txt
       - name: Pull trailing history DB files (LFS)
+        if: steps.gate.outputs.skip != 'true' && success()
         # accumulation/volume_dryness가 종목 자기 히스토리(최근 24개월치 월별 표본,
         # db_reader.SIGNAL_HISTORY_MONTHS) 대비 percentile로 채점되도록 바뀌면서
         # (2026-07), screener.py가 이제 매일 실행마다 data/*.db 과거 파일을 읽는다.
@@ -46,18 +74,22 @@ jobs:
           git lfs pull --include="$(cat lfs_include.txt)"
           rm -f lfs_include.txt
       - name: Run screener
+        if: steps.gate.outputs.skip != 'true' && success()
         env:
           KRX_ID: ${{ secrets.KRX_ID }}
           KRX_PW: ${{ secrets.KRX_PW }}
         run: python screener.py
       - name: Update market data DB
+        if: steps.gate.outputs.skip != 'true' && success()
         env:
           KRX_ID: ${{ secrets.KRX_ID }}
           KRX_PW: ${{ secrets.KRX_PW }}
         run: python update_db_daily.py
       - name: Publish results to docs/
+        if: steps.gate.outputs.skip != 'true' && success()
         run: cp results.json docs/results.json
       - name: Commit results
+        if: steps.gate.outputs.skip != 'true' && success()
         run: |
           git config user.name "screener-bot"
           git config user.email "bot@users.noreply.github.com"
