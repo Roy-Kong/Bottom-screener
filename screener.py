@@ -686,7 +686,13 @@ def run():
     halted_count = 0  # 진단: 거래정지/상장폐지 의심(is_trading_halted)으로 생존 게이트 탈락한 종목 수
     for tkr, name in universe.items():
         dates, opens, highs, lows, closes, vols = series_for_ticker(matrix, tkr)
-        if len(closes) < 60 or len(vols) < 120:
+        # 110 = 관측 최악 실거래일 116(2025-01 설날 밀집 구간, 2022-08~2026-07 전체
+        # 976개 앵커 실측)에 여유. 120은 volume_dryness의 "6개월" 관행값이지 하드
+        # 요구가 아니다 — vols[-120:]는 슬라이스라 116~119개만 있어도 그 개수로
+        # median을 계산한다(2026-08, 공휴일 밀집 유니버스 결측 해소). OHLCV_LOOKBACK_DAYS
+        # (130)는 그대로 유지 — 늘리면 bollinger_bandwidth_series가 closes 전체 길이를
+        # 쓰는 구조라 volatility_squeeze 계산값 자체가 바뀌는 부작용이 있다.
+        if len(closes) < 60 or len(vols) < 110:
             continue
 
         # --- 생존 게이트 ---

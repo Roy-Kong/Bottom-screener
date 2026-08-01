@@ -302,7 +302,8 @@ def ticker_bottom_score(tkr: str, day: str, pre: dict, month_snaps: dict[str, di
     day_date = dt.datetime.strptime(day, "%Y%m%d").date()
     ohlcv_dates = scr.recent_business_dates(scr.OHLCV_LOOKBACK_DAYS, day_date)
     dates, opens, highs, lows, closes, vols = _ticker_series_upto(pre["matrix"], tkr, day, ohlcv_dates)
-    if len(closes) < 60 or len(vols) < 120:
+    # 110 = 공휴일 밀집 구간 유니버스 결측 해소, screener.py와 동일 이유(2026-08)
+    if len(closes) < 60 or len(vols) < 110:
         score_cache[key] = None
         return None
     if scr.is_trading_halted(opens, highs, lows, closes, vols):

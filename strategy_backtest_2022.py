@@ -215,7 +215,8 @@ def screen_and_score(anchor_date: dt.date, asof: str, use_cache: bool = True) ->
                   # 않는다(원인 미확정, 정상적으로 통과가 적은 날과 구분 불가). 경고만.
     for tkr, name in universe.items():
         dates, opens, highs, lows, closes, vols = scr.series_for_ticker(matrix, tkr)
-        if len(closes) < 60 or len(vols) < 120:
+        # 110 = 공휴일 밀집 구간 유니버스 결측 해소, screener.py와 동일 이유(2026-08)
+        if len(closes) < 60 or len(vols) < 110:
             continue
         n_len_ok += 1
 

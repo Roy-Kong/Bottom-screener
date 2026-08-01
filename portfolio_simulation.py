@@ -178,7 +178,8 @@ def _compute_raw_scores_for_day(day: str, universe: dict, sector_map: dict, sect
     out = []
     for tkr, name in universe.items():
         dates, opens, highs, lows, closes, vols = scr.series_for_ticker(windowed_matrix, tkr)
-        if len(closes) < 60 or len(vols) < 120:
+        # 110 = 공휴일 밀집 구간 유니버스 결측 해소, screener.py와 동일 이유(2026-08)
+        if len(closes) < 60 or len(vols) < 110:
             continue
         if scr.is_trading_halted(opens, highs, lows, closes, vols):
             continue
