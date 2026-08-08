@@ -40,7 +40,14 @@ TARGET_MARKETS = ["KOSPI", "KOSDAQ"]
 OHLCV_LOOKBACK_DAYS = 130      # 거래량/수익률용 최근 영업일 수
 FUND_HISTORY_MONTHS = 60       # PBR/배당 5년 밴드용 월별 표본
 SHORT_SAMPLE_WEEKS = 13        # 공매도 3개월 최고용 주별 표본
-ACCUM_WINDOW_DAYS = 20         # 매집 판정 창(영업일)
+# 2026-08 바닥-턴어라운드 8일 경계 재설계: 바닥(레벨) 신호(매집/상대강도/거래량고갈)와
+# 턴어라운드 가속 신호(매집가속/상대강도가속/거래량급증)가 겹치는 기간을 봐서 신호
+# 목적이 흐려지는 문제(실측 확인)를 8일 경계로 분리한다. 최근 ACCUM_RECENT_DAYS일은
+# "가속"(최근 vs 그 이전) 쪽 몫, 그 이전 ACCUM_WINDOW_DAYS일은 "레벨"(바닥) 쪽 몫 —
+# 두 구간은 절대 겹치지 않는다. from=ohlcv_dates[-(RECENT+WINDOW)], to=ohlcv_dates[-(RECENT+1)]
+# 이 "레벨" 창이고, from=ohlcv_dates[-RECENT], to=latest_date가 "최근"(가속) 창이다.
+ACCUM_WINDOW_DAYS = 40         # 매집/상대강도/거래량고갈 "레벨" 판정 창(영업일, t-9~t-48)
+ACCUM_RECENT_DAYS = 8          # 매집가속/거래량급증 "최근" 판정 창(영업일)
 TOP_N = 40                     # 결과에 담을 상위 종목 수
 
 # 생존 게이트 임계값
@@ -632,21 +639,23 @@ def run():
     print("4b) 시가총액 수집…")
     market_cap = collect_market_cap(latest_date)
 
-    print("5) 매집 수집(20일 / 최근5일 / 이전15일)…")
-    accum_from = ohlcv_dates[-ACCUM_WINDOW_DAYS] if len(ohlcv_dates) >= ACCUM_WINDOW_DAYS else ohlcv_dates[0]
-    accum = collect_accumulation(accum_from, latest_date)
-    # 매집 가속(턴어라운드) 계산용: 최근 5일 vs 그 이전 15일을 별도 수집
-    accum_recent5_from = ohlcv_dates[-5] if len(ohlcv_dates) >= 5 else ohlcv_dates[0]
-    accum_recent5 = collect_accumulation(accum_recent5_from, latest_date)
-    accum_prior15_from = ohlcv_dates[-20] if len(ohlcv_dates) >= 20 else ohlcv_dates[0]
-    accum_prior15_to = ohlcv_dates[-6] if len(ohlcv_dates) >= 6 else ohlcv_dates[0]
-    accum_prior15 = collect_accumulation(accum_prior15_from, accum_prior15_to)
+    print("5) 매집 수집(이전40일 t-9~t-48 / 최근8일)…")
+    # 바닥(매집 레벨)과 턴어라운드(매집가속 baseline)가 같은 "이전40일"을 공유한다 —
+    # 예전엔 accum/accum_recent5/accum_prior15로 3번 호출했는데, 지금은 2번으로 줄었다
+    # (라이브 pykrx 호출 절감 + 바닥/가속이 정확히 같은 원본 순매수 데이터를 쓰도록 보장).
+    accum_bottom_from = ohlcv_dates[-(ACCUM_RECENT_DAYS + ACCUM_WINDOW_DAYS)] \
+        if len(ohlcv_dates) >= ACCUM_RECENT_DAYS + ACCUM_WINDOW_DAYS else ohlcv_dates[0]
+    accum_bottom_to = ohlcv_dates[-(ACCUM_RECENT_DAYS + 1)] \
+        if len(ohlcv_dates) >= ACCUM_RECENT_DAYS + 1 else ohlcv_dates[0]
+    accum_t9_t48 = collect_accumulation(accum_bottom_from, accum_bottom_to)
+    accum_recent8_from = ohlcv_dates[-ACCUM_RECENT_DAYS] if len(ohlcv_dates) >= ACCUM_RECENT_DAYS else ohlcv_dates[0]
+    accum_recent8 = collect_accumulation(accum_recent8_from, latest_date)
 
     print("6) 지수 수익률(코스피·코스닥)…")
     # 업종 매핑 실패 종목의 폴백 벤치마크. 코스닥 종목을 코스피 지수와 비교하면
     # 안 되므로(위 resolve_benchmark_series 참고) 시장별로 따로 받는다.
     # 상대강도 가속(턴어라운드)의 날짜별 조회를 위해 전체 구간을 받아 두되,
-    # 기존 60일 상대강도(바닥 신호)는 이전과 동일하게 60일 구간만 사용한다.
+    # 상대강도(바닥 신호)는 t-9~t-48(레벨 창)과 같은 구간만 사용한다.
     market_idx_by_date: dict[str, dict[str, float]] = {}
     idx_ret_by_market: dict[str, float] = {}
     for mkt, code in MARKET_INDEX_CODE.items():
@@ -656,11 +665,11 @@ def run():
         except Exception:
             by_date = {}
         market_idx_by_date[mkt] = by_date
-        c_latest = by_date.get(latest_date)
-        c_60ago = by_date.get(ohlcv_dates[-60])
-        idx_ret_by_market[mkt] = (c_latest / c_60ago - 1) if c_latest and c_60ago else 0.0
+        c_t9 = by_date.get(ohlcv_dates[-(ACCUM_RECENT_DAYS + 1)])
+        c_t48 = by_date.get(ohlcv_dates[-(ACCUM_RECENT_DAYS + ACCUM_WINDOW_DAYS + 1)])
+        idx_ret_by_market[mkt] = (c_t9 / c_t48 - 1) if c_t9 and c_t48 else 0.0
         print(f"   {mkt}({code}) 지수: {len(by_date)}개 날짜 확보, "
-              f"60일 수익률={idx_ret_by_market[mkt]*100:.1f}%")
+              f"t-9~t-48 수익률={idx_ret_by_market[mkt]*100:.1f}%")
 
     print("6b) 업종지수 OHLCV 수집…")
     sector_codes_needed = set(sector_map.values())
@@ -746,13 +755,14 @@ def run():
                   f"— relative_strength/ma_breakout/short_term_breakout/rsi_reversal/macd_cross None 처리")
 
         # --- 신호 입력값 ---
-        # 거래량 고갈(①)은 최근 5일을 일부러 제외한 6~25일 전 구간을 본다 —
-        # 턴어라운드 신호 '거래량 동반 상승'(⑨, 최근 5일 vs 최근 20일)과
-        # 구간이 겹치지 않게 하기 위함. 자세한 이유는 signals.py 참고.
-        rec6to25 = median(vols[-25:-5])
+        # 거래량 고갈(①)은 최근8일을 일부러 제외한 t-9~t-48(40일) 구간을 본다 —
+        # 턴어라운드 신호 '거래량 동반 상승'(⑨, 최근8일 vs 이전40일)과 구간이
+        # 겹치지 않게 하기 위함. 자세한 이유는 signals.py 참고.
+        rec_t9_t48 = median(vols[-(ACCUM_RECENT_DAYS + ACCUM_WINDOW_DAYS):-ACCUM_RECENT_DAYS])
         past120 = median(vols[-120:])
-        ret60 = (closes[-1] / closes[-60]) - 1
-        ret20_price = (closes[-1] / closes[-20]) - 1
+        # 상대강도(⑥)와 매집(③)의 quiet 게이트가 같은 t-9~t-48 40일 구간을 보므로
+        # (재설계 취지 — 최근8일을 완전히 배제) 수익률 계산도 하나로 공유한다.
+        ret_t9_t48 = (closes[-(ACCUM_RECENT_DAYS + 1)] / closes[-(ACCUM_RECENT_DAYS + ACCUM_WINDOW_DAYS + 1)]) - 1
 
         # 상대강도는 코스피 전체가 아니라 그 종목의 업종지수 대비로 본다 (매핑 없거나
         # 업종지수 데이터가 없으면 그 종목이 속한 시장의 전체 지수로 폴백 — 코스닥
@@ -764,21 +774,25 @@ def run():
         # 종목 고유의 날짜(dates)로 조회한다 — ohlcv_dates(전체 유니버스 캘린더)의
         # 인덱스를 쓰면, 이 종목만 결측(±30% 필터 등)이 있을 때 종목 수익률(closes
         # 기준)과 지수 수익률이 서로 다른 기간을 비교하게 된다. turnaround 섹션의
-        # relative_strength_accel과 동일한 방식으로 맞춘다.
-        bench_c_latest = bench_series.get(latest_date)
-        bench_c_60ago = bench_series.get(dates[-60])
+        # relative_strength_accel과 동일한 방식으로 맞춘다. 지수 쪽도 종목과 같은
+        # t-9~t-48 구간이어야 한다 — "오늘" 지수와 "t-9~t-48" 종목수익률을 비교하면
+        # 서로 다른 기간을 재는 것이라 재설계 취지(최근8일 완전 배제)가 무너진다.
+        bench_c_t9 = bench_series.get(dates[-(ACCUM_RECENT_DAYS + 1)])
+        bench_c_t48 = bench_series.get(dates[-(ACCUM_RECENT_DAYS + ACCUM_WINDOW_DAYS + 1)])
         idx_ret_fallback = idx_ret_by_market.get(ticker_market.get(tkr, "KOSPI"), 0.0)
-        idx_ret_t = (bench_c_latest / bench_c_60ago - 1) if bench_c_latest and bench_c_60ago else idx_ret_fallback
+        idx_ret_t = (bench_c_t9 / bench_c_t48 - 1) if bench_c_t9 and bench_c_t48 else idx_ret_fallback
 
-        if ret60 > 1.0:  # 임시 진단: +100% 이상 잔존 이상치 확인용, 확인 후 제거
+        if ret_t9_t48 > 1.0:  # 임시 진단: +100% 이상 잔존 이상치 확인용, 확인 후 제거
             outlier_count += 1
             try:
                 expected_days = ohlcv_dates.index(dates[-1]) - ohlcv_dates.index(dates[0]) + 1
             except ValueError:
                 expected_days = None
             missing = (expected_days - len(dates)) if expected_days is not None else None
-            print(f"   [진단:이상치] {name}({tkr}) ret60={ret60:.2f} "
-                  f"60일전({dates[-60]})={closes[-60]:.0f} 현재({dates[-1]})={closes[-1]:.0f} "
+            print(f"   [진단:이상치] {name}({tkr}) ret_t9_t48={ret_t9_t48:.2f} "
+                  f"t-48({dates[-(ACCUM_RECENT_DAYS + ACCUM_WINDOW_DAYS + 1)]})="
+                  f"{closes[-(ACCUM_RECENT_DAYS + ACCUM_WINDOW_DAYS + 1)]:.0f} "
+                  f"t-9({dates[-(ACCUM_RECENT_DAYS + 1)]})={closes[-(ACCUM_RECENT_DAYS + 1)]:.0f} "
                   f"보유일수={len(dates)} 예상거래일={expected_days} 결측추정={missing}")
 
         pbr_series = [r["PBR"] for r in fh if r["PBR"] > 0]
@@ -812,28 +826,28 @@ def run():
             bottom_weights["pbr_low"] = bottom_weights["pbr_low"] / 2
 
         # --- 바닥 신호 7개: "매도세 소진·역사적으로 싸다"만 본다 ---
+        net_buy_40d = accum_t9_t48.get(tkr, 0.0)
         scores = {
-            "volume_dryness": sg.score_volume_dryness(rec6to25, past120, vd_ratio_hist.get(tkr, [])),
-            "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100,
+            "volume_dryness": sg.score_volume_dryness(rec_t9_t48, past120, vd_ratio_hist.get(tkr, [])),
+            "accumulation": sg.score_accumulation(net_buy_40d, float_mc, ret_t9_t48 * 100,
                                                    accum_intensity_hist.get(tkr, [])),
             "short_covering": sg.score_short_covering(short_cur.get(tkr), short_max.get(tkr)),
             "pbr_low": None if capital_eroding else sg.score_pbr_low(cur_pbr, pbr_series),
             "dividend_yield": sg.score_dividend_yield(cur_div, div_series, cur_dps, cur_eps, had_dividend_cut(fh)),
-            "relative_strength": None if split_suspected else sg.score_relative_strength(ret60, idx_ret_t),
+            "relative_strength": None if split_suspected else sg.score_relative_strength(ret_t9_t48, idx_ret_t),
             "volatility_squeeze": sg.score_volatility_squeeze(bw_series),
         }
 
         # --- 정규화 전 원본 수치 (설명 문장 생성용, explain.py가 사용) ---
-        net_buy_20d = accum.get(tkr, 0.0)
         cur_short = short_cur.get(tkr)
         max_short = short_max.get(tkr)
         cur_bw = bw_series[-1] if bw_series else None
         raw = {
-            "volume_dryness": {"ratio": (rec6to25 / past120) if past120 else None},
+            "volume_dryness": {"ratio": (rec_t9_t48 / past120) if past120 else None},
             "accumulation": {
-                "net_buy_krw": net_buy_20d,
-                "intensity_pct": (net_buy_20d / float_mc * 100) if float_mc else None,
-                "price_change_pct": ret20_price * 100,
+                "net_buy_krw": net_buy_40d,
+                "intensity_pct": (net_buy_40d / float_mc * 100) if float_mc else None,
+                "price_change_pct": ret_t9_t48 * 100,
             },
             "short_covering": {
                 "current_ratio_pct": cur_short, "max_ratio_3m_pct": max_short,
@@ -846,8 +860,8 @@ def run():
             },
             "dividend_yield": {"div_pct": cur_div, "percentile": sg.percentile_rank(div_series, cur_div)},
             "relative_strength": {
-                "stock_ret_pct": ret60 * 100, "index_ret_pct": idx_ret_t * 100,
-                "excess_pct": (ret60 - idx_ret_t) * 100, "benchmark": bench_label,
+                "stock_ret_pct": ret_t9_t48 * 100, "index_ret_pct": idx_ret_t * 100,
+                "excess_pct": (ret_t9_t48 - idx_ret_t) * 100, "benchmark": bench_label,
             },
             "volatility_squeeze": {
                 "bandwidth_pct": (cur_bw * 100) if cur_bw is not None else None,
@@ -868,11 +882,14 @@ def run():
         turnaround_scores = None
         turnaround_comp = None
         turnaround_raw = None
-        if len(closes) >= 21 and len(dates) >= 21:
-            recent5_avg_vol = sum(vols[-5:]) / 5
-            # 최근5일과 안 겹치는 '직전 15일'(6~20일 전) — accumulation_accel과 동일
-            # 규칙(자기참조 방지, 아래 signals.score_volume_surge 참고).
-            prior15_avg_vol = sum(vols[-20:-5]) / 15
+        # 2026-08: 21→48(ACCUM_RECENT_DAYS+ACCUM_WINDOW_DAYS) — 매집가속/거래량급증이
+        # 이제 최근8일+이전40일을 쓰므로 그만큼 데이터가 확보돼 있어야 한다(파일
+        # 최상단 len(closes)<60 게이트가 이미 48을 커버하지만 명시적으로 맞춘다).
+        if len(closes) >= ACCUM_RECENT_DAYS + ACCUM_WINDOW_DAYS and len(dates) >= ACCUM_RECENT_DAYS + ACCUM_WINDOW_DAYS:
+            recent8_avg_vol = sum(vols[-ACCUM_RECENT_DAYS:]) / ACCUM_RECENT_DAYS
+            # 최근8일과 안 겹치는 '이전40일'(t-9~t-48) — accumulation_accel/volume_dryness와
+            # 동일 규칙(자기참조 방지, 아래 signals.score_volume_surge 참고).
+            prior40_avg_vol = sum(vols[-(ACCUM_RECENT_DAYS + ACCUM_WINDOW_DAYS):-ACCUM_RECENT_DAYS]) / ACCUM_WINDOW_DAYS
             ma20 = sum(closes[-20:]) / 20
             ma60 = sum(closes[-60:]) / 60
             high60 = max(closes[-60:])
@@ -885,16 +902,18 @@ def run():
             index_ret_recent10 = (idx_c1 / idx_c11 - 1) if idx_c1 and idx_c11 else None
             index_ret_prior10 = (idx_c11 / idx_c21 - 1) if idx_c11 and idx_c21 else None
 
-            net_buy_recent5_avg = accum_recent5.get(tkr, 0.0) / 5
-            net_buy_prior15_avg = accum_prior15.get(tkr, 0.0) / 15
+            # 매집가속의 "이전40일" baseline은 바닥 매집(③)과 완전히 같은 원본
+            # 순매수 데이터(accum_t9_t48)를 나눠 쓴다 — 위 net_buy_40d와 동일 소스.
+            net_buy_recent8_avg = accum_recent8.get(tkr, 0.0) / ACCUM_RECENT_DAYS
+            net_buy_prior40_avg = net_buy_40d / ACCUM_WINDOW_DAYS
 
             turnaround_scores = {
-                "volume_surge": sg.score_volume_surge(recent5_avg_vol, prior15_avg_vol),
+                "volume_surge": sg.score_volume_surge(recent8_avg_vol, prior40_avg_vol),
                 "ma_breakout": None if split_suspected else sg.score_ma_breakout(closes[-1], ma20, ma60),
                 "short_term_breakout": None if split_suspected else sg.score_short_term_breakout(closes[-1], high60),
                 "relative_strength_accel": sg.score_relative_strength_accel(
                     stock_ret_recent10, index_ret_recent10, stock_ret_prior10, index_ret_prior10),
-                "accumulation_accel": sg.score_accumulation_accel(net_buy_recent5_avg, net_buy_prior15_avg),
+                "accumulation_accel": sg.score_accumulation_accel(net_buy_recent8_avg, net_buy_prior40_avg),
                 # 참고용(게이트 미사용) — PRICE_GROUP과 개념이 겹쳐서 판정에는 안 씀.
                 # closes만으로 계산돼 별도 수집이 필요 없다. split_suspected면 다른
                 # 가격 패턴 신호들과 동일한 이유로 None 처리(미조정 분할 구간에서
@@ -907,7 +926,7 @@ def run():
             rs_recent10 = (stock_ret_recent10 - index_ret_recent10) if index_ret_recent10 is not None else None
             rs_prior10 = (stock_ret_prior10 - index_ret_prior10) if index_ret_prior10 is not None else None
             turnaround_raw = {
-                "volume_surge": {"ratio": (recent5_avg_vol / prior15_avg_vol) if prior15_avg_vol else None},
+                "volume_surge": {"ratio": (recent8_avg_vol / prior40_avg_vol) if prior40_avg_vol else None},
                 "ma_breakout": {
                     "close": closes[-1], "ma20": ma20, "ma60": ma60,
                     "close_vs_ma60_pct": ((closes[-1] - ma60) / ma60 * 100) if ma60 else None,
@@ -925,9 +944,9 @@ def run():
                         if rs_recent10 is not None and rs_prior10 is not None else None,
                 },
                 "accumulation_accel": {
-                    "recent5_avg_krw": net_buy_recent5_avg, "prior15_avg_krw": net_buy_prior15_avg,
-                    "ratio": (net_buy_recent5_avg / net_buy_prior15_avg)
-                        if net_buy_prior15_avg and net_buy_prior15_avg > 0 else None,
+                    "recent8_avg_krw": net_buy_recent8_avg, "prior40_avg_krw": net_buy_prior40_avg,
+                    "ratio": (net_buy_recent8_avg / net_buy_prior40_avg)
+                        if net_buy_prior40_avg and net_buy_prior40_avg > 0 else None,
                 },
             }
 

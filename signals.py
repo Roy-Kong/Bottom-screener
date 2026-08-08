@@ -130,23 +130,38 @@ ACCUM_QUIET_FLOOR = 0.7
 
 # raw% 하한 게이트 임계값 — 순매수/시총이 이 이하면 "자기 히스토리 대비로만 강한"
 # percentile 인플레이션으로 간주해 감쇠. 2026-07 43앵커 스윕(2023-01~2026-06,
-# 약세/횡보/강세 국면 포함) 결과: 이 값에서 정당대형주(percentile 높고 raw도
-# 하위30% 밖) 유지율 median 88%(레짐별로도 촘촘, 약세 83~90%·횡보 71~100%·
-# 강세 54~100%) + 인플레(percentile 높은데 raw 하위30% 미만) median 75% 차단
-# (약세·횡보 국면 90~100%, 강세 국면은 median 92%지만 앵커별 편차 큼 — 이
-# 도구가 원래 하락장/박스권 바닥 탐지에 최적화된 성격과 일치해 감수하기로 함).
-# 국면별로 하한을 다르게 주는 안은 과최적화 위험이 커서 안 함 — 단일 값 유지.
-RAW_FLOOR_PCT = 0.0035
+# 약세/횡보/강세 국면 포함) 결과: 이 값(당시 20일 합산 기준 0.35%)에서
+# 정당대형주(percentile 높고 raw도 하위30% 밖) 유지율 median 88%(레짐별로도
+# 촘촘, 약세 83~90%·횡보 71~100%·강세 54~100%) + 인플레(percentile 높은데
+# raw 하위30% 미만) median 75% 차단(약세·횡보 국면 90~100%, 강세 국면은
+# median 92%지만 앵커별 편차 큼 — 이 도구가 원래 하락장/박스권 바닥 탐지에
+# 최적화된 성격과 일치해 감수하기로 함). 국면별로 하한을 다르게 주는 안은
+# 과최적화 위험이 커서 안 함 — 단일 값 유지.
+#
+# 2026-08 바닥-턴어라운드 8일 경계 재설계: 매집 합산 구간이 20일→40일(t-9~t-48)로
+# 늘면서 같은 일평균 매수강도라도 raw%가 대략 2배로 커진다. 하한을 그대로 두면
+# 상대적으로 느슨해져(0.35% 기준 통과율 20.8%→25.9%로 실측 확인) 인플레이션
+# 차단력이 약해진다. 후보 0.5/0.6/0.7/0.8% 스윕 결과 0.70%가 통과율 20.6%로
+# OLD(20일+0.35%, 20.8%)와 가장 근접 — 동등 엄격도로 채택.
+RAW_FLOOR_PCT = 0.0070
 
 
-def score_accumulation(net_buy_value_20d: float, float_market_cap: float,
-                       price_change_pct_20d: float, intensity_history: list[float]) -> float | None:
-    """③ 기관·외국인 매집. intensity = 20일 누적 순매수액/시가총액을 그 종목 "자기
-       히스토리"(intensity_history, 보통 과거 12~24개월 월별 표본) 대비 percentile로
-       정규화한다. 주가가 조용할수록(변동 작을수록) 가중 — 단, 이 가중은 최대
-       (1-ACCUM_QUIET_FLOOR)만큼의 보너스일 뿐 매집강도 자체를 0으로 죽이지 않는다
+def score_accumulation(net_buy_value_40d: float, float_market_cap: float,
+                       price_change_pct_40d: float, intensity_history: list[float]) -> float | None:
+    """③ 기관·외국인 매집. intensity = 40일(t-9~t-48) 누적 순매수액/시가총액을 그
+       종목 "자기 히스토리"(intensity_history, 보통 과거 12~24개월 월별 표본) 대비
+       percentile로 정규화한다. 주가가 조용할수록(변동 작을수록) 가중 — 단, 이 가중은
+       최대 (1-ACCUM_QUIET_FLOOR)만큼의 보너스일 뿐 매집강도 자체를 0으로 죽이지 않는다
        (ACCUM_QUIET_FLOOR 주석 참고). 순매수 음수면 0(percentile 계산 자체를 생략 —
        순매도인데 히스토리상 "상대적으로 덜 판" 정도로 점수가 나가는 걸 막는다).
+
+       2026-08 바닥-턴어라운드 8일 경계 재설계: 측정구간을 "최근20일"에서
+       "최근8일을 제외한 그 이전 40일(t-9~t-48)"로 옮겼다 — 턴어라운드 신호
+       매집가속(⑬, 최근8일 vs 이 40일)과 날짜가 겹치면 "오래 매집했다(③)"와
+       "최근 들어 매집이 강해졌다(⑬)"가 뒤섞여 신호 목적이 흐려진다(실측: 재설계
+       전 두 신호 상관 ρ=0.194 → 재설계 후 ρ=-0.069로 겹침 해소 확인).
+       price_change_pct_40d(quiet 게이트)도 같은 t-9~t-48 구간 기준으로 맞춘다 —
+       최근8일 가격변동을 quiet 판정에 섞으면 겹침 분리 취지가 무너진다.
 
        2026-07 결정: 예전엔 절대문턱(2.6%)을 썼는데, 초대형주는 시총이 워낙 커서
        실제 상당한 순매수도 이 절대비율에 못 미쳐 구조적으로 0점에 깔리는 편향이
@@ -173,17 +188,17 @@ def score_accumulation(net_buy_value_20d: float, float_market_cap: float,
        한계, 별도 과제).
 
        intensity_history가 MIN_HISTORY_MONTHS 미만이면(신규상장 등) None(신호 미적용)."""
-    if not _valid(net_buy_value_20d, float_market_cap, price_change_pct_20d) or float_market_cap <= 0:
+    if not _valid(net_buy_value_40d, float_market_cap, price_change_pct_40d) or float_market_cap <= 0:
         return None
-    if net_buy_value_20d <= 0:
+    if net_buy_value_40d <= 0:
         return 0.0
     if len(intensity_history) < MIN_HISTORY_MONTHS:
         return None
-    intensity = net_buy_value_20d / float_market_cap
+    intensity = net_buy_value_40d / float_market_cap
     base = percentile_rank(intensity_history, intensity)
     if base is None:
         return None
-    dp = abs(price_change_pct_20d)
+    dp = abs(price_change_pct_40d)
     quiet = 1.0 if dp <= 5 else _clamp(1 - (dp - 5) / 15, 0, 1)  # 5%↑ 움직이면 감쇠, 20%↑면 0
     raw_gate = _clamp(intensity / RAW_FLOOR_PCT, 0.0, 1.0)  # RAW_FLOOR_PCT 이상=1.0, 그 아래는 비례 감쇠
     return _clamp(base * (ACCUM_QUIET_FLOOR + (1 - ACCUM_QUIET_FLOOR) * quiet) * raw_gate)
@@ -275,19 +290,23 @@ def score_volatility_squeeze(bandwidth_history: list[float]) -> float | None:
 # 증거일 뿐 실제로 오르기 시작했다는 증거는 아니다. 아래 5개는 "방향을 실제로
 # 틀었는지"만 본다. 두 그룹은 절대 섞지 않고 끝까지 별도 합성점수로 유지한다.
 
-def score_volume_surge(recent5_avg_vol: float, prior15_avg_vol: float) -> float | None:
-    """⑨ 거래량 동반 상승. 최근 5일 평균거래량 ÷ 그 직전 15일(6~20일 전) 평균거래량.
+def score_volume_surge(recent8_avg_vol: float, prior40_avg_vol: float) -> float | None:
+    """⑨ 거래량 동반 상승. 최근 8일 평균거래량 ÷ 그 직전 40일(t-9~t-48) 평균거래량.
        높을수록 고점. 주의: 바닥 신호의 '거래량 고갈'(①)과 정반대 방향이다 —
        거래량 고갈은 낮을수록 좋고(매도 소진 확인), 이건 높을수록 좋다(매수 유입
        확인). 헷갈리지 말 것.
 
        이전 버전은 분모가 '최근 20일'(최근 5일을 포함)이라 급증이 그 자신의
        비교 기준을 같이 끌어올려 비율이 과소평가됐다(자기참조). accumulation_accel
-       (매집 가속)이 이미 recent5 vs prior15(6~20일 전, 겹치지 않음)로 계산하는
-       것과 같은 방식으로 맞췄다 — 두 '가속' 계열 신호가 같은 규칙을 쓰게 됨."""
-    if not _valid(recent5_avg_vol, prior15_avg_vol) or prior15_avg_vol <= 0:
+       (매집 가속)이 이미 recent vs prior(겹치지 않음)로 계산하는 것과 같은
+       방식으로 맞췄다 — 두 '가속' 계열 신호가 같은 규칙을 쓰게 됨.
+
+       2026-08 바닥-턴어라운드 8일 경계 재설계: 창을 5일/15일에서 8일/40일로
+       넓혔다 — 거래량 고갈(①)의 측정구간도 같은 t-9~t-48로 옮겨졌으므로
+       둘의 경계(최근8일 vs 그 이전)가 정확히 맞물린다."""
+    if not _valid(recent8_avg_vol, prior40_avg_vol) or prior40_avg_vol <= 0:
         return None
-    ratio = recent5_avg_vol / prior15_avg_vol
+    ratio = recent8_avg_vol / prior40_avg_vol
     return _lin(ratio, 1.0, 2.5, 0.0, 100.0)
 
 
@@ -329,15 +348,22 @@ def score_relative_strength_accel(stock_ret_recent10: float, index_ret_recent10:
     return _lin(accel, -0.10, 0.10, 0.0, 100.0)
 
 
-def score_accumulation_accel(net_buy_recent5_avg: float, net_buy_prior15_avg: float) -> float | None:
-    """⑬ 매집 가속. 최근 5일 일평균 순매수 ÷ 이전 15일 일평균 순매수(둘 다 일평균이라
-       단위가 같음). 매집 강도(③)가 아니라 '최근 들어 매집이 강해지는 추세인지'를 본다.
-       이전 15일이 순매도(0 이하)였는데 최근 5일이 순매수로 전환되면 만점 처리."""
-    if not _valid(net_buy_recent5_avg, net_buy_prior15_avg):
+def score_accumulation_accel(net_buy_recent8_avg: float, net_buy_prior40_avg: float) -> float | None:
+    """⑬ 매집 가속. 최근 8일 일평균 순매수 ÷ 이전 40일(t-9~t-48) 일평균 순매수(둘 다
+       일평균이라 단위가 같음). 매집 강도(③)가 아니라 '최근 들어 매집이 강해지는
+       추세인지'를 본다. 이전 40일이 순매도(0 이하)였는데 최근 8일이 순매수로
+       전환되면 만점 처리.
+
+       2026-08 바닥-턴어라운드 8일 경계 재설계: 5일/15일→8일/40일. 이전 40일
+       구간은 매집(③)의 측정구간과 동일(t-9~t-48) — 호출부에서 같은 원본 순매수
+       합계를 재사용해 배선한다(중복 조회 방지). 실측: SK하이닉스 신호 전환횟수
+       88회(5일/15일) → 66회(8일/40일)로 깜빡임 감소, 매집(③)과의 상관도
+       0.194→-0.069로 겹침 해소 확인."""
+    if not _valid(net_buy_recent8_avg, net_buy_prior40_avg):
         return None
-    if net_buy_prior15_avg <= 0:
-        return 100.0 if net_buy_recent5_avg > 0 else 0.0
-    ratio = net_buy_recent5_avg / net_buy_prior15_avg
+    if net_buy_prior40_avg <= 0:
+        return 100.0 if net_buy_recent8_avg > 0 else 0.0
+    ratio = net_buy_recent8_avg / net_buy_prior40_avg
     return _lin(ratio, 0.5, 2.0, 0.0, 100.0)
 
 

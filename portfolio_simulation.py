@@ -164,13 +164,13 @@ def _compute_raw_scores_for_day(day: str, universe: dict, sector_map: dict, sect
     short_cur = dbr.load_short_current_from_db(latest_date)
     market_cap = dbr.load_market_cap_from_db(latest_date)
 
-    accum_from = ohlcv_dates[-scr.ACCUM_WINDOW_DAYS] if len(ohlcv_dates) >= scr.ACCUM_WINDOW_DAYS else ohlcv_dates[0]
-    accum_recent5_from = ohlcv_dates[-5] if len(ohlcv_dates) >= 5 else ohlcv_dates[0]
-    accum_prior15_from = ohlcv_dates[-20] if len(ohlcv_dates) >= 20 else ohlcv_dates[0]
-    accum_prior15_to = ohlcv_dates[-6] if len(ohlcv_dates) >= 6 else ohlcv_dates[0]
-    accum = dbr.load_accumulation_from_db(dbr.date_range_inclusive(db_dates_sorted, accum_from, latest_date))
-    accum_recent5 = dbr.load_accumulation_from_db(dbr.date_range_inclusive(db_dates_sorted, accum_recent5_from, latest_date))
-    accum_prior15 = dbr.load_accumulation_from_db(dbr.date_range_inclusive(db_dates_sorted, accum_prior15_from, accum_prior15_to))
+    accum_bottom_from = ohlcv_dates[-(scr.ACCUM_RECENT_DAYS + scr.ACCUM_WINDOW_DAYS)] \
+        if len(ohlcv_dates) >= scr.ACCUM_RECENT_DAYS + scr.ACCUM_WINDOW_DAYS else ohlcv_dates[0]
+    accum_bottom_to = ohlcv_dates[-(scr.ACCUM_RECENT_DAYS + 1)] \
+        if len(ohlcv_dates) >= scr.ACCUM_RECENT_DAYS + 1 else ohlcv_dates[0]
+    accum_recent8_from = ohlcv_dates[-scr.ACCUM_RECENT_DAYS] if len(ohlcv_dates) >= scr.ACCUM_RECENT_DAYS else ohlcv_dates[0]
+    accum_t9_t48 = dbr.load_accumulation_from_db(dbr.date_range_inclusive(db_dates_sorted, accum_bottom_from, accum_bottom_to))
+    accum_recent8 = dbr.load_accumulation_from_db(dbr.date_range_inclusive(db_dates_sorted, accum_recent8_from, latest_date))
 
     accum_intensity_hist, vd_ratio_hist = signal_history_source.for_anchor(
         dt.datetime.strptime(day, "%Y%m%d").date())
@@ -196,16 +196,16 @@ def _compute_raw_scores_for_day(day: str, universe: dict, sector_map: dict, sect
             continue
 
         split_suspected = scr.has_unadjusted_split_jump(closes)
-        rec6to25 = median(vols[-25:-5])
+        rec_t9_t48 = median(vols[-(scr.ACCUM_RECENT_DAYS + scr.ACCUM_WINDOW_DAYS):-scr.ACCUM_RECENT_DAYS])
         past120 = median(vols[-120:])
-        ret60 = (closes[-1] / closes[-60]) - 1
-        ret20_price = (closes[-1] / closes[-20]) - 1
+        ret_t9_t48 = (closes[-(scr.ACCUM_RECENT_DAYS + 1)]
+                      / closes[-(scr.ACCUM_RECENT_DAYS + scr.ACCUM_WINDOW_DAYS + 1)]) - 1
 
         bench_series, _ = scr.resolve_benchmark_series(tkr, sector_map, sector_idx_by_date,
                                                         market_idx_by_date, ticker_market)
-        bench_c_latest = bench_series.get(latest_date)
-        bench_c_60ago = bench_series.get(dates[-60])
-        idx_ret_t = (bench_c_latest / bench_c_60ago - 1) if bench_c_latest and bench_c_60ago else 0.0
+        bench_c_t9 = bench_series.get(dates[-(scr.ACCUM_RECENT_DAYS + 1)])
+        bench_c_t48 = bench_series.get(dates[-(scr.ACCUM_RECENT_DAYS + scr.ACCUM_WINDOW_DAYS + 1)])
+        idx_ret_t = (bench_c_t9 / bench_c_t48 - 1) if bench_c_t9 and bench_c_t48 else 0.0
 
         pbr_series = [r["PBR"] for r in fh if r["PBR"] > 0]
         div_series = [r["DIV"] for r in fh if r["DIV"] > 0]
@@ -220,21 +220,22 @@ def _compute_raw_scores_for_day(day: str, universe: dict, sector_map: dict, sect
         pbr_caution_sector = scr.is_pbr_caution_sector(sector_name)
         capital_eroding = scr.had_progressive_capital_erosion(fh)
 
+        net_buy_40d = accum_t9_t48.get(tkr, 0.0)
         bottom_scores = {
-            "volume_dryness": sg.score_volume_dryness(rec6to25, past120, vd_ratio_hist.get(tkr, [])),
-            "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100,
+            "volume_dryness": sg.score_volume_dryness(rec_t9_t48, past120, vd_ratio_hist.get(tkr, [])),
+            "accumulation": sg.score_accumulation(net_buy_40d, float_mc, ret_t9_t48 * 100,
                                                    accum_intensity_hist.get(tkr, [])),
             "short_covering": sg.score_short_covering(short_cur.get(tkr, 0.0), short_max.get(tkr, 0.0)),
             "pbr_low": None if capital_eroding else sg.score_pbr_low(cur_pbr, pbr_series),
             "dividend_yield": sg.score_dividend_yield(cur_div, div_series, cur_dps, cur_eps, scr.had_dividend_cut(fh)),
-            "relative_strength": None if split_suspected else sg.score_relative_strength(ret60, idx_ret_t),
+            "relative_strength": None if split_suspected else sg.score_relative_strength(ret_t9_t48, idx_ret_t),
             "volatility_squeeze": sg.score_volatility_squeeze(bw_series),
         }
 
         turnaround_scores = {k: None for k in GATE_TURNAROUND_KEYS}
-        if len(closes) >= 21 and len(dates) >= 21:
-            recent5_avg_vol = sum(vols[-5:]) / 5
-            prior15_avg_vol = sum(vols[-20:-5]) / 15
+        if len(closes) >= scr.ACCUM_RECENT_DAYS + scr.ACCUM_WINDOW_DAYS and len(dates) >= scr.ACCUM_RECENT_DAYS + scr.ACCUM_WINDOW_DAYS:
+            recent8_avg_vol = sum(vols[-scr.ACCUM_RECENT_DAYS:]) / scr.ACCUM_RECENT_DAYS
+            prior40_avg_vol = sum(vols[-(scr.ACCUM_RECENT_DAYS + scr.ACCUM_WINDOW_DAYS):-scr.ACCUM_RECENT_DAYS]) / scr.ACCUM_WINDOW_DAYS
             ma20 = sum(closes[-20:]) / 20
             ma60 = sum(closes[-60:]) / 60
             high60 = max(closes[-60:])
@@ -245,15 +246,15 @@ def _compute_raw_scores_for_day(day: str, universe: dict, sector_map: dict, sect
             idx_c21 = bench_series.get(dates[-21])
             index_ret_recent10 = (idx_c1 / idx_c11 - 1) if idx_c1 and idx_c11 else None
             index_ret_prior10 = (idx_c11 / idx_c21 - 1) if idx_c11 and idx_c21 else None
-            net_buy_recent5_avg = accum_recent5.get(tkr, 0.0) / 5
-            net_buy_prior15_avg = accum_prior15.get(tkr, 0.0) / 15
+            net_buy_recent8_avg = accum_recent8.get(tkr, 0.0) / scr.ACCUM_RECENT_DAYS
+            net_buy_prior40_avg = net_buy_40d / scr.ACCUM_WINDOW_DAYS
             turnaround_scores = {
-                "volume_surge": sg.score_volume_surge(recent5_avg_vol, prior15_avg_vol),
+                "volume_surge": sg.score_volume_surge(recent8_avg_vol, prior40_avg_vol),
                 "ma_breakout": None if split_suspected else sg.score_ma_breakout(closes[-1], ma20, ma60),
                 "short_term_breakout": None if split_suspected else sg.score_short_term_breakout(closes[-1], high60),
                 "relative_strength_accel": sg.score_relative_strength_accel(
                     stock_ret_recent10, index_ret_recent10, stock_ret_prior10, index_ret_prior10),
-                "accumulation_accel": sg.score_accumulation_accel(net_buy_recent5_avg, net_buy_prior15_avg),
+                "accumulation_accel": sg.score_accumulation_accel(net_buy_recent8_avg, net_buy_prior40_avg),
             }
 
         out.append({"ticker": tkr, "name": name, "bottom_scores": bottom_scores,

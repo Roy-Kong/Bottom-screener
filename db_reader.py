@@ -224,9 +224,17 @@ class SignalHistorySource:
 
            월별 표본 규칙은 month_end_samples(펀더멘털 5년 밴드와 동일 방식)를
            재사용해 실제 거래일로 스냅한다. 표본 하나당:
-             - intensity = 그 거래일 기준 직전 20영업일 누적(기관+외국인 순매수)/시가총액
-             - vd_ratio = 6~25일전(최근5일 제외) 거래량 중앙값 / 직전 120영업일 중앙값
-           (score_accumulation/score_volume_dryness의 실시간 계산과 동일한 정의)."""
+             - intensity = 그 거래일 기준 t-9~t-48(최근8일 제외 그 이전 40영업일)
+               누적(기관+외국인 순매수)/시가총액
+             - vd_ratio = t-9~t-48(accumulation과 동일 40일 창) 거래량 중앙값 /
+               직전 120영업일 중앙값
+           (score_accumulation/score_volume_dryness의 실시간 계산과 동일한 정의).
+
+           2026-08 바닥-턴어라운드 8일 경계 재설계: 두 신호의 "최근" 측정구간을
+           20일/6~25일전에서 동일한 t-9~t-48(40일)로 통일했다 — 턴어라운드
+           신호(매집가속·거래량급증)가 보는 "최근8일"과 정확히 맞물려 겹치지
+           않게 하기 위함(screener.py 등 라이브 원값 계산과 반드시 같은 창을
+           써야 percentile 비교가 사과-사과가 된다)."""
         anchor_ds = scr.yyyymmdd(anchor)
         trading_dates = [d for d in self.trading_dates if d <= anchor_ds]
         if len(trading_dates) < 120:
@@ -250,24 +258,23 @@ class SignalHistorySource:
         vd_hist: dict[str, list[float]] = {}
         for ds in monthly_anchors:
             idx = trading_dates.index(ds)
-            if idx < 119:
-                continue  # 120영업일 윈도우 미확보(백필 시작 근처)
+            if idx < 47:
+                continue  # 40일(t-9~t-48) 윈도우 미확보(백필 시작 근처)
 
-            win20 = trading_dates[idx - 19: idx + 1]
+            win_t9_t48 = trading_dates[idx - 47: idx - 7]  # 40일, accumulation/volume_dryness 공용
             accum_sum: dict[str, float] = {}
-            for d in win20:
+            for d in win_t9_t48:
                 for t, v in self.flow_by_date.get(d, {}).items():
                     accum_sum[t] = accum_sum.get(t, 0.0) + v
             for t, mc in self.mc_by_date.get(ds, {}).items():
                 if mc and mc > 0:
                     accum_hist.setdefault(t, []).append(accum_sum.get(t, 0.0) / mc)
 
-            if idx < 24:
-                continue  # 6~25일전 구간 미확보
+            if idx < 119:
+                continue  # 120영업일 윈도우 미확보(백필 시작 근처)
             win120 = trading_dates[idx - 119: idx + 1]
-            win25_5 = trading_dates[idx - 24: idx - 4]
             vol_recent: dict[str, list[float]] = {}
-            for d in win25_5:
+            for d in win_t9_t48:
                 for t, v in self.vol_by_date.get(d, {}).items():
                     vol_recent.setdefault(t, []).append(v)
             vol_past: dict[str, list[float]] = {}

@@ -36,7 +36,7 @@ def _sentence_volume_dryness(raw: dict) -> str | None:
     r = raw.get("ratio")
     if r is None:
         return None
-    return f"6~25일 전 거래량이 과거 120일 평균의 {r * 100:.0f}%로 크게 줄었습니다."
+    return f"9~48일 전(최근8일 제외) 거래량이 과거 120일 평균의 {r * 100:.0f}%로 크게 줄었습니다."
 
 
 def _sentence_accumulation(raw: dict) -> str | None:
@@ -45,7 +45,7 @@ def _sentence_accumulation(raw: dict) -> str | None:
         return None
     intensity = raw.get("intensity_pct")
     price_change = raw.get("price_change_pct")
-    s = f"최근 20일간 기관·외국인이 {krw / 1e8:,.0f}억원"
+    s = f"9~48일 전(최근8일 제외) 기관·외국인이 {krw / 1e8:,.0f}억원"
     if intensity is not None:
         s += f"(유통시총의 {intensity:.1f}%)"
     s += "을 순매수했"
@@ -93,7 +93,7 @@ def _sentence_relative_strength(raw: dict) -> str | None:
     if stock_ret is None or idx_ret is None:
         return None
     bench = _benchmark_label(raw)
-    return f"최근 60일 {bench}는 {idx_ret:+.1f}%인데 이 종목은 {stock_ret:+.1f}%로 {bench}보다 {excess:+.1f}%p 선방했습니다."
+    return f"9~48일 전(최근8일 제외) {bench}는 {idx_ret:+.1f}%인데 이 종목은 {stock_ret:+.1f}%로 {bench}보다 {excess:+.1f}%p 선방했습니다."
 
 
 def _sentence_volatility_squeeze(raw: dict) -> str | None:
@@ -107,7 +107,7 @@ def _sentence_volume_surge(raw: dict) -> str | None:
     r = raw.get("ratio")
     if r is None:
         return None
-    return f"최근 5일 거래량이 20일 평균 대비 {r * 100:.0f}%로 늘었습니다."
+    return f"최근 8일 거래량이 이전 40일 평균 대비 {r * 100:.0f}%로 늘었습니다."
 
 
 def _sentence_ma_breakout(raw: dict) -> str | None:
@@ -136,7 +136,7 @@ def _sentence_accumulation_accel(raw: dict) -> str | None:
     ratio = raw.get("ratio")
     if ratio is None:
         return None
-    return f"최근 5일 일평균 순매수가 이전 15일 평균의 {ratio * 100:.0f}%로 매집이 강해졌습니다."
+    return f"최근 8일 일평균 순매수가 이전 40일 평균의 {ratio * 100:.0f}%로 매집이 강해졌습니다."
 
 
 BOTTOM_SENTENCES = {
@@ -242,7 +242,7 @@ if __name__ == "__main__":
             "ma_breakout": {"close": 105, "ma20": 103, "ma60": 100, "close_vs_ma60_pct": 5.0, "ma20_vs_ma60_pct": 3.0},
             "short_term_breakout": {"close": 84, "high60": 100, "pct_of_high60": 84.0},
             "relative_strength_accel": {"rs_recent10_pct": 7.0, "rs_prior10_pct": -2.0, "accel_pct": 9.0},
-            "accumulation_accel": {"recent5_avg_krw": 1.0e8, "prior15_avg_krw": 5.0e8, "ratio": 0.2},
+            "accumulation_accel": {"recent8_avg_krw": 1.0e8, "prior40_avg_krw": 5.0e8, "ratio": 0.2},
         },
     }
 

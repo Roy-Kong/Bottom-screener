@@ -104,9 +104,12 @@ def run_backtest(anchor_str: str, top_n: int = 10):
     short_cur = scr.collect_short_current(latest_date)
     market_cap = scr.collect_market_cap(latest_date)
 
-    print("5) 매집(20일) 수집…")
-    accum_from = ohlcv_dates[-scr.ACCUM_WINDOW_DAYS] if len(ohlcv_dates) >= scr.ACCUM_WINDOW_DAYS else ohlcv_dates[0]
-    accum = scr.collect_accumulation(accum_from, latest_date)
+    print("5) 매집(t-9~t-48, 40일) 수집…")
+    accum_from = ohlcv_dates[-(scr.ACCUM_RECENT_DAYS + scr.ACCUM_WINDOW_DAYS)] \
+        if len(ohlcv_dates) >= scr.ACCUM_RECENT_DAYS + scr.ACCUM_WINDOW_DAYS else ohlcv_dates[0]
+    accum_to = ohlcv_dates[-(scr.ACCUM_RECENT_DAYS + 1)] \
+        if len(ohlcv_dates) >= scr.ACCUM_RECENT_DAYS + 1 else ohlcv_dates[0]
+    accum = scr.collect_accumulation(accum_from, accum_to)
 
     print("6) 지수 수익률(코스피·코스닥)…")
     market_idx_by_date: dict[str, dict[str, float]] = {}
@@ -148,16 +151,16 @@ def run_backtest(anchor_str: str, top_n: int = 10):
 
         split_suspected = scr.has_unadjusted_split_jump(closes)
 
-        rec6to25 = median(vols[-25:-5])
+        rec_t9_t48 = median(vols[-(scr.ACCUM_RECENT_DAYS + scr.ACCUM_WINDOW_DAYS):-scr.ACCUM_RECENT_DAYS])
         past120 = median(vols[-120:])
-        ret60 = (closes[-1] / closes[-60]) - 1
-        ret20_price = (closes[-1] / closes[-20]) - 1
+        ret_t9_t48 = (closes[-(scr.ACCUM_RECENT_DAYS + 1)]
+                      / closes[-(scr.ACCUM_RECENT_DAYS + scr.ACCUM_WINDOW_DAYS + 1)]) - 1
 
         bench_series, bench_label = scr.resolve_benchmark_series(
             tkr, sector_map, sector_idx_by_date, market_idx_by_date, ticker_market)
-        bench_c_latest = bench_series.get(latest_date)
-        bench_c_60ago = bench_series.get(dates[-60])
-        idx_ret_t = (bench_c_latest / bench_c_60ago - 1) if bench_c_latest and bench_c_60ago else 0.0
+        bench_c_t9 = bench_series.get(dates[-(scr.ACCUM_RECENT_DAYS + 1)])
+        bench_c_t48 = bench_series.get(dates[-(scr.ACCUM_RECENT_DAYS + scr.ACCUM_WINDOW_DAYS + 1)])
+        idx_ret_t = (bench_c_t9 / bench_c_t48 - 1) if bench_c_t9 and bench_c_t48 else 0.0
 
         pbr_series = [r["PBR"] for r in fh if r["PBR"] > 0]
         div_series = [r["DIV"] for r in fh if r["DIV"] > 0]
@@ -178,13 +181,13 @@ def run_backtest(anchor_str: str, top_n: int = 10):
             bottom_weights["pbr_low"] = bottom_weights["pbr_low"] / 2
 
         scores = {
-            "volume_dryness": sg.score_volume_dryness(rec6to25, past120, vd_ratio_hist.get(tkr, [])),
-            "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100,
+            "volume_dryness": sg.score_volume_dryness(rec_t9_t48, past120, vd_ratio_hist.get(tkr, [])),
+            "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret_t9_t48 * 100,
                                                    accum_intensity_hist.get(tkr, [])),
             "short_covering": sg.score_short_covering(short_cur.get(tkr, 0.0), short_max.get(tkr, 0.0)),
             "pbr_low": None if capital_eroding else sg.score_pbr_low(cur_pbr, pbr_series),
             "dividend_yield": sg.score_dividend_yield(cur_div, div_series, cur_dps, cur_eps, scr.had_dividend_cut(fh)),
-            "relative_strength": None if split_suspected else sg.score_relative_strength(ret60, idx_ret_t),
+            "relative_strength": None if split_suspected else sg.score_relative_strength(ret_t9_t48, idx_ret_t),
             "volatility_squeeze": sg.score_volatility_squeeze(bw_series),
         }
         comp = sg.composite_score(scores, bottom_weights)
@@ -287,9 +290,12 @@ def run_backtest_from_db(anchor_str: str, top_n: int = 10):
     short_cur = dbr.load_short_current_from_db(latest_date)
     market_cap = dbr.load_market_cap_from_db(latest_date)
 
-    print("5) 매집(20일) 로딩… (DB)")
-    accum_from = ohlcv_dates[-scr.ACCUM_WINDOW_DAYS] if len(ohlcv_dates) >= scr.ACCUM_WINDOW_DAYS else ohlcv_dates[0]
-    accum_dates = dbr.date_range_inclusive(sorted(matrix.keys()), accum_from, latest_date)
+    print("5) 매집(t-9~t-48, 40일) 로딩… (DB)")
+    accum_from = ohlcv_dates[-(scr.ACCUM_RECENT_DAYS + scr.ACCUM_WINDOW_DAYS)] \
+        if len(ohlcv_dates) >= scr.ACCUM_RECENT_DAYS + scr.ACCUM_WINDOW_DAYS else ohlcv_dates[0]
+    accum_to = ohlcv_dates[-(scr.ACCUM_RECENT_DAYS + 1)] \
+        if len(ohlcv_dates) >= scr.ACCUM_RECENT_DAYS + 1 else ohlcv_dates[0]
+    accum_dates = dbr.date_range_inclusive(sorted(matrix.keys()), accum_from, accum_to)
     accum = dbr.load_accumulation_from_db(accum_dates)
 
     if ohlcv_dates[0] >= dbr.INDEX_COVERAGE_START:
@@ -340,16 +346,16 @@ def run_backtest_from_db(anchor_str: str, top_n: int = 10):
 
         split_suspected = scr.has_unadjusted_split_jump(closes)
 
-        rec6to25 = median(vols[-25:-5])
+        rec_t9_t48 = median(vols[-(scr.ACCUM_RECENT_DAYS + scr.ACCUM_WINDOW_DAYS):-scr.ACCUM_RECENT_DAYS])
         past120 = median(vols[-120:])
-        ret60 = (closes[-1] / closes[-60]) - 1
-        ret20_price = (closes[-1] / closes[-20]) - 1
+        ret_t9_t48 = (closes[-(scr.ACCUM_RECENT_DAYS + 1)]
+                      / closes[-(scr.ACCUM_RECENT_DAYS + scr.ACCUM_WINDOW_DAYS + 1)]) - 1
 
         bench_series, bench_label = scr.resolve_benchmark_series(
             tkr, sector_map, sector_idx_by_date, market_idx_by_date, ticker_market)
-        bench_c_latest = bench_series.get(latest_date)
-        bench_c_60ago = bench_series.get(dates[-60])
-        idx_ret_t = (bench_c_latest / bench_c_60ago - 1) if bench_c_latest and bench_c_60ago else 0.0
+        bench_c_t9 = bench_series.get(dates[-(scr.ACCUM_RECENT_DAYS + 1)])
+        bench_c_t48 = bench_series.get(dates[-(scr.ACCUM_RECENT_DAYS + scr.ACCUM_WINDOW_DAYS + 1)])
+        idx_ret_t = (bench_c_t9 / bench_c_t48 - 1) if bench_c_t9 and bench_c_t48 else 0.0
 
         pbr_series = [r["PBR"] for r in fh if r["PBR"] > 0]
         div_series = [r["DIV"] for r in fh if r["DIV"] > 0]
@@ -370,13 +376,13 @@ def run_backtest_from_db(anchor_str: str, top_n: int = 10):
             bottom_weights["pbr_low"] = bottom_weights["pbr_low"] / 2
 
         scores = {
-            "volume_dryness": sg.score_volume_dryness(rec6to25, past120, vd_ratio_hist.get(tkr, [])),
-            "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret20_price * 100,
+            "volume_dryness": sg.score_volume_dryness(rec_t9_t48, past120, vd_ratio_hist.get(tkr, [])),
+            "accumulation": sg.score_accumulation(accum.get(tkr, 0.0), float_mc, ret_t9_t48 * 100,
                                                    accum_intensity_hist.get(tkr, [])),
             "short_covering": sg.score_short_covering(short_cur.get(tkr, 0.0), short_max.get(tkr, 0.0)),
             "pbr_low": None if capital_eroding else sg.score_pbr_low(cur_pbr, pbr_series),
             "dividend_yield": sg.score_dividend_yield(cur_div, div_series, cur_dps, cur_eps, scr.had_dividend_cut(fh)),
-            "relative_strength": None if split_suspected else sg.score_relative_strength(ret60, idx_ret_t),
+            "relative_strength": None if split_suspected else sg.score_relative_strength(ret_t9_t48, idx_ret_t),
             "volatility_squeeze": sg.score_volatility_squeeze(bw_series),
         }
         comp = sg.composite_score(scores, bottom_weights)
