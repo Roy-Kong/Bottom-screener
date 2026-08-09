@@ -74,6 +74,9 @@
   .impact b{font-weight:600}
   .impact .warn{color:var(--hot)}
 
+  .filterbar{display:flex;align-items:center;gap:7px;margin-bottom:16px;font-family:var(--mono);font-size:11.5px;color:var(--mute);cursor:pointer;user-select:none}
+  .filterbar input{accent-color:var(--go);width:14px;height:14px;cursor:pointer}
+  .divv{color:var(--dim)}
   .loading,.err{font-family:var(--mono);font-size:13px;color:var(--mute);padding:30px 4px;text-align:center;line-height:1.6}
   .err{color:var(--hot)}
   .disc{margin-top:22px;font-size:11px;color:var(--dim);line-height:1.55;font-family:var(--mono)}
@@ -103,12 +106,19 @@
     <span class="lg"><span class="ld" style="background:#2b4359"></span>미적용</span>
   </div>
 
+  <label class="filterbar" for="divFilter">
+    <input type="checkbox" id="divFilter">
+    배당 <span id="divFilterMin"></span>%+ 만 보기
+  </label>
+
   <div id="list"><div class="loading">데이터 불러오는 중…</div></div>
 
   <div class="disc" id="disc"></div>
 </div>
 
 <script>
+const DIV_MIN = 3.5; // "배당 X%+ 만 보기" 필터 임계값(%) — 조정은 이 값만 바꾸면 됨
+
 const LABELS = {
   volume_dryness:"거래량 고갈", accumulation:"기관·외국인 매집", short_covering:"공매도 감소",
   pbr_low:"PBR 역사적 저점", dividend_yield:"배당수익률", relative_strength:"상대강도",
@@ -165,6 +175,11 @@ const SAMPLE = {
 };
 
 function color(v){ if(v==null) return "#2b4359"; return v>=66?"#2FE0B6":v>=34?"#F4C15D":"#F5695C"; }
+
+// 무배당 종목은 raw.dividend_yield.div_pct가 0.0(null 아님)이라 ||0 폴백으로도 안전하게 제외됨.
+function divPct(r){
+  return (r.raw && r.raw.dividend_yield && r.raw.dividend_yield.div_pct) || 0;
+}
 
 function signalBars(breakdown, order, labels){
   return order.map(k=>{
@@ -228,21 +243,29 @@ function renderRow(r, rank){
       whyBlock(r)+
       '<div class="subhead">바닥 신호<span class="ssc">'+r.score+'</span></div>'+bottomBars+
       '<div class="subhead">턴어라운드 신호<span class="ssc">'+(turnScore==null?'—':turnScore)+'</span></div>'+turnaroundBars+
-      '<div class="close">종가 '+(r.close?r.close.toLocaleString('ko-KR')+'원':'—')+'</div>'+
+      '<div class="close">종가 '+(r.close?r.close.toLocaleString('ko-KR')+'원':'—')+
+        (divPct(r)>0?' · <span class="divv">배당 '+divPct(r).toFixed(1)+'%</span>':'')+'</div>'+
       impactBlock(r)+
     '</div>'+
   '</div>';
 }
 
+let RAW_DATA = null; // 원본 fetch 결과 보관 — 필터 체크박스가 재fetch 없이 재렌더할 수 있게
+
 function render(data){
+  RAW_DATA = data;
   document.getElementById("meta").innerHTML =
     "기준일 "+data.as_of_date+"<br>갱신 "+data.generated_at+"<br>채점 "+(data.scored||0)+" / "+(data.universe_size||"—");
   const list = document.getElementById("list");
   if(!data.results || !data.results.length){ list.innerHTML='<div class="err">결과가 없습니다.</div>'; return; }
 
-  const confirmed = data.results.filter(r=>r.status==="confirmed_turnaround" && r.tier!=="watch");
-  const watching = data.results.filter(r=>r.status!=="confirmed_turnaround" && r.tier!=="watch");
-  const refCandidates = data.results.filter(r=>r.tier==="watch");
+  const divFilterOn = document.getElementById("divFilter") && document.getElementById("divFilter").checked;
+  const results = divFilterOn ? data.results.filter(r=>divPct(r)>=DIV_MIN) : data.results;
+
+  const confirmed = results.filter(r=>r.status==="confirmed_turnaround" && r.tier!=="watch");
+  const watching = results.filter(r=>r.status!=="confirmed_turnaround" && r.tier!=="watch");
+  const refCandidates = results.filter(r=>r.tier==="watch");
+  if(!results.length){ list.innerHTML='<div class="err">배당 '+DIV_MIN+'%+ 조건에 맞는 종목이 없습니다.</div>'; return; }
   let rank = 0;
   let html = "";
   if(confirmed.length){
@@ -264,6 +287,9 @@ function render(data){
 document.getElementById("disc").textContent =
   "신호는 증거 직접성에 따른 가중평균 · 가중치·임계값 모두 백테스트 전 초기 추정값 · 매수·매도 신호가 아닌 후보 발굴 도구입니다. 바닥 신호는 매도세 소진·저평가만, " +
   "턴어라운드 신호는 실제 방향 전환만 봅니다 — 두 점수는 섞이지 않습니다. 신용잔고·내부자매수는 무료로 종목별 조회할 API를 찾지 못해 제외했습니다.";
+
+document.getElementById("divFilterMin").textContent = DIV_MIN;
+document.getElementById("divFilter").addEventListener("change", ()=>{ if(RAW_DATA) render(RAW_DATA); });
 
 fetch("results.json").then(r=>{ if(!r.ok) throw new Error(); return r.json(); })
   .then(render)
