@@ -267,8 +267,8 @@ def screen_and_score(anchor_date: dt.date, asof: str, use_cache: bool = True) ->
         net_buy_40d = accum_t9_t48.get(tkr, 0.0)
         bottom_scores = {
             "volume_dryness": sg.score_volume_dryness(rec_t9_t48, past120, vd_ratio_hist.get(tkr, [])),
-            "accumulation": sg.score_accumulation(net_buy_40d, float_mc, ret_t9_t48 * 100,
-                                                   accum_intensity_hist.get(tkr, [])),
+            "accumulation": None if split_suspected else sg.score_accumulation(
+                net_buy_40d, float_mc, ret_t9_t48 * 100, accum_intensity_hist.get(tkr, [])),
             "short_covering": sg.score_short_covering(short_cur.get(tkr, 0.0), short_max.get(tkr, 0.0)),
             "pbr_low": None if capital_eroding else sg.score_pbr_low(cur_pbr, pbr_series),
             "dividend_yield": sg.score_dividend_yield(cur_div, div_series, cur_dps, cur_eps, scr.had_dividend_cut(fh)),

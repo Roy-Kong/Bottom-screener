@@ -752,7 +752,7 @@ def run():
         if split_suspected:
             split_flag_count += 1
             print(f"   [진단:분할의심] {name}({tkr}) 최근 60일 내 전일 대비 2배↑/0.5배↓ 지점 발견 "
-                  f"— relative_strength/ma_breakout/short_term_breakout/rsi_reversal/macd_cross None 처리")
+                  f"— accumulation/relative_strength/ma_breakout/short_term_breakout/rsi_reversal/macd_cross None 처리")
 
         # --- 신호 입력값 ---
         # 거래량 고갈(①)은 최근8일을 일부러 제외한 t-9~t-48(40일) 구간을 본다 —
@@ -782,7 +782,13 @@ def run():
         idx_ret_fallback = idx_ret_by_market.get(ticker_market.get(tkr, "KOSPI"), 0.0)
         idx_ret_t = (bench_c_t9 / bench_c_t48 - 1) if bench_c_t9 and bench_c_t48 else idx_ret_fallback
 
-        if ret_t9_t48 > 1.0:  # 임시 진단: +100% 이상 잔존 이상치 확인용, 확인 후 제거
+        # has_unadjusted_split_jump는 "전일 대비" 단일 점프만 보므로, 여러 날에 걸쳐
+        # 나뉘어 반영된 잔존 분할/증자(개별 등락은 30% 미만이지만 40일 누적으로는
+        # 2배 이상)는 못 잡는다 — t-9~t-48 누적수익률로 그 잔존분을 보조 감시한다.
+        # (2026-08 진단 결과 split_suspected 종목의 accumulation이 게이트 없이
+        # 통과하던 문제를 여기서 발견 — 그 게이트는 추가했고, 이 카운터는 계속
+        # 상시 모니터링용으로 유지한다.)
+        if ret_t9_t48 > 1.0:
             outlier_count += 1
             try:
                 expected_days = ohlcv_dates.index(dates[-1]) - ohlcv_dates.index(dates[0]) + 1
@@ -829,8 +835,8 @@ def run():
         net_buy_40d = accum_t9_t48.get(tkr, 0.0)
         scores = {
             "volume_dryness": sg.score_volume_dryness(rec_t9_t48, past120, vd_ratio_hist.get(tkr, [])),
-            "accumulation": sg.score_accumulation(net_buy_40d, float_mc, ret_t9_t48 * 100,
-                                                   accum_intensity_hist.get(tkr, [])),
+            "accumulation": None if split_suspected else sg.score_accumulation(
+                net_buy_40d, float_mc, ret_t9_t48 * 100, accum_intensity_hist.get(tkr, [])),
             "short_covering": sg.score_short_covering(short_cur.get(tkr), short_max.get(tkr)),
             "pbr_low": None if capital_eroding else sg.score_pbr_low(cur_pbr, pbr_series),
             "dividend_yield": sg.score_dividend_yield(cur_div, div_series, cur_dps, cur_eps, had_dividend_cut(fh)),
@@ -994,7 +1000,7 @@ def run():
     print(f"   [진단:거래정지의심] is_trading_halted로 생존 게이트 탈락: {halted_count}개")
     print(f"   [진단:이상치] 총 {outlier_count}개 종목이 생존 게이트 통과 종목 중 60일 +100% 이상")
     print(f"   [진단:분할의심] 총 {split_flag_count}개 종목이 ±30% 필터를 뚫은 잔존 분할/증자 의심"
-          f"(relative_strength/ma_breakout/short_term_breakout/rsi_reversal/macd_cross None 처리됨)")
+          f"(accumulation/relative_strength/ma_breakout/short_term_breakout/rsi_reversal/macd_cross None 처리됨)")
     # 통과 통계(scored/confirmed_turnaround)는 예전처럼 tier=="pass"(바닥 60점 이상)만
     # 센다 — 52~60 참고분은 화면 노출용으로 results에 같이 담기지만 이 통계엔 안 들어간다.
     passed_results = [r for r in results if r["tier"] == "pass"]
