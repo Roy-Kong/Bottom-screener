@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-14T08:52",
+  "generated_at": "2026-08-17T07:53",
   "as_of_date": "20260814",
   "universe_size": 2763,
   "scored": 43,
@@ -304,7 +304,7 @@
       },
       "turnaround_raw": {
         "volume_surge": {
-          "ratio": 0.7150664909707823
+          "ratio": 0.7151472164143328
         },
         "ma_breakout": {
           "close": 8420.0,
@@ -1173,9 +1173,9 @@
           "accel_pct": -3.8982588138207763
         },
         "accumulation_accel": {
-          "recent8_avg_krw": 5463606593.75,
+          "recent8_avg_krw": 5469044468.75,
           "prior40_avg_krw": 1031295918.75,
-          "ratio": 5.297806860684815
+          "ratio": 5.3030797168080035
         }
       },
       "status": "confirmed_turnaround",
@@ -1258,7 +1258,7 @@
       },
       "turnaround_raw": {
         "volume_surge": {
-          "ratio": 0.5388642916767254
+          "ratio": 0.540138234397994
         },
         "ma_breakout": {
           "close": 2035.0,
@@ -1460,7 +1460,7 @@
       "turnaround_score": 28.7,
       "n_turnaround_signals": 7,
       "turnaround_breakdown": {
-        "volume_surge": 19.0,
+        "volume_surge": 19.1,
         "ma_breakout": 71.5,
         "short_term_breakout": 68.4,
         "relative_strength_accel": 15.7,
@@ -1470,7 +1470,7 @@
       },
       "turnaround_raw": {
         "volume_surge": {
-          "ratio": 1.2856398929996684
+          "ratio": 1.2858045000758487
         },
         "ma_breakout": {
           "close": 40000.0,
@@ -1576,7 +1576,7 @@
       },
       "turnaround_raw": {
         "volume_surge": {
-          "ratio": 0.6814132801175259
+          "ratio": 0.6814374681751484
         },
         "ma_breakout": {
           "close": 11910.0,
@@ -1682,7 +1682,7 @@
       },
       "turnaround_raw": {
         "volume_surge": {
-          "ratio": 0.9919687253206881
+          "ratio": 0.992384383317435
         },
         "ma_breakout": {
           "close": 10360.0,
@@ -1894,7 +1894,7 @@
       },
       "turnaround_raw": {
         "volume_surge": {
-          "ratio": 0.620443347957813
+          "ratio": 0.6205390154159667
         },
         "ma_breakout": {
           "close": 73800.0,
@@ -2318,7 +2318,7 @@
       },
       "turnaround_raw": {
         "volume_surge": {
-          "ratio": 0.8685452174921263
+          "ratio": 0.868799587329306
         },
         "ma_breakout": {
           "close": 15510.0,
@@ -2424,7 +2424,7 @@
       },
       "turnaround_raw": {
         "volume_surge": {
-          "ratio": 0.48761496320401315
+          "ratio": 0.4877992725016768
         },
         "ma_breakout": {
           "close": 57100.0,
@@ -2742,7 +2742,7 @@
       },
       "turnaround_raw": {
         "volume_surge": {
-          "ratio": 0.7037497424871725
+          "ratio": 0.7037903844054272
         },
         "ma_breakout": {
           "close": 26300.0,
@@ -3166,7 +3166,7 @@
       },
       "turnaround_raw": {
         "volume_surge": {
-          "ratio": 1.0829188671083778
+          "ratio": 1.0829698867282613
         },
         "ma_breakout": {
           "close": 6990.0,
@@ -3368,7 +3368,7 @@
       "turnaround_score": 63.1,
       "n_turnaround_signals": 7,
       "turnaround_breakdown": {
-        "volume_surge": 16.2,
+        "volume_surge": 16.3,
         "ma_breakout": 50.0,
         "short_term_breakout": 93.9,
         "relative_strength_accel": 100.0,
@@ -3378,7 +3378,7 @@
       },
       "turnaround_raw": {
         "volume_surge": {
-          "ratio": 1.2430872907066475
+          "ratio": 1.2440323220277212
         },
         "ma_breakout": {
           "close": 5630.0,
@@ -3399,9 +3399,9 @@
           "accel_pct": 22.610474496000887
         },
         "accumulation_accel": {
-          "recent8_avg_krw": 5754411069.375,
+          "recent8_avg_krw": 5777306214.375,
           "prior40_avg_krw": 980847477.0,
-          "ratio": 5.866774604931772
+          "ratio": 5.890116812091264
         }
       },
       "status": "confirmed_turnaround",
@@ -3417,7 +3417,7 @@
       "explanation": {
         "summary": "바닥 신호(거래량 고갈, 기관·외국인 매집)와 턴어라운드 신호(상대강도 가속, 매집 가속)가 동시에 확인됐습니다.",
         "bottom": "9~48일 전(최근8일 제외) 거래량이 과거 120일 평균의 61%로 크게 줄었습니다. 9~48일 전(최근8일 제외) 기관·외국인이 392억원(유통시총의 0.8%)을 순매수했고, 그동안 주가는 -5.5%로 조용했습니다. 9~48일 전(최근8일 제외) 업종지수는 -15.9%인데 이 종목은 -5.5%로 업종지수보다 +10.4%p 선방했습니다.",
-        "turnaround": "상대강도가 이전 10일 +3.5%p에서 최근 10일 +26.1%p로 +22.6%p 가속됐습니다. 최근 8일 일평균 순매수가 이전 40일 평균의 587%로 매집이 강해졌습니다. 현재가가 최근 60일 박스권 고점의 99%까지 올라왔습니다. 20일 이평선이 60일 이평선보다 -4.2% 위로 정배열이고, 종가는 60일 이평선을 +19.1% 돌파했습니다."
+        "turnaround": "상대강도가 이전 10일 +3.5%p에서 최근 10일 +26.1%p로 +22.6%p 가속됐습니다. 최근 8일 일평균 순매수가 이전 40일 평균의 589%로 매집이 강해졌습니다. 현재가가 최근 60일 박스권 고점의 99%까지 올라왔습니다. 20일 이평선이 60일 이평선보다 -4.2% 위로 정배열이고, 종가는 60일 이평선을 +19.1% 돌파했습니다."
       }
     },
     {
@@ -3590,7 +3590,7 @@
       },
       "turnaround_raw": {
         "volume_surge": {
-          "ratio": 1.1904329946556096
+          "ratio": 1.1905508192885246
         },
         "ma_breakout": {
           "close": 7560.0,
@@ -4073,7 +4073,7 @@
       },
       "raw": {
         "volume_dryness": {
-          "ratio": 0.4940065897917418
+          "ratio": 0.4938940852425151
         },
         "accumulation": {
           "net_buy_krw": 6046736790.0,
@@ -4120,7 +4120,7 @@
       },
       "turnaround_raw": {
         "volume_surge": {
-          "ratio": 1.6734995091052016
+          "ratio": 1.6736030699680022
         },
         "ma_breakout": {
           "close": 32350.0,
